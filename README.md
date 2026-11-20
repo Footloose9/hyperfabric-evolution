@@ -4,11 +4,11 @@
 
 Our goal is to make public ledger information easier to **identify correctly, inspect independently, reproduce, and discuss**. We are opening a small, deliberately independent collection of educational code and transparent research methods so that community members can help shape useful tools.
 
-**Project stage: early public preview.** This repository is not a finished exchange, trading bot, token project, or complete product. The current implementation is a small, offline XRPL identity example plus a synthetic cross-chain evidence-graph primitive, with 25 tests. No live ledger explorer, wallet, threat monitor or production forensic engine is implemented. The wider direction is open for community discussion; features listed as ideas are not promises.
+**Project stage: early public preview.** This repository is not a finished exchange, trading bot, token project, or complete product. The current implementation is a small, offline XRPL identity example plus a synthetic cross-chain evidence-graph primitive, with an offline, deterministic test suite. No live ledger explorer, wallet, threat monitor or production forensic engine is implemented. The wider direction is open for community discussion; features listed as ideas are not promises.
 
 ## Explore the interactive research portal
 
-A self-contained, browser-based **synthetic evidence graph** lets newcomers explore chain-aware relationships and see how evidence types differ. No wallet or API key is needed, and the demo never requests live ledger data. The public portal is at [Hyperfabric Evolution](https://footloose9.github.io/hyperfabric-evolution/) once GitHub Pages is enabled; its complete source is in [`docs/index.html`](docs/index.html), [`docs/site.js`](docs/site.js), and [`docs/site.css`](docs/site.css).
+A self-contained, browser-based **synthetic evidence graph** lets newcomers explore chain-aware relationships and see how evidence types differ. No wallet or API key is needed, and the demo never requests live ledger data. The verified, published portal is at [Hyperfabric Evolution](https://footloose9.github.io/hyperfabric-evolution/); its complete source is in [`docs/index.html`](docs/index.html), [`docs/site.js`](docs/site.js), and [`docs/site.css`](docs/site.css).
 
 ## What problem are we solving?
 
@@ -21,7 +21,7 @@ That is one concrete example of why verifiable data models matter. The longer-te
 | Area | Status | Where |
 | --- | --- | --- |
 | XRPL native-versus-issued asset identity model | Working educational example | [`hyperfabric_public/identity.py`](hyperfabric_public/identity.py) |
-| Synthetic, offline unit tests | 25 tests; no RPC calls or secrets | [`tests/test_identity.py`](tests/test_identity.py), [`tests/test_evidence_graph.py`](tests/test_evidence_graph.py) |
+| Synthetic, offline unit tests | Reproducible, no RPC calls or secrets; test count evolves | [`tests/`](tests/) |
 | Chain-scoped synthetic evidence graph | Bounded, typed traversal without real ledger input or attribution | [`hyperfabric_public/evidence_graph.py`](hyperfabric_public/evidence_graph.py) |
 | Interactive public research portal | Static, offline-data visualization of synthetic chains and typed edges; **not a live explorer** | [`docs/index.html`](docs/index.html) |
 | Community contribution process | Open | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
@@ -59,6 +59,12 @@ Three useful starting questions:
 2. Which documentation or synthetic examples would make the protocol easier to understand?
 3. Which small, read-only tool would you find useful enough to review or test?
 
+## Reuse existing open-source work before rebuilding
+
+We maintain a **dated [18-project upstream discovery catalog](docs/UPSTREAM_LEVERAGE.md)** covering XRPL, Xahau, EVM, Solana, Cosmos, Bitcoin, forensic graphs, threat detection, OpenClaw and public standards. The [machine-readable source register](docs/upstream_candidates.json) records GitHub-reported licenses, source dates and candidate uses. The [reuse policy](docs/UPSTREAM_REUSE_POLICY.md) explains how to choose a dependency, a thin adapter, an upstream contribution or a justified fork; no upstream code has been imported merely by listing it.
+
+Have an existing library or explorer that solves one of our issues? Submit an [upstream reuse proposal](https://github.com/Footloose9/hyperfabric-evolution/issues/new/choose) with a reproducible public example and license evidence. We prefer collaboration and compatibility over duplicate implementations.
+
 ## Public-only and safety boundaries
 
 This repository is a **standalone public lab**, not a mirror of any private software, internal architecture, unreleased invention, or operational service. The public code is reviewable; no live trading, signing, account control, private key handling, or financial automation is included or authorized. Do not publish private wallet data, credentials, internal documents, personal information, or unsupported allegations.
@@ -73,6 +79,8 @@ Only files separately reviewed for public release belong here; a GitHub permissi
 - [Community research tracks](docs/COMMUNITY_TRACKS.md) — explorer, asset identity, wallet interoperability and other chains
 - [Chain and standards scope](docs/CHAIN_SCOPE.md) — what is actually implemented and what remains proposed
 - [Chain adapter contributor guide](docs/CHAIN_ADAPTER_GUIDE.md) — how XRPL, Xahau, EVM, Solana, Cosmos and Bitcoin communities can propose tests without live wallets
+- [Upstream leverage catalog](docs/UPSTREAM_LEVERAGE.md) — 18 verified public discovery candidates and specific reuse opportunities
+- [Source-and-license reuse policy](docs/UPSTREAM_REUSE_POLICY.md) — dependencies, upstream PRs, interoperability, forks and admission gates
 - [Explorer proposal](docs/EXPLORER_PROPOSAL.md) — initial offline, read-only public explorer design
 - [Wallet interoperability proposal](docs/WALLET_INTEROP_PROPOSAL.md) — generic watch-only research, no signing
 - [Public collaboration protocol](docs/PUBLIC_COLLABORATION_PROTOCOL.md) — issue-to-PR and reproducibility process

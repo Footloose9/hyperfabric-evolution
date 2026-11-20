@@ -17,7 +17,7 @@ python -m unittest discover -s tests -v
 
 On Windows where `python` is not on PATH, `py -3 -m unittest discover -s tests -v` may work.
 
-Expected result: `Ran 25 tests` and `OK`.
+Expected result: a passing unittest summary ending in `OK`; the number of tests grows as contributors add cases.
 
 ## 3. Read the example
 
