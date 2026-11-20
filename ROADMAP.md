@@ -20,6 +20,14 @@ The following are open proposals. Scope and priority are subject to review.
    - Acceptance: tests run offline; only made-up fixtures; no source or dependency from private systems.
 4. **Research methodology:** Develop a template for documenting public-ledger observations, provenance, uncertainty, and reproducibility.
    - Acceptance: no private investigator records or person-identifying allegations.
+5. **Chain-aware identifier conformance:** Document XRPL classic-token currency shapes, case sensitivity and MPT issuance IDs; compare applicable CAIP-2/10/19 profiles using independently sourced synthetic examples.
+   - Acceptance: negative tests for wrong network and wrong asset class; do not claim unsupported namespace registration.
+6. **Public explorer prototype:** Design a synthetic, offline read-only source/asset/event explorer with completeness and uncertainty indicators.
+   - Acceptance: reproducible fixtures, accessible desktop/mobile views, no live RPC or signing requirements. See [explorer proposal](docs/EXPLORER_PROPOSAL.md).
+7. **Wallet-neutral view-only model:** Propose synthetic account/asset/balance display contracts across separately identified chains, with explicit unknown/stale states.
+   - Acceptance: no private keys, real account data, wallet coupling or financial authority. See [wallet interoperability proposal](docs/WALLET_INTEROP_PROPOSAL.md).
+8. **Other ecosystems:** Invite Xahau, EVM, Solana, Cosmos and Bitcoin contributors to identify source-backed, independently publishable protocol test cases.
+   - Acceptance: one public specification, testable synthetic example and documented differences; no claim of current integration.
 
 ## Possible later topics (not implemented or committed)
 
@@ -27,7 +35,7 @@ The following are open proposals. Scope and priority are subject to review.
 - Independent comparison of publicly documented XRPL and Xahau data formats.
 - Read-only data exploration or visualization prototypes built exclusively from approved public specifications and synthetic examples.
 
-These are **research directions**, not evidence that a production analytics, market-making, arbitrage, wallet, or exchange system exists here.
+These are **research directions**, not evidence that a production analytics, explorer, market-making, arbitrage, wallet, bridging, or exchange system exists here. See [community tracks](docs/COMMUNITY_TRACKS.md) and the [chain scope](docs/CHAIN_SCOPE.md).
 
 ## Suggesting a direction
 
