@@ -11,6 +11,11 @@
 !docs/
 !docs/GETTING_STARTED.md
 !docs/PROJECT_OVERVIEW.md
+!docs/COMMUNITY_TRACKS.md
+!docs/CHAIN_SCOPE.md
+!docs/EXPLORER_PROPOSAL.md
+!docs/WALLET_INTEROP_PROPOSAL.md
+!docs/PUBLIC_COLLABORATION_PROTOCOL.md
 !.github/
 !.github/ISSUE_TEMPLATE/
 !.github/ISSUE_TEMPLATE/bug_report.md
