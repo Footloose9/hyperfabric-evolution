@@ -7,6 +7,7 @@ This page describes **only this public repository**. The roadmap is a discussion
 - XRPL-native XRP versus issued-asset identity demonstration using currency plus issuer.
 - Twenty-five offline Python tests with synthetic, non-sensitive inputs; includes a bounded chain-scoped graph traversal primitive that has **no** live data connector.
 - Contribution and publication criteria for public research.
+- A standalone interactive **synthetic evidence graph portal** built without external services or user credentials. It is not a live blockchain explorer.
 
 ## Next: proposed community-friendly improvements
 

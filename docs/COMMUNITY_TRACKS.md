@@ -38,7 +38,7 @@ Contribute clearly explained terminology, beginner workflows, mobile usability c
 
 XRPL and Xahau protocol specialists; Ethereum, Base and other EVM developers; Solana/Cosmos/Bitcoin researchers; cryptographic security experts; and designers are welcome to propose independently publishable work. No chain has implementation status merely because it is invited.
 
-Start with [Discussions](https://github.com/Footloose9/hyperfabric-evolution/discussions) for ideas or [Issues](https://github.com/Footloose9/hyperfabric-evolution/issues) for a bounded task. Contribute public specifications, reproducible synthetic examples, and explicit acceptance criteria.
+Start with [Discussions](https://github.com/Footloose9/hyperfabric-evolution/discussions) for ideas or [Issues](https://github.com/Footloose9/hyperfabric-evolution/issues) for a bounded task. If your expertise is outside XRPL, use the [chain adapter guide](CHAIN_ADAPTER_GUIDE.md) and the [adapter proposal template](https://github.com/Footloose9/hyperfabric-evolution/issues/new/choose). Contribute public specifications, reproducible synthetic examples, and explicit acceptance criteria.
 
 ## Publication boundary
 

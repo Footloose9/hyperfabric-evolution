@@ -20,11 +20,16 @@
 !docs/BITX_PILOT.md
 !docs/MEV_RESEARCH_METHODS.md
 !docs/CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md
+!docs/CHAIN_ADAPTER_GUIDE.md
+!docs/index.html
+!docs/site.css
+!docs/site.js
 !.github/
 !.github/ISSUE_TEMPLATE/
 !.github/ISSUE_TEMPLATE/bug_report.md
 !.github/ISSUE_TEMPLATE/public_feature_request.md
 !.github/ISSUE_TEMPLATE/public_threat_observation.md
+!.github/ISSUE_TEMPLATE/chain_adapter_proposal.md
 !.github/ISSUE_TEMPLATE/config.yml
 !.github/PULL_REQUEST_TEMPLATE.md
 !.github/workflows/
@@ -36,3 +41,4 @@
 !tests/
 !tests/test_identity.py
 !tests/test_evidence_graph.py
+!tests/test_public_portal.py
