@@ -6,6 +6,10 @@ Our goal is to make public ledger information easier to **identify correctly, in
 
 **Project stage: early public preview.** This repository is not a finished exchange, trading bot, token project, or complete product. The current implementation is a small, offline XRPL identity example plus a synthetic cross-chain evidence-graph primitive, with 25 tests. No live ledger explorer, wallet, threat monitor or production forensic engine is implemented. The wider direction is open for community discussion; features listed as ideas are not promises.
 
+## Explore the interactive research portal
+
+A self-contained, browser-based **synthetic evidence graph** lets newcomers explore chain-aware relationships and see how evidence types differ. No wallet or API key is needed, and the demo never requests live ledger data. The public portal is at [Hyperfabric Evolution](https://footloose9.github.io/hyperfabric-evolution/) once GitHub Pages is enabled; its complete source is in [`docs/index.html`](docs/index.html), [`docs/site.js`](docs/site.js), and [`docs/site.css`](docs/site.css).
+
 ## What problem are we solving?
 
 On the XRP Ledger, an issued token cannot be identified reliably by its ticker alone. Its identity includes both its **currency code and issuer account**. Two assets labeled `USD` can be different assets when their issuers differ. Native XRP, by contrast, has no issuer.
@@ -19,6 +23,7 @@ That is one concrete example of why verifiable data models matter. The longer-te
 | XRPL native-versus-issued asset identity model | Working educational example | [`hyperfabric_public/identity.py`](hyperfabric_public/identity.py) |
 | Synthetic, offline unit tests | 25 tests; no RPC calls or secrets | [`tests/test_identity.py`](tests/test_identity.py), [`tests/test_evidence_graph.py`](tests/test_evidence_graph.py) |
 | Chain-scoped synthetic evidence graph | Bounded, typed traversal without real ledger input or attribution | [`hyperfabric_public/evidence_graph.py`](hyperfabric_public/evidence_graph.py) |
+| Interactive public research portal | Static, offline-data visualization of synthetic chains and typed edges; **not a live explorer** | [`docs/index.html`](docs/index.html) |
 | Community contribution process | Open | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Read-only explorer, wallet UI, live ledger data, Xahau/EVM and other chain adapters | **Not implemented** | [Community tracks](docs/COMMUNITY_TRACKS.md) |
 
@@ -67,6 +72,7 @@ Only files separately reviewed for public release belong here; a GitHub permissi
 - [Public roadmap](ROADMAP.md) — shipped work versus proposals
 - [Community research tracks](docs/COMMUNITY_TRACKS.md) — explorer, asset identity, wallet interoperability and other chains
 - [Chain and standards scope](docs/CHAIN_SCOPE.md) — what is actually implemented and what remains proposed
+- [Chain adapter contributor guide](docs/CHAIN_ADAPTER_GUIDE.md) — how XRPL, Xahau, EVM, Solana, Cosmos and Bitcoin communities can propose tests without live wallets
 - [Explorer proposal](docs/EXPLORER_PROPOSAL.md) — initial offline, read-only public explorer design
 - [Wallet interoperability proposal](docs/WALLET_INTEROP_PROPOSAL.md) — generic watch-only research, no signing
 - [Public collaboration protocol](docs/PUBLIC_COLLABORATION_PROTOCOL.md) — issue-to-PR and reproducibility process

@@ -16,7 +16,7 @@ People who want to understand public XRPL mechanics, test claims about public da
 
 It models native XRP separately from issued tokens and creates a stable representation that includes an issued token's currency and issuer. The new synthetic-only evidence graph models typed, directed funding and venue relationships on explicitly separate networks with visible traversal limits; it refuses real wallet identifiers and unverified cross-network links. The program runs locally, offline. The public code is verified by 25 unit tests, including 16 synthetic graph cases. These show expected and rejected inputs, not live-network correctness.
 
-It currently **does not** verify an XRPL account checksum; the illustrative account strings are placeholders, not real wallet records. It has no live ledger access, trust-line inspection, balance lookups, or transaction functions.
+A separate static browser portal visualizes fictional graph nodes and edges. Its interactions run in the browser without a live node, provider or RPC. It currently **does not** verify an XRPL account checksum; the illustrative account strings are placeholders, not real wallet records. It has no live ledger access, trust-line inspection, balance lookups, or transaction functions.
 
 ## Is this a blockchain forensics or threat-monitoring engine?
 
