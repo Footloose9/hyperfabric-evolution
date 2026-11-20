@@ -23,6 +23,7 @@
 !docs/CHAIN_ADAPTER_GUIDE.md
 !docs/UPSTREAM_LEVERAGE.md
 !docs/UPSTREAM_REUSE_POLICY.md
+!docs/GRAPHSENSE_INTEROP.md
 !docs/upstream_candidates.json
 !docs/index.html
 !docs/site.css
@@ -42,8 +43,10 @@
 !hyperfabric_public/__init__.py
 !hyperfabric_public/identity.py
 !hyperfabric_public/evidence_graph.py
+!hyperfabric_public/graphsense_bridge.py
 !tests/
 !tests/test_identity.py
 !tests/test_evidence_graph.py
+!tests/test_graphsense_bridge.py
 !tests/test_public_portal.py
 !tests/test_upstream_catalog.py
