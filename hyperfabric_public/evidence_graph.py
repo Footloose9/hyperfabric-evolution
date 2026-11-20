@@ -72,6 +72,21 @@ class EvidenceEdge:
             raise ValueError("unsupported edge relation")
 
 
+@dataclass(frozen=True, order=True)
+class SyntheticLedgerGap:
+    """Caller-declared missing inclusive ledger interval, not inferred coverage."""
+
+    network: str
+    first_ledger: int
+    last_ledger: int
+
+    def __post_init__(self) -> None:
+        _network(self.network)
+        if (type(self.first_ledger) is not int or type(self.last_ledger) is not int
+                or not 0 <= self.first_ledger <= self.last_ledger):
+            raise ValueError("invalid synthetic ledger gap")
+
+
 @dataclass(frozen=True)
 class TraversalResult:
     """Bounded synthetic traversal; never evidence of global completeness."""
@@ -81,10 +96,12 @@ class TraversalResult:
     depth_limit_reached: bool
     node_limit_reached: bool
     provenance_class: str = "SYNTHETIC_ONLY"
+    coverage_gaps: tuple[SyntheticLedgerGap, ...] = ()
 
     @property
     def has_open_frontier(self) -> bool:
-        return self.depth_limit_reached or self.node_limit_reached
+        return (self.depth_limit_reached or self.node_limit_reached
+                or bool(self.coverage_gaps))
 
 
 class EvidenceGraph:
@@ -95,6 +112,8 @@ class EvidenceGraph:
         nodes: Iterable[EvidenceNode],
         events: Iterable[SyntheticEvent],
         edges: Iterable[EvidenceEdge],
+        *,
+        coverage_gaps: Iterable[SyntheticLedgerGap] = (),
     ) -> None:
         self.nodes: dict[str, EvidenceNode] = {}
         self.events: dict[str, SyntheticEvent] = {}
@@ -110,6 +129,13 @@ class EvidenceGraph:
             if event.key in self.events:
                 raise ValueError("duplicate event")
             self.events[event.key] = event
+
+        gaps: set[SyntheticLedgerGap] = set()
+        for gap in coverage_gaps:
+            if not isinstance(gap, SyntheticLedgerGap):
+                raise ValueError("invalid synthetic ledger gap")
+            gaps.add(gap)
+        self._coverage_gaps = tuple(sorted(gaps))
 
         adjacency: dict[str, list[EvidenceEdge]] = {key: [] for key in self.nodes}
         seen_edges: set[EvidenceEdge] = set()
@@ -190,6 +216,7 @@ class EvidenceGraph:
                     queue.append((edge.target, depth + 1))
                 collected.add(edge)
 
+        visited_networks = {self.nodes[key].network for key in visited}
         return TraversalResult(
             seeds=selected,
             nodes=tuple(sorted(visited)),
@@ -197,4 +224,8 @@ class EvidenceGraph:
                 e.source, e.target, e.relation, e.event))),
             depth_limit_reached=depth_limited,
             node_limit_reached=node_limited,
+            coverage_gaps=tuple(
+                gap for gap in self._coverage_gaps
+                if gap.network in visited_networks
+            ),
         )
