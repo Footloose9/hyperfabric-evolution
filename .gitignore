@@ -1,0 +1,13 @@
+# Explicit public allowlist: add new publication classes deliberately.
+*
+!.gitignore
+!README.md
+!LICENSE
+!CONTRIBUTING.md
+!SECURITY.md
+!PUBLICATION_POLICY.md
+!hyperfabric_public/
+!hyperfabric_public/__init__.py
+!hyperfabric_public/identity.py
+!tests/
+!tests/test_identity.py
