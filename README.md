@@ -23,6 +23,7 @@ That is one concrete example of why verifiable data models matter. The longer-te
 | XRPL native-versus-issued asset identity model | Working educational example | [`hyperfabric_public/identity.py`](hyperfabric_public/identity.py) |
 | Synthetic, offline unit tests | Reproducible, no RPC calls or secrets; test count evolves | [`tests/`](tests/) |
 | Chain-scoped synthetic evidence graph | Bounded, typed traversal without real ledger input or attribution | [`hyperfabric_public/evidence_graph.py`](hyperfabric_public/evidence_graph.py) |
+| XRPL synthetic typed-event conformance | Offline decisions for fabricated native/issued/MPT Payment and Offer observations; not a live decoder | [Conformance guide](docs/XRPL_TYPED_EVENT_CONFORMANCE.md) |
 | Interactive public research portal | Static, offline-data visualization of synthetic chains and typed edges; **not a live explorer** | [`docs/index.html`](docs/index.html) |
 | Community contribution process | Open | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Read-only explorer, wallet UI, live ledger data, Xahau/EVM and other chain adapters | **Not implemented** | [Community tracks](docs/COMMUNITY_TRACKS.md) |
@@ -79,6 +80,7 @@ Only files separately reviewed for public release belong here; a GitHub permissi
 - [Community research tracks](docs/COMMUNITY_TRACKS.md) — explorer, asset identity, wallet interoperability and other chains
 - [Chain and standards scope](docs/CHAIN_SCOPE.md) — what is actually implemented and what remains proposed
 - [Chain adapter contributor guide](docs/CHAIN_ADAPTER_GUIDE.md) — how XRPL, Xahau, EVM, Solana, Cosmos and Bitcoin communities can propose tests without live wallets
+- [XRPL typed-event conformance](docs/XRPL_TYPED_EVENT_CONFORMANCE.md) — deterministic, synthetic-only Payment/Offer and MPT test contract (not a live ledger decoder)
 - [Upstream leverage catalog](docs/UPSTREAM_LEVERAGE.md) — 18 verified public discovery candidates and specific reuse opportunities
 - [Source-and-license reuse policy](docs/UPSTREAM_REUSE_POLICY.md) — dependencies, upstream PRs, interoperability, forks and admission gates
 - [Explorer proposal](docs/EXPLORER_PROPOSAL.md) — initial offline, read-only public explorer design
