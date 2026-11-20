@@ -14,9 +14,13 @@ People who want to understand public XRPL mechanics, test claims about public da
 
 ## What does the current code do?
 
-It models native XRP separately from issued tokens and creates a stable representation that includes an issued token's currency and issuer. The program runs locally, offline. Nine unit tests show expected and rejected inputs.
+It models native XRP separately from issued tokens and creates a stable representation that includes an issued token's currency and issuer. The new synthetic-only evidence graph models typed, directed funding and venue relationships on explicitly separate networks with visible traversal limits; it refuses real wallet identifiers and unverified cross-network links. The program runs locally, offline. The public code is verified by 25 unit tests, including 16 synthetic graph cases. These show expected and rejected inputs, not live-network correctness.
 
 It currently **does not** verify an XRPL account checksum; the illustrative account strings are placeholders, not real wallet records. It has no live ledger access, trust-line inspection, balance lookups, or transaction functions.
+
+## Is this a blockchain forensics or threat-monitoring engine?
+
+**Not yet.** An initial synthetic, offline graph module and a modular [research RFC](CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md) now exist. The public pilot invites independently verifiable BITx / MEV-style research, but there is no deployed crawler, external surveillance, live incident detector, legal attribution process or automated accusation.
 
 ## Is this an exchange or an automated trading system?
 

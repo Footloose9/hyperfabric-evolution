@@ -17,7 +17,7 @@ python -m unittest discover -s tests -v
 
 On Windows where `python` is not on PATH, `py -3 -m unittest discover -s tests -v` may work.
 
-Expected result: `Ran 9 tests` and `OK`.
+Expected result: `Ran 25 tests` and `OK`.
 
 ## 3. Read the example
 
@@ -29,7 +29,28 @@ Open [`hyperfabric_public/identity.py`](../hyperfabric_public/identity.py). The 
 
 For example, `AssetIdentity.xrp().key` returns `"xrpl:native:XRP"`. The unit tests exercise synthetic issuer strings so that no real wallet addresses are required.
 
-## 4. Decide how to contribute
+## 4. Try the synthetic evidence graph
+
+This example uses **only fictional identifiers**. It does not query any blockchain or identify people. In a Python prompt from the repository root:
+
+```python
+from hyperfabric_public import EvidenceNode, SyntheticEvent, EvidenceEdge, EvidenceGraph
+
+nodes = [
+    EvidenceNode("sim:alpha", "xrpl:synthetic", "account"),
+    EvidenceNode("sim:beta", "xrpl:synthetic", "account"),
+]
+events = [SyntheticEvent("sim:example", "xrpl:synthetic", 1)]
+edges = [EvidenceEdge("sim:alpha", "sim:beta", "funded", "sim:example")]
+graph = EvidenceGraph(nodes, events, edges)
+result = graph.expand(["sim:alpha"], max_hops=1, max_nodes=10)
+print(result.nodes)  # ('sim:alpha', 'sim:beta')
+print(result.provenance_class)  # SYNTHETIC_ONLY
+```
+
+To propose extensions, read the [cross-chain evidence-engine RFC](CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md). Graph edges alone cannot establish common control, malice, real account balances or global completeness.
+
+## 5. Decide how to contribute
 
 - If you do not code: read the [FAQ](PROJECT_OVERVIEW.md) and post a specific confusion or improvement idea in [Discussions](https://github.com/Footloose9/hyperfabric-evolution/discussions).
 - If you code: choose a small issue, add offline tests, and submit a pull request with explicit source provenance.
@@ -37,6 +58,6 @@ For example, `AssetIdentity.xrp().key` returns `"xrpl:native:XRP"`. The unit tes
 
 Review the [public/private publication gate](../PUBLICATION_POLICY.md) before submitting anything. Never share personal/private data or copied internal source.
 
-## 5. Important limits
+## 6. Important limits
 
 Passing these tests means only that this small deterministic model behaved as specified on the fixtures. It is **not** evidence of cryptographic address validation, XRPL ledger correctness, trading safety, or runtime availability.

@@ -5,7 +5,7 @@ This page describes **only this public repository**. The roadmap is a discussion
 ## Available now (verified public scope)
 
 - XRPL-native XRP versus issued-asset identity demonstration using currency plus issuer.
-- Nine offline Python tests with synthetic, non-sensitive inputs.
+- Twenty-five offline Python tests with synthetic, non-sensitive inputs; includes a bounded chain-scoped graph traversal primitive that has **no** live data connector.
 - Contribution and publication criteria for public research.
 
 ## Next: proposed community-friendly improvements
@@ -28,6 +28,12 @@ The following are open proposals. Scope and priority are subject to review.
    - Acceptance: no private keys, real account data, wallet coupling or financial authority. See [wallet interoperability proposal](docs/WALLET_INTEROP_PROPOSAL.md).
 8. **Other ecosystems:** Invite Xahau, EVM, Solana, Cosmos and Bitcoin contributors to identify source-backed, independently publishable protocol test cases.
    - Acceptance: one public specification, testable synthetic example and documented differences; no claim of current integration.
+9. **Community threat-research pilot:** Independently reproduce a bounded historical BITx ledger anchor and develop synthetic negative controls for MEV-style claims, Offer removals, AMM reserve shifts, funding roles and incomplete sources.
+   - Acceptance: nonaccusatory public evidence, exact validated ledger and issuer identity, alternative benign hypotheses and publication review. See [threat research](docs/THREAT_RESEARCH.md) and [BITx pilot](docs/BITX_PILOT.md).
+10. **Read-only investigation engine:** Build on the already implemented synthetic graph primitive with public source-provenance schemas, bounded chain-specific adapters, anomaly metrics and reviewed cross-chain linkage.
+   - Acceptance: staged E0–E7 adoption, source/chain semantics and falsifiers, explicit truncation and incomplete sources; no wallet/user inference. See the [cross-chain engine RFC](docs/CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md).
+11. **Read-only observation tooling (later proposal):** A deterministic, offline evidence-fixture validator and optional bounded public-source adapters, with abstention for stale, incomplete or contradictory inputs.
+   - Acceptance: no autonomous accusation, wallet actions, market trading, duplicate monitoring scheduler, or unreviewed user-data collection.
 
 ## Possible later topics (not implemented or committed)
 

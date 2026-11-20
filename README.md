@@ -4,20 +4,21 @@
 
 Our goal is to make public ledger information easier to **identify correctly, inspect independently, reproduce, and discuss**. We are opening a small, deliberately independent collection of educational code and transparent research methods so that community members can help shape useful tools.
 
-**Project stage: early public preview.** This repository is not a finished exchange, trading bot, token project, or complete product. The current implementation is a small, offline Python example with nine tests. The wider direction is open for community discussion; features listed as ideas are not promises.
+**Project stage: early public preview.** This repository is not a finished exchange, trading bot, token project, or complete product. The current implementation is a small, offline XRPL identity example plus a synthetic cross-chain evidence-graph primitive, with 25 tests. No live ledger explorer, wallet, threat monitor or production forensic engine is implemented. The wider direction is open for community discussion; features listed as ideas are not promises.
 
 ## What problem are we solving?
 
 On the XRP Ledger, an issued token cannot be identified reliably by its ticker alone. Its identity includes both its **currency code and issuer account**. Two assets labeled `USD` can be different assets when their issuers differ. Native XRP, by contrast, has no issuer.
 
-That is one concrete example of why verifiable data models matter. The longer-term public research direction includes **read-only explorers, multi-chain identity, wallet-neutral view-only interoperability, and reproducible public-ledger tools**. These are proposed community workstreams, **not released functionality**. See the [community tracks](docs/COMMUNITY_TRACKS.md).
+That is one concrete example of why verifiable data models matter. The longer-term public research direction includes **read-only explorers, multi-chain identity, wallet-neutral view-only interoperability, reproducible public-ledger tools, and evidence-based threat monitoring**. These are proposed community workstreams, **not released functionality**. See the [community tracks](docs/COMMUNITY_TRACKS.md).
 
 ## What works today?
 
 | Area | Status | Where |
 | --- | --- | --- |
 | XRPL native-versus-issued asset identity model | Working educational example | [`hyperfabric_public/identity.py`](hyperfabric_public/identity.py) |
-| Synthetic, offline unit tests | 9 tests; no RPC calls or secrets | [`tests/test_identity.py`](tests/test_identity.py) |
+| Synthetic, offline unit tests | 25 tests; no RPC calls or secrets | [`tests/test_identity.py`](tests/test_identity.py), [`tests/test_evidence_graph.py`](tests/test_evidence_graph.py) |
+| Chain-scoped synthetic evidence graph | Bounded, typed traversal without real ledger input or attribution | [`hyperfabric_public/evidence_graph.py`](hyperfabric_public/evidence_graph.py) |
 | Community contribution process | Open | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Read-only explorer, wallet UI, live ledger data, Xahau/EVM and other chain adapters | **Not implemented** | [Community tracks](docs/COMMUNITY_TRACKS.md) |
 
@@ -45,6 +46,8 @@ For a no-clone introduction, see [Getting started](docs/GETTING_STARTED.md). Non
 
 Use [GitHub Discussions](https://github.com/Footloose9/hyperfabric-evolution/discussions) for ideas and questions; [Issues](https://github.com/Footloose9/hyperfabric-evolution/issues) for specific tasks or reproducible defects; and [Pull Requests](https://github.com/Footloose9/hyperfabric-evolution/pulls) for reviewed changes. See the [Public roadmap](ROADMAP.md) and [Contributor guide](CONTRIBUTING.md) before adding new features.
 
+**Public investigation pilot:** [BITx event replication](docs/BITX_PILOT.md) and the [community threat-research framework](docs/THREAT_RESEARCH.md) invite source-backed, nonaccusatory examination of AMM/DEX anomalies and MEV-style bot behavior. No fraud verdict or live monitoring service exists in this repository.
+
 Three useful starting questions:
 
 1. What **publicly observable** XRPL behavior is difficult for you to verify independently?
@@ -67,6 +70,11 @@ Only files separately reviewed for public release belong here; a GitHub permissi
 - [Explorer proposal](docs/EXPLORER_PROPOSAL.md) — initial offline, read-only public explorer design
 - [Wallet interoperability proposal](docs/WALLET_INTEROP_PROPOSAL.md) — generic watch-only research, no signing
 - [Public collaboration protocol](docs/PUBLIC_COLLABORATION_PROTOCOL.md) — issue-to-PR and reproducibility process
+- [Threat research](docs/THREAT_RESEARCH.md) — source standards and evidence submissions
+- [BITx historical pilot](docs/BITX_PILOT.md) — independently reproduce a bounded ledger event
+- [MEV/bot research methods](docs/MEV_RESEARCH_METHODS.md) — hypothesis tests and negative controls
+- [Cross-chain investigation engine RFC](docs/CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md) — modular forensic research, chain adapters, typed graph and source-quality gates
+- [Synthetic graph source](hyperfabric_public/evidence_graph.py) — deterministic evidence-edge traversal that refuses real wallet IDs and unproven cross-chain edges
 - [Contributing](CONTRIBUTING.md) — review and provenance requirements
 - [Publication policy](PUBLICATION_POLICY.md) — intellectual-property and privacy quarantine
 - [License](LICENSE) — MIT for the contents of this public repository only

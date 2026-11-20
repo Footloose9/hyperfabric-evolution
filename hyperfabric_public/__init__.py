@@ -1,7 +1,22 @@
-"""Public, read-only XRPL protocol identity examples.
+"""Public educational asset-identity and synthetic evidence-graph utilities.
 
-No proprietary Root/Hyperfabric runtime or private ledger data is imported.
+No live ledger access, real wallets, privileged services or source authority.
 """
-from .identity import AssetIdentity
 
-__all__ = ["AssetIdentity"]
+from .identity import AssetIdentity
+from .evidence_graph import (
+    EvidenceEdge,
+    EvidenceGraph,
+    EvidenceNode,
+    SyntheticEvent,
+    TraversalResult,
+)
+
+__all__ = [
+    "AssetIdentity",
+    "EvidenceEdge",
+    "EvidenceGraph",
+    "EvidenceNode",
+    "SyntheticEvent",
+    "TraversalResult",
+]

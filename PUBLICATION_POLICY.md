@@ -8,6 +8,8 @@ Allowed source classes: original public-domain protocol explanations, freshly de
 
 Excluded by default: private inventions and unpublished methods; private project names or identifiers; trading alpha and financial automation; issuer/control and signer material; personal or third-party data; forensic dossiers identifying people; proprietary models; private contract or agent instructions; internal workspaces, snapshots and receipts; credentials; binary archives; databases and logs.
 
+For public ledger investigations, independently reproduce exact transaction/ledger/asset sources and publish **only claims supported by those public observations**. Do not publish private forensic source copies, inferred real-world controller identities, unsupported fraud/MEV accusations, victim lists, or wallet blacklists. Submit public leads only through the bounded research template; security-sensitive reports go to private vulnerability reporting. Publication of a pilot methodology does not clear its private investigative conclusions.
+
 ## Publication gate for each commit
 
 1. Confirm the proposed files were independently created for public use; do not copy from a private tree or retain its Git history.
