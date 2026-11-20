@@ -2,7 +2,7 @@
 
 An open-source, community-oriented workspace for **read-only, reproducible experiments** with open blockchain protocol data. The initial example demonstrates how XRP Ledger asset identities should retain both currency and issuer.
 
-**This is a new, intentionally independent public codebase.** It is not a copy, mirror, export, or disclosure of any private Hyperfabric, Ghost of Guy Fawkes, or Blueprint Genesis repository.
+**This is a new, intentionally independent public codebase.** It is not a copy, mirror, export, or disclosure of any private repository or unpublished implementation.
 
 ## Public scope
 

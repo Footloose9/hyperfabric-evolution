@@ -2,11 +2,11 @@
 
 ## Fail-closed default
 
-This repository was created from new public-only materials. **It must never be made a remote mirror of the private Ghost, Hyperfabric Exchange, or Original Root workspaces.** Git remote permission is not authorization to declassify intellectual property.
+This repository was created from independently authored public-only materials. **It must never be made a remote mirror of any private workspace or repository.** Git remote permission is not authorization to declassify intellectual property.
 
 Allowed source classes: original public-domain protocol explanations, freshly developed generic utilities, synthetic fixtures, independently approved public documentation, and reviewed community contributions.
 
-Excluded by default: private inventions and unpublished methods; trading alpha and financial automation; issuer/control and signer material; personal or third-party data; forensic dossiers identifying people; proprietary models; private contract or agent instructions; internal workspaces, snapshots and receipts; credentials; binary archives; databases and logs.
+Excluded by default: private inventions and unpublished methods; private project names or identifiers; trading alpha and financial automation; issuer/control and signer material; personal or third-party data; forensic dossiers identifying people; proprietary models; private contract or agent instructions; internal workspaces, snapshots and receipts; credentials; binary archives; databases and logs.
 
 ## Publication gate for each commit
 
