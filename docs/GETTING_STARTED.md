@@ -1,0 +1,42 @@
+# Getting started
+
+This is a deliberately small offline demonstration. There are **no external services, tokens, network calls, wallets, or required dependencies**.
+
+## 1. What you need
+
+- Python 3.10 or later.
+- Git only if cloning the repository from the command line.
+
+## 2. Run the tests
+
+```bash
+git clone https://github.com/Footloose9/hyperfabric-evolution.git
+cd hyperfabric-evolution
+python -m unittest discover -s tests -v
+```
+
+On Windows where `python` is not on PATH, `py -3 -m unittest discover -s tests -v` may work.
+
+Expected result: `Ran 9 tests` and `OK`.
+
+## 3. Read the example
+
+Open [`hyperfabric_public/identity.py`](../hyperfabric_public/identity.py). The important concepts are:
+
+- **Native XRP** has no issuer.
+- **Issued XRPL assets** are identified by currency **and** issuer; matching ticker labels alone do not mean two assets are identical.
+- **Syntactic shape is not validation.** The demonstration does not verify the issuer's checksum, actual existence or authorization, or a token's market state.
+
+For example, `AssetIdentity.xrp().key` returns `"xrpl:native:XRP"`. The unit tests exercise synthetic issuer strings so that no real wallet addresses are required.
+
+## 4. Decide how to contribute
+
+- If you do not code: read the [FAQ](PROJECT_OVERVIEW.md) and post a specific confusion or improvement idea in [Discussions](https://github.com/Footloose9/hyperfabric-evolution/discussions).
+- If you code: choose a small issue, add offline tests, and submit a pull request with explicit source provenance.
+- If you do protocol research: cite publicly available specifications and separate factual observations from interpretations.
+
+Review the [public/private publication gate](../PUBLICATION_POLICY.md) before submitting anything. Never share personal/private data or copied internal source.
+
+## 5. Important limits
+
+Passing these tests means only that this small deterministic model behaved as specified on the fixtures. It is **not** evidence of cryptographic address validation, XRPL ledger correctness, trading safety, or runtime availability.

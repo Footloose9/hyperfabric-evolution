@@ -1,0 +1,25 @@
+name: Offline Python tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout public repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify Python environment
+        run: python3 --version
+      - name: Run deterministic offline tests
+        run: python3 -B -m unittest discover -s tests -v

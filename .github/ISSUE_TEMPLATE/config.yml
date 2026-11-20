@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community questions and broad ideas
+    url: https://github.com/Footloose9/hyperfabric-evolution/discussions
+    about: Ask questions, share research concerns, and discuss what should be built next.
+  - name: Security disclosures
+    url: https://github.com/Footloose9/hyperfabric-evolution/security
+    about: Use a private report where supported; never disclose secrets in public issues.
