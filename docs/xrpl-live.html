@@ -28,14 +28,16 @@
       If the provider is unreachable, the result stays unavailable; no balance is simulated.</p>
     <section class="panel" aria-labelledby="ledger-heading">
       <h2 id="ledger-heading">Latest reported validated XRPL ledger</h2>
-      <p>Make one manual read-only request and inspect its reported ledger index, hash and source.</p>
+      <p>Make one manual read-only request and inspect its reported ledger index, hash, close time and source. A validated claim does not establish freshness.</p>
       <button id="read-ledger" type="button">Read validated ledger</button>
       <div id="ledger-result" class="status" role="status" aria-live="polite">Not queried.</div>
     </section>
     <section class="panel" aria-labelledby="account-heading">
       <h2 id="account-heading">Public XRP account observation</h2>
-      <p>Enter an <strong>existing public XRPL classic address</strong> to request its validated native-XRP
-        balance. This is not a wallet connection. A syntactically plausible address is not a verified address;
+      <p>Enter an <strong>existing public XRPL classic address</strong> to request its native-XRP
+        balance pinned to a specific provider-reported validated ledger hash. This makes two
+        manual read-only RPC calls per click. It is not a wallet connection.
+        A syntactically plausible address is not a verified address;
         the network provider determines whether it is valid and funded.</p>
       <label for="public-address">Public classic address (starts with r)</label>
       <input id="public-address" type="text" autocomplete="off" autocapitalize="none"
@@ -50,11 +52,14 @@
     <section aria-labelledby="limits-heading">
       <h2 id="limits-heading">Scope and limitations</h2>
       <ul>
-        <li>One manually initiated HTTP request per action; no polling or background service.</li>
+        <li>One manually initiated ledger query, or two read-only RPC calls for an account query
+          (validated ledger header followed by account_info pinned to its hash).
+          No polling or background service.</li>
         <li>Native XRP balance only. Issued tokens require exact currency plus issuer;
           MPTs have different identities. This utility reports none of those balances.</li>
-        <li>Queries always use XRPL Mainnet and a validated ledger request. Failed, stale,
-          malformed, or unvalidated responses must not be presented as current facts.</li>
+        <li>Queries always use XRPL Mainnet and a validated ledger. The provider-reported
+          ledger close time is shown, but independent freshness is not established.
+          Failed, malformed, or unvalidated responses are unavailable, never synthetic zero.</li>
         <li>The public provider may rate-limit, change policy, become unavailable, or return errors.
           A single provider's response is not independently authenticated consensus evidence.</li>
         <li>No wallet extension, signer, transaction builder, funded transaction, API key, cookie,

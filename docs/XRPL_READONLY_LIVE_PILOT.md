@@ -10,8 +10,8 @@ This candidate operates on a separate standalone page `docs/xrpl-live.html` with
 
 ## What is real
 
-- A manual `ledger` JSON-RPC request with `ledger_index: "validated"`, no transaction expansion, displays the provider-reported validated ledger index and hash.
-- A separate manual `account_info` request for a user-entered **public** XRPL classic address, also restricted to the provider's validated ledger, displays the reported **native XRP** account balance and ledger index. Uses BigInt to convert drops to XRP without floating-point rounding.
+- A manual `ledger` JSON-RPC request with `ledger_index: "validated"`, no transaction expansion, displays the provider-reported validated ledger index, hash and ledger close time.
+- A user-initiated public-address observation makes **two read-only RPC calls**: `ledger` at validated, then `account_info` pinned to the retrieved ledger hash. The response must agree on hash and index. It displays reported **native XRP**, ledger identity and close time; BigInt converts drops without floating-point rounding.
 - Network: **XRPL Mainnet only**, via public `https://xrplcluster.com/`. The provider sees the user's IP address and any queried public address. The browser does not intentionally store the query, request wallet access, or use analytics/tracking.
 - No automatic polling, no RPC on page load, no API keys, paid services, cookies, external JS dependencies, seed/key forms, signing, submitting, trading, asset pricing or wallet operations.
 - The endpoint successfully answered a one-shot read-only `ledger` query and browser-origin OPTIONS probe from an isolated test host, returning HTTP 200, CORS `*`, and `validated: true` with agreeing ledger index/hash. This is **not a universal uptime guarantee**; another provider tested was unavailable.
@@ -21,11 +21,11 @@ This candidate operates on a separate standalone page `docs/xrpl-live.html` with
 
 The endpoint is a third party, and `validated: true` is **the provider's claim**. The page does not run an XRP Ledger node, verify consensus, compare independently operated providers, or prove the provider isn't stale/compromised. It must not advertise trustless finality or financial-grade correctness.
 
-The parser requires `status: success`, `validated: true`, a positive safe ledger index, a 64-hex ledger hash for ledger observations, exact matching account identity for account observations, and decimal-only native XRP drops. It refuses inconsistent ledger hash/index fields, rejected RPC results, missing balances and unknown account identity.
+The parser requires `status: success`, `validated: true`, a positive safe ledger index, a 64-hex ledger hash, a valid and internally consistent ledger close time, an exact matching account identity, and decimal-only native XRP drops. Account observations are pinned to the retrieved ledger hash and must agree on both hash and index. Malformed or inconsistent source fields, rejected RPC results, missing balances and unknown account identities are refused. Displayed close time is not a guarantee of provider freshness.
 
-`account_info` can include a validated ledger index without a corresponding ledger hash; the page does **not** invent a hash. The input shape check is **not an XRPL address checksum validator**; the provider is asked to reject invalid addresses. No issued token or MPT balance is calculated. Distinct issued assets require full currency+issuer identity; MPT issuance uses a different identity. No wallet-owned account is inferred from a public address.
+`account_info` may omit a ledger hash on some providers or API versions. This narrow pilot **fails closed** when that field is omitted and never invents a hash. The tested mainnet endpoint provided matching hash and index. The input shape check is **not an XRPL address checksum validator**; the provider is asked to reject invalid addresses. No issued token or MPT balance is calculated. Distinct issued assets require full currency+issuer identity; MPT issuance uses a different identity. No wallet-owned account is inferred from a public address.
 
-A 10-second timeout, no automatic retries, no hidden provider fallback, and no synthetic substitution limit resource and interpretation risks. Browser CSP only permits network connections to the specific RPC URL and scripts served from the same site. Availability, provider privacy policy, rate limits, browser compatibility and accessibility require review in the actual deployed environment.
+A 10-second timeout per request, no automatic retries, no hidden provider fallback, and no synthetic substitution limit resource and interpretation risks. The account observation uses two sequential manual RPC calls to make its ledger identity explicit. Browser CSP only permits network connections to the specific RPC URL and scripts served from the same site. Availability, provider privacy policy, rate limits, browser compatibility and accessibility require review in the actual deployed environment.
 
 ## Offline acceptance
 

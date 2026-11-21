@@ -48,8 +48,20 @@
         ledgerIndex(r.ledger_index) !== ledgerIndex(l.ledger_index)) {
       refuse("Inconsistent ledger indices. Observation refused.");
     }
+    // Ripple Epoch is 2000-01-01 UTC (946684800 UNIX seconds).
+    // A provider-validated claim alone does not establish freshness.
+    var closeTime = l.close_time;
+    if (!Number.isSafeInteger(closeTime) || closeTime < 1 || closeTime > 4294967295) {
+      refuse("Missing or invalid ledger close time. Observation refused.");
+    }
+    var closeMillis = (closeTime + 946684800) * 1000;
+    if (l.close_time_iso !== undefined &&
+        (typeof l.close_time_iso !== "string" || Date.parse(l.close_time_iso) !== closeMillis)) {
+      refuse("Inconsistent ledger close time. Observation refused.");
+    }
     return Object.freeze({
       network: "XRPL Mainnet", ledger_index: index, ledger_hash: hash,
+      ledger_close_time_utc: new Date(closeMillis).toISOString(),
       source: ENDPOINT, provider_reports_validated: true
     });
   }
@@ -79,9 +91,11 @@
       refuse("Provider account identity mismatch or missing account data.");
     }
     var index = ledgerIndex(r.ledger_index);
+    var hash = validHash(r.ledger_hash);
     var balance = formatDrops(r.account_data.Balance);
     return Object.freeze({
-      network: "XRPL Mainnet", account: account, xrp: balance, ledger_index: index,
+      network: "XRPL Mainnet", account: account, xrp: balance,
+      ledger_index: index, ledger_hash: hash,
       source: ENDPOINT, provider_reports_validated: true,
       scope: "Native XRP balance only; excludes trust-line tokens and MPTs."
     });
@@ -117,9 +131,19 @@
   }
   async function readAccount(address, fetcher) {
     checkAddressShape(address);
-    return parseAccount(await request("account_info", {
-      account: address, ledger_index: "validated"
+    // Account observation is pinned to one provider-reported validated ledger.
+    var ledger = await readLedger(fetcher);
+    var account = parseAccount(await request("account_info", {
+      account: address, ledger_hash: ledger.ledger_hash
     }, fetcher), address);
+    if (account.ledger_index !== ledger.ledger_index ||
+        account.ledger_hash !== ledger.ledger_hash) {
+      refuse("Account response disagrees with the pinned validated ledger.");
+    }
+    return Object.freeze(Object.assign({}, account, {
+      ledger_close_time_utc: ledger.ledger_close_time_utc,
+      pinned_to_observed_ledger: true
+    }));
   }
   var api = Object.freeze({
     endpoint: ENDPOINT, checkAddressShape: checkAddressShape, formatDrops: formatDrops,
@@ -147,8 +171,10 @@
       var ledger = await readLedger();
       setText("ledger-result",
         "Provider reports validated mainnet ledger " + ledger.ledger_index +
-        " | Hash: " + ledger.ledger_hash + " | Source: " + ledger.source +
-        " | Not independently cross-checked.");
+        " | Hash: " + ledger.ledger_hash +
+        " | Closed (reported UTC): " + ledger.ledger_close_time_utc +
+        " | Source: " + ledger.source +
+        " | One provider; freshness and consensus not independently cross-checked.");
     } catch (error) {
       setText("ledger-result", "UNAVAILABLE — " + error.message);
     } finally { busy(false); }
@@ -163,8 +189,10 @@
       setText("account-result",
         "Provider reports validated XRPL Mainnet ledger " + account.ledger_index +
         ": " + account.account + " holds " + account.xrp +
-        " native XRP. This excludes issued tokens and MPTs. Source: " +
-        account.source + ". Not independently cross-checked.");
+        " native XRP. Pinned ledger hash: " + account.ledger_hash +
+        " | Reported close: " + account.ledger_close_time_utc +
+        ". Excludes issued tokens and MPTs. Source: " +
+        account.source + ". One provider; freshness and consensus not independently cross-checked.");
     } catch (error) {
       setText("account-result", "UNAVAILABLE — " + error.message);
     } finally { busy(false); }

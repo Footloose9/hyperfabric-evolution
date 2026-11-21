@@ -7,17 +7,19 @@ const HASH = "A".repeat(64);
 const ADDR = "rAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const ledger = {
   result: {status:"success", validated:true, ledger_index:108466979,
-    ledger_hash:HASH, ledger:{ledger_index:"108466979",ledger_hash:HASH}}
+    ledger_hash:HASH, ledger:{ledger_index:"108466979",ledger_hash:HASH,
+      close_time:848546660,close_time_iso:"2026-11-21T03:24:20Z"}}
 };
 const account = {
   result: {status:"success",validated:true, ledger_index:108466979,
-    account_data:{Account:ADDR,Balance:"9007199254740993000000"}}
+    ledger_hash:HASH,account_data:{Account:ADDR,Balance:"9007199254740993000000"}}
 };
 
 test("strictly typed, provider-reported validated ledger", () => {
   const x=view.parseLedger(ledger);
   assert.equal(x.ledger_index,108466979);
   assert.equal(x.ledger_hash,HASH);
+  assert.equal(x.ledger_close_time_utc,"2026-11-21T03:24:20.000Z");
   assert.equal(x.provider_reports_validated,true);
   assert.match(x.source,/^https:\/\//);
 });
@@ -33,6 +35,12 @@ test("hash disagreement is refused", () => {
 test("index disagreement is refused", () => {
   assert.throws(() => view.parseLedger({result:{...ledger.result,ledger:{ledger_index:1,ledger_hash:HASH}}}),/Inconsistent/);
 });
+test("ledger close time is required and internally consistent", () => {
+  assert.throws(() => view.parseLedger({result:{...ledger.result,
+    ledger:{ledger_index:"108466979",ledger_hash:HASH}}}), /close time/);
+  assert.throws(() => view.parseLedger({result:{...ledger.result,
+    ledger:{...ledger.result.ledger,close_time_iso:"2026-11-21T03:24:19Z"}}}), /close time/);
+});
 test("RPC failures or wrong envelopes are refused", () => {
   assert.throws(() => view.parseLedger({error:"tooBusy"}),/Malformed/);
   assert.throws(() => view.parseLedger({result:{error:"tooBusy",status:"error"}}),/validated/);
@@ -41,6 +49,7 @@ test("mainnet public account observation is native XRP only", () => {
   const x=view.parseAccount(account,ADDR);
   assert.equal(x.account,ADDR);
   assert.equal(x.xrp,"9007199254740993.000000");
+  assert.equal(x.ledger_hash,HASH);
   assert.match(x.scope,/excludes trust-line/);
 });
 test("account not found is not confused with zero balance", () => {
@@ -86,13 +95,38 @@ test("manual validated ledger request passes no authentication or wallet data",a
   assert.equal(wire.params[0].expand,false);
   assert.equal("account" in wire.params[0],false);
 });
-test("read-only account query carries only public address and validated selector",async()=>{
-  let seen;
-  const fake=async(url,options)=>{seen=JSON.parse(options.body);return {ok:true,json:async()=>account};};
+test("manual account request first pins a specific validated ledger hash",async()=>{
+  const seen=[];
+  const fake=async(url,options)=>{
+    const wire=JSON.parse(options.body);
+    seen.push(wire);
+    return {ok:true,json:async()=>wire.method==="ledger" ? ledger : account};
+  };
   const x=await view.readAccount(ADDR,fake);
   assert.equal(x.xrp,"9007199254740993.000000");
-  assert.equal(seen.method,"account_info");
-  assert.deepEqual(seen.params,[{account:ADDR,ledger_index:"validated"}]);
+  assert.equal(x.ledger_index,108466979);
+  assert.equal(x.ledger_hash,HASH);
+  assert.equal(x.pinned_to_observed_ledger,true);
+  assert.equal(seen.length,2);
+  assert.equal(seen[0].method,"ledger");
+  assert.equal(seen[0].params[0].ledger_index,"validated");
+  assert.equal(seen[1].method,"account_info");
+  assert.deepEqual(seen[1].params,[{account:ADDR,ledger_hash:HASH}]);
+});
+test("account hash or ledger-index mismatch is refused",async()=>{
+  const mismatchHash=async(url,options)=>{
+    const wire=JSON.parse(options.body);
+    return {ok:true,json:async()=>wire.method==="ledger" ? ledger :
+      {result:{...account.result,ledger_hash:"B".repeat(64)}}};
+  };
+  const mismatchIndex=async(url,options)=>{
+    const wire=JSON.parse(options.body);
+    return {ok:true,json:async()=>wire.method==="ledger" ? ledger :
+      {result:{...account.result,ledger_index:108466978}}};
+  };
+  await assert.rejects(()=>view.readAccount(ADDR,mismatchHash),/disagrees/);
+  await assert.rejects(()=>view.readAccount(ADDR,mismatchIndex),/disagrees/);
+  assert.throws(()=>view.parseAccount({result:{...account.result,ledger_hash:null}},ADDR),/hash/);
 });
 test("HTTP provider refusal does not become synthetic fallback",async()=>{
   await assert.rejects(()=>view.readLedger(async()=>({ok:false,status:429})),/HTTP success/);
