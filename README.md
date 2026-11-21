@@ -10,6 +10,12 @@ Our goal is to make important technical claims **inspectable, independently test
 
 The [published research portal](https://footloose9.github.io/hyperfabric-evolution/) offers three distinct experiences: an interactive **synthetic evidence graph**, a [static Source Evidence Explorer](https://footloose9.github.io/hyperfabric-evolution/source-explorer.html) with invented XRPL/Xahau/EVM observations, and a [manual XRPL Mainnet read-only viewer](https://footloose9.github.io/hyperfabric-evolution/xrpl-live.html) using third-party provider observations. None requires a wallet or API key. The two synthetic demonstrations make no live ledger requests; the manual viewer queries its provider only when requested, discloses account-query privacy limits, and cannot sign or submit transactions. Homepage source lives in [`docs/index.html`](docs/index.html), [`docs/site.js`](docs/site.js), and [`docs/site.css`](docs/site.css).
 
+## Research hub, public roadmap and live issue lookup
+
+The [Research Hub](docs/research-hub.html) organizes **blockchain interoperability, cryptography, privacy, AI and automation, communications, and security** with plain-language summaries and optional technical detail. It includes Bitcoin, Ethereum, XRPL, Monero, Zano, Solana, Cosmos/IBC and Xahau research tracks. [Open the live public hub](https://footloose9.github.io/hyperfabric-evolution/research-hub.html).
+
+Visitors can choose **Check recent public activity** to request a bounded sample of GitHub public issues. It is not a background poll, private task board, complete roadmap or proof of operational progress; the static public roadmap remains available when GitHub is offline or rate-limited. No private project data, key material, or user account is required.
+
 ## Public research areas
 
 The community tracks cover **blockchain and cross-chain evidence**, **AI-agent/tool interoperability**, **automation and workflow reliability**, **security and software provenance**, **privacy engineering**, **cryptographic and communication-protocol research**, and **accessible, reproducible public tools**. Blockchain remains a first-class area; security/privacy/communication protocols are research scopes, not deployed protection services.

@@ -2,6 +2,10 @@
 
 **Project status: early public lab.** The implemented examples now include restricted XRPL identity, synthetic evidence graphs, a static Source Evidence Explorer, an offline agent/tool evidence-conformance model, and a **separate manual XRPL Mainnet read-only viewer**. These do not authenticate agents or establish live cross-chain activity. Security, privacy, cryptography and communication protocols are public research directions, **not deployed privacy or secure-messaging services**.
 
+## Find a public research domain
+
+Start at the [Research Hub](research-hub.html) for six public domains: **blockchains and interoperability**, **cryptography**, **privacy**, **AI/automation**, **communications**, and **security/software trust**. Individual chains remain separate protocols, not interoperable by declaration. Public Monero [#58](https://github.com/Footloose9/hyperfabric-evolution/issues/58) and Zano [#59](https://github.com/Footloose9/hyperfabric-evolution/issues/59) invitations begin with confidential-observation refusal tests and no live wallet access.
+
 ## 1. Read-only public ledger explorer
 
 The **published synthetic Source Evidence Explorer** shows invented ledger events, chain/asset identity, fabricated source digests, known/unknown/partial/stale fixture coverage and cross-chain falsifiers. Contributions can extend accessibility, public-source fixtures, charts and test vectors. A live multichain source indexer and production-grade evidence capture remain proposals, not implemented services.
