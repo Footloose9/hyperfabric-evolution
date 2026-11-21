@@ -16,7 +16,7 @@ People who want to understand XRPL mechanics, study trustworthy agents and workf
 
 It models native XRP separately from issued tokens and creates a stable representation that includes an issued token's currency and issuer. The new synthetic-only evidence graph models typed, directed funding and venue relationships on explicitly separate networks with visible traversal limits; it refuses real wallet identifiers and unverified cross-network links. The program runs locally, offline. Its deterministic test suite grows with contributions. These examples show accepted and rejected synthetic inputs, not live-network correctness or production safety.
 
-A separate static browser portal visualizes fictional graph nodes and edges. Its interactions run in the browser without a live node, provider or RPC. It currently **does not** verify an XRPL account checksum; the illustrative account strings are placeholders, not real wallet records. It has no live ledger access, trust-line inspection, balance lookups, or transaction functions.
+The public portal's **synthetic graph** visualizes fictional nodes and edges without a provider or RPC. Its illustrative account strings are placeholders, not wallet records. Separately, the [manual XRPL read-only viewer](xrpl-live.html) makes bounded requests to a public Mainnet provider and displays provider-reported validated ledger information and native-XRP balances for public classic addresses. It does not establish independent consensus, account ownership, trust-line or MPT balances, or transaction execution. Its basic address-shape precheck is not full checksum validation. See [viewer limitations](XRPL_READONLY_LIVE_PILOT.md).
 
 ## Does the public lab currently run AI agents or autonomous workflows?
 
@@ -28,7 +28,7 @@ A separate static browser portal visualizes fictional graph nodes and edges. Its
 
 ## Is this an exchange or an automated trading system?
 
-**No.** The name refers to an evolving public protocol-research lab. No trading, signing, wallet control, real-time data feed, or investment function is implemented.
+**No.** The name refers to an evolving public protocol-research lab. The manual viewer reads real public-ledger observations on demand, but no trading, signing, wallet control, automatic real-time feed, or investment function is implemented.
 
 ## Does the repository expose the full underlying project?
 

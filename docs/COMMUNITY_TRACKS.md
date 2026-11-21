@@ -1,12 +1,12 @@
 # Open-source collaboration tracks
 
-**Project status: early public lab.** These tracks describe independently publishable research, not capabilities already deployed. The implemented examples remain restricted XRPL identity and synthetic evidence graphs with offline tests. AI and automation are invited research areas, not deployed agent services.
+**Project status: early public lab.** These tracks describe independently publishable research, not capabilities already deployed. The implemented examples include restricted XRPL identity, synthetic evidence graphs with offline tests, and a **separate deployed manual XRPL Mainnet read-only viewer**. AI and automation are research areas, not deployed agent services.
 
 ## 1. Read-only public ledger explorer
 
 Proposed public code: an **offline-first**, noncustodial explorer showing synthetic ledger events, network/asset identity, raw source provenance, known/unknown status, and explicit completeness. Contributions can include UI accessibility, public API fixtures, charts, test vectors, and later bounded read-only provider adapters.
 
-See [Explorer proposal](EXPLORER_PROPOSAL.md). No hosted explorer exists here yet.
+See the [explorer proposal](EXPLORER_PROPOSAL.md). A [limited manual XRPL viewer](xrpl-live.html) is hosted for provider-reported validated ledger and public native-XRP account observations. It is not the proposed full offline-first explorer or live evidence graph. See [source and privacy limitations](XRPL_READONLY_LIVE_PILOT.md).
 
 ## 2. Chain-aware assets and identity
 
@@ -18,7 +18,7 @@ See [Chain support and standards](CHAIN_SCOPE.md). The current Python example is
 
 Proposed public work: **view-only** test fixtures, account display contracts, chain/network selection, explicit unknown/stale states, and public provider standards research. Not a signer or financial execution service.
 
-See [Wallet interoperability proposal](WALLET_INTEROP_PROPOSAL.md). There are no wallet keys, paired devices, balances, transaction submissions, or signing functions in this public repository.
+See [Wallet interoperability proposal](WALLET_INTEROP_PROPOSAL.md). The separate manual viewer can display a **provider-reported native-XRP balance for a public address** without establishing ownership. No wallet keys, paired devices, wallet-managed balances, transaction submissions, or signing functions exist in this repository.
 
 ## 4. Reproducible protocol and market research
 
