@@ -1,12 +1,12 @@
 # AI agents, automation and verifiable software — public research proposal
 
-**Status: proposed research and reproducible tests only.** This document does not claim or authorize a deployed agent runtime, workflow scheduler, model service, privileged tools, financial execution, or autonomous external effects.
+**Status: public offline synthetic conformance implementation plus proposed research.** A small, deterministic [agent/tool evidence model](../hyperfabric_public/agent_tool_conformance.py) and tests are published; no deployed agent runtime, production MCP/A2A service, workflow scheduler, hosted model, privileged tool execution, financial automation or autonomous external effects are claimed or authorized.
 
 ## Why this belongs in the public lab
 
 Blockchain data, AI tools, and automated workflows share a research problem: a plausible output is not necessarily independently verified evidence. This proposed public track focuses on reproducible interfaces, negative tests, source integrity, failure behavior, and justified abstention.
 
-The existing XRPL identity and synthetic evidence-graph examples remain the public lab's implemented educational work. No private control system, invention, confidential record, or operational design is part of this proposal.
+Existing XRPL identity and synthetic evidence-graph examples remain educational public work. The published agent/tool conformance model uses only invented actors and results and does not establish production authentication or tool execution. No private control system, invention, confidential record, or operational design is part of this public research.
 
 ## Proposed research tracks
 
@@ -18,11 +18,11 @@ The existing XRPL identity and synthetic evidence-graph examples remain the publ
 
 ## First bounded pilot: offline agent-to-tool task conformance
 
-Propose a small self-contained dataset using **invented** task identities, agents, tools, and results. Test normal completion, duplicate delivery, out-of-order responses, conflicting evidence, interruption and retry, cancellation, expired evidence, malformed inputs, unauthorized effect requests, and resource exhaustion.
+A small self-contained [offline conformance model](AGENT_TOOL_CONFORMANCE_RFC.md) now uses **invented** task identities, agents, tools and results. Its negative tests exercise duplicate delivery, conflicting evidence, retry/cancellation, expiration and simulated approval boundaries. Additional real-standard conformance and broader failure matrices remain research proposals.
 
 Each case should state the observed evidence, uncertainty, expected disposition, negative controls, and deterministic reproduction steps. The implementation must require no network, model provider, wallet, credentials, private prompts, privileged filesystem operations, or background daemon. It must not assume a passing synthetic test authenticates real actors or authorizes production actions.
 
-The first candidate deliverable is a public test contract and fixture review, not production autonomous execution.
+The published deliverable is a bounded public synthetic test contract, not production autonomous execution. Broader reliable automation, privacy engineering and cryptographic communication protocols require new, independently reviewed public specifications and test vectors before implementation.
 
 ## Public upstream references
 
