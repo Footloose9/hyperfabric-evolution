@@ -206,6 +206,7 @@ class TestHostedPortalAccessibility(unittest.TestCase):
             const r=b.getBoundingClientRect();
             return {top:r.top,bottom:r.bottom,height:innerHeight,
                     scrollY:window.scrollY,
+                    x:r.left+r.width/2,y:r.top+r.height/2,
                     hit:document.elementFromPoint(r.left+r.width/2,
                          r.top+r.height/2)===b};
         """)
@@ -213,7 +214,12 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         self.assertGreaterEqual(target["top"],0)
         self.assertLessEqual(target["bottom"],target["height"])
         self.assertTrue(target["hit"])
-        self.driver.click('.filter-button[data-mode="roles"]')
+        for event_type in ("mousePressed","mouseReleased"):
+            self.driver.api("POST",self.driver.prefix+"/goog/cdp/execute",{
+                "cmd":"Input.dispatchMouseEvent",
+                "params":{"type":event_type,"x":target["x"],"y":target["y"],
+                          "button":"left","clickCount":1},
+            })
         graph = self.driver.execute("""
             return {
               rolesPressed:document.querySelector('[data-mode="roles"]')
