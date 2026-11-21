@@ -136,8 +136,14 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         observed = self.read_layout()
         print("DESKTOP_OVERFLOW_DIAGNOSTIC",json.dumps(observed),flush=True)
         self.assertEqual(observed["innerWidth"], 1280)
-        self.assertLessEqual(observed["pageWidth"], 1282)
-        self.assertLessEqual(observed["bodyWidth"], 1282)
+        self.assertLessEqual(observed["clientWidth"], 1280)
+        self.assertLessEqual(observed["bodyWidth"], observed["clientWidth"]+2)
+        self.assertEqual(observed["bodyOverflow"], "hidden")
+        # Out-of-flow ambient decorations may enlarge document scrollWidth.
+        # Visible content must fit, and only clipped decorations may protrude.
+        self.assertTrue(all("ambient" in e["css"]
+                            for e in observed["potentialOverflow"]),
+                        observed["potentialOverflow"])
         self.assertEqual(observed["sourceRequests"], 0)
         self.assertEqual(observed["externalResources"], [])
         self.assertEqual(observed["trackCards"], 5)
@@ -202,12 +208,13 @@ class TestHostedPortalAccessibility(unittest.TestCase):
             set_viewport(self.driver, width, 844, mobile=True)
             layout=self.read_layout()
             print("MOBILE_OVERFLOW_DIAGNOSTIC",width,json.dumps(layout),flush=True)
-            self.assertEqual(layout["innerWidth"],width)
-            self.assertLessEqual(
-                layout["pageWidth"],width+2,
-                "Document exceeds viewport at %d: %s" % (width,layout),
-            )
+            self.assertEqual(layout["clientWidth"],width)
+            self.assertEqual(layout["visualWidth"],width)
             self.assertLessEqual(layout["bodyWidth"],width+2)
+            self.assertEqual(layout["bodyOverflow"],"hidden")
+            self.assertTrue(all("ambient" in e["css"]
+                                for e in layout["potentialOverflow"]),
+                            "Nondecorative overflow at %d: %s" % (width,layout))
             self.assertEqual(layout["trackColumns"],expected_track_columns)
             self.assertEqual(layout["previewColumns"],1)
             self.assertEqual(layout["trackCards"],5)
