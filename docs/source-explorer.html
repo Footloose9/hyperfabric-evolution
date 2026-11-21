@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Offline, fabricated cross-chain evidence viewer. No wallet, node, network, account or transaction access.">
+  <title>Source Evidence Explorer | Hyperfabric Evolution public candidate</title>
+  <link rel="stylesheet" href="source-explorer.css">
+  <script src="source-explorer.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to evidence</a>
+  <header class="header">
+    <a href="index.html">H/E · Hyperfabric Evolution</a>
+    <span class="flag">OFFLINE · SYNTHETIC ONLY</span>
+  </header>
+  <main id="main">
+    <div class="intro">
+      <p class="eyebrow">PUBLIC ORIGINAL RESEARCH CANDIDATE / SOURCE INSPECTION</p>
+      <h1>Source Evidence Explorer</h1>
+      <p>Inspect invented XRPL, Xahau and EVM observation envelopes, exact asset identities,
+        pagination limits and disputed cross-chain correlation. This is not a live explorer.</p>
+      <p class="warning"><strong>Every identifier, hash, timestamp and event below is fabricated.</strong>
+        The absence of a missing-page warning never proves real ledger completeness. No signing,
+        wallet connection, live RPC, telemetry, storage, monitoring or trading exists here.</p>
+    </div>
+    <section aria-labelledby="observations-title">
+      <div class="section-header">
+        <h2 id="observations-title">Synthetic observations</h2>
+        <label for="network-filter">Network
+          <select id="network-filter">
+            <option value="all">All fictional networks</option>
+            <option value="xrpl:synthetic">XRPL synthetic</option>
+            <option value="xahau:synthetic">Xahau synthetic</option>
+            <option value="eip155:synthetic">EVM synthetic</option>
+          </select>
+        </label>
+      </div>
+      <p id="observation-count" role="status" aria-live="polite"></p>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Synthetic observation table">
+        <table>
+          <caption>Fabricated events; coverage refers only to declared fixture pages</caption>
+          <thead><tr><th scope="col">Event ID</th><th scope="col">Network</th>
+            <th scope="col">Event</th><th scope="col">Fixture coverage</th>
+            <th scope="col">Evidence class</th></tr></thead>
+          <tbody id="observation-rows"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="detail-card" aria-labelledby="detail-title">
+      <h2 id="detail-title">Source and asset inspector</h2>
+      <div id="observation-detail" aria-live="polite">Select a fictional event to inspect.</div>
+    </section>
+    <section class="route-card" aria-labelledby="routes-title">
+      <h2 id="routes-title">Cross-chain claim falsifiers</h2>
+      <p>A source-chain observation alone never proves destination execution.
+        Even two synthetic observations are not evidence of a real completed transfer.
+        Matching token symbols also do not establish identical assets.</p>
+      <ul id="route-results"></ul>
+    </section>
+    <section class="method-card" aria-labelledby="method-title">
+      <h2 id="method-title">Evidence classification</h2>
+      <p><strong>SIMULATED</strong> is an evidence class. <strong>COMPLETE, PARTIAL,
+        UNKNOWN, STALE</strong> describe declared fixture coverage; they are not
+        live data quality assessments. All fixture finality is <strong>NOT_APPLICABLE</strong>.
+        An issued XRPL asset is identified by currency plus issuer, while an EVM token
+        includes network and contract identity. No ticker-only equivalence is allowed.</p>
+      <p>Specification: <a href="source-explorer.md">public candidate methodology</a>.
+        Existing public work: <a href="index.html#lab">synthetic evidence graph</a> and
+        <a href="xrpl-live.html">separate manual XRPL read-only viewer</a>.</p>
+    </section>
+  </main>
+  <footer><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/8"
+    rel="noopener noreferrer">Public explorer issue #8</a>
+    · No upstream dependencies · Independent public-original candidate</footer>
+</body>
+</html>
