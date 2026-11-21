@@ -38,7 +38,8 @@ class SourceExplorerContractTest(unittest.TestCase):
     def test_published_homepage_discovers_explorer_and_documentation_is_current(self) -> None:
         homepage = (DOCS / "index.html").read_text(encoding="utf-8")
         self.assertIn('href="./source-explorer.html"', homepage)
-        self.assertEqual(homepage.count('href="./source-explorer.html"'), 1)
+        # Desktop and native mobile disclosure each expose the same explorer route.
+        self.assertEqual(homepage.count('href="./source-explorer.html"'), 2)
         docs = (DOCS / "source-explorer.md").read_text(encoding="utf-8")
         self.assertIn("PR #47", docs)
         self.assertNotIn("isolated, unmerged implementation candidate", docs)
