@@ -66,10 +66,25 @@ def snapshot(driver, name):
     return width, height
 
 
+class PortalDriver(Driver):
+    def api(self, verb, route, body=None, timeout=15):
+        # Cold Chrome session creation on shared CI sometimes exceeds 15s.
+        if verb == "POST" and route == "/session":
+            timeout = max(timeout, 30)
+        return super().api(verb, route, body, timeout=timeout)
+
+
 @unittest.skipUnless(ENABLED, "one-shot actual hosted browser audit is opt-in")
 class TestHostedPortalAccessibility(unittest.TestCase):
     def setUp(self):
-        self.driver = Driver()
+        for attempt in range(2):
+            try:
+                self.driver = PortalDriver()
+                break
+            except TimeoutError:
+                if attempt:
+                    raise
+                time.sleep(1)
         self.driver.api(
             "POST", self.driver.prefix + "/url",
             {"url": PORTAL + "?accessibility_audit=public-r013"},
