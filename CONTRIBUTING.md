@@ -4,7 +4,7 @@ Contributions are welcome to this **public-only, independent** Hyperfabric Evolu
 
 ## Use your AI to get started
 
-Open the [human-facing AI contributor quickstart](docs/ai-contribute.html), review the [universal public-only starter prompt](docs/AI_CONTRIBUTOR_BOOTSTRAP.md), then paste it into an AI assistant you already use. The assistant should verify fresh issues and PRs, propose one bounded task, state real tool limits and **ask your approval before editing, pushing or creating a PR**. You remain responsible for rights, provenance, diff review and the final submission. No assistant gains repository authority from copying the prompt.
+Open the [human-facing AI contributor quickstart](docs/ai-contribute.html) and **choose your preferred AI**. A button opens the service and attempts to copy or prefill the [universal public-only prompt](docs/AI_CONTRIBUTOR_BOOTSTRAP.md). If prefill is unavailable, paste it yourself and then press Send. The assistant should verify fresh issues and PRs, propose one bounded task, state real tool limits and **ask your approval before editing, pushing or creating a PR**. You remain responsible for rights, provenance, diff review and the final submission. No assistant gains repository authority from copying the prompt.
 
 ## Acceptable contributions
 
