@@ -214,12 +214,32 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         self.assertGreaterEqual(target["top"],0)
         self.assertLessEqual(target["bottom"],target["height"])
         self.assertTrue(target["hit"])
+        print("GRAPH_INITIAL",self.driver.execute("""
+            return {edges:document.querySelector("#edge-count").textContent,
+                summary:document.querySelector("#inspector-summary").textContent,
+                title:document.querySelector("#inspector-title").textContent,
+                pressed:document.querySelector('[data-mode="roles"]')
+                    .getAttribute("aria-pressed")};
+        """),flush=True)
         for event_type in ("mousePressed","mouseReleased"):
             self.driver.api("POST",self.driver.prefix+"/goog/cdp/execute",{
                 "cmd":"Input.dispatchMouseEvent",
                 "params":{"type":event_type,"x":target["x"],"y":target["y"],
                           "button":"left","clickCount":1},
             })
+        print("GRAPH_POINTER_AFTER",self.driver.execute("""
+            return {edges:document.querySelector("#edge-count").textContent,
+                pressed:document.querySelector('[data-mode="roles"]')
+                    .getAttribute("aria-pressed"),focus:document.activeElement.className};
+        """),flush=True)
+        self.driver.execute(
+            'document.querySelector(\'.filter-button[data-mode="roles"]\').click();'
+        )
+        print("GRAPH_DOM_EVENT_AFTER",self.driver.execute("""
+            return {edges:document.querySelector("#edge-count").textContent,
+                pressed:document.querySelector('[data-mode="roles"]')
+                    .getAttribute("aria-pressed")};
+        """),flush=True)
         graph = self.driver.execute("""
             return {
               rolesPressed:document.querySelector('[data-mode="roles"]')
