@@ -121,6 +121,12 @@ class PublicPortalTests(unittest.TestCase):
         self.assertNotRegex(self.js, r"\beval\s*\(")
         self.assertNotRegex(self.js, r"\binnerHTML\b")
 
+    def test_08b_graph_filter_listener_captures_each_button(self):
+        # A function-scoped var here binds every click handler to the final
+        # "all" button even when the "roles" or "flows" button is clicked.
+        self.assertRegex(self.js, r"for\s*\(\s*(?:const|let)\s+button\s+of\s+buttons\s*\)")
+        self.assertNotRegex(self.js, r"for\s*\(\s*var\s+button\s+of\s+buttons\s*\)")
+
     def test_09_responsive_no_external_assets_or_dependency_bundles(self):
         self.assertIn("@media (max-width: 570px)", self.css)
         self.assertIn("@media (max-width: 830px)", self.css)
