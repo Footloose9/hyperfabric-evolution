@@ -202,7 +202,7 @@
       " fabricated directed relationships. Select a node to inspect a simulated role.";
   }
   picker.addEventListener("change",render);
-  for (var button of buttons) {
+  for (const button of buttons) {
     button.addEventListener("click",function () {
       var next=button.getAttribute("data-mode");
       if (!Object.prototype.hasOwnProperty.call(views,next)) { return; }
