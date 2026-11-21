@@ -1,6 +1,6 @@
 # Open-source collaboration tracks
 
-**Project status: early public lab.** These tracks describe opportunities to develop independent public software, not capabilities already deployed. This repository currently contains restricted XRPL identity and synthetic graph examples with 25 offline tests. We welcome contributors from other blockchain ecosystems.
+**Project status: early public lab.** These tracks describe independently publishable research, not capabilities already deployed. The implemented examples remain restricted XRPL identity and synthetic evidence graphs with offline tests. AI and automation are invited research areas, not deployed agent services.
 
 ## 1. Read-only public ledger explorer
 
@@ -33,6 +33,24 @@ Start with [threat research](THREAT_RESEARCH.md), the [BITx pilot](BITX_PILOT.md
 ## 6. UX, accessibility, multilingual documentation
 
 Contribute clearly explained terminology, beginner workflows, mobile usability checks, keyboard accessibility, translations, and public testing methodology. Coding is not a prerequisite to raising a well-specified problem.
+
+## 7. AI agent and tool interoperability
+
+Propose public MCP/A2A protocol fixtures, typed task-result examples, source verification, malicious-tool-input tests and interoperable diagnostics. Avoid publishing private prompts, personal task records, credentials or proprietary orchestration.
+
+## 8. Reliable automation and recovery
+
+Propose synthetic tests for idempotent retries, interruption recovery, cancellation, source freshness, resource limits and external-effect approval. A simulator does not constitute a production worker, scheduler or authenticated operator.
+
+## 9. Trust, provenance and public software reuse
+
+Investigate reproducible test evidence, supply-chain integrity, dependency inventories, bounded observability and small upstream improvements. Verify rights, source versions, negative tests and rollback before import.
+
+See [AI and automation research](AI_AUTOMATION_RESEARCH.md) for the first proposed pilot.
+
+## Other AI and automation communities
+
+Contributors working with open agent and tool protocols, model evaluation, task reliability, workflow engineering, software security, and accessibility are welcome. Referenced technologies are not dependencies, endorsements or claims of affiliation.
 
 ## Other blockchain communities
 

@@ -1,11 +1,11 @@
 # Hyperfabric Evolution — public lab roadmap
 
-This page describes **only this public repository**. The roadmap is a discussion aid, not a statement about any private product or runtime and not a commitment to deliver or operate trading infrastructure.
+This page describes **only this public repository**. Blockchain is the implemented example domain; agentic AI and automation are additional proposed public research areas. The roadmap is a discussion aid, not a statement about any private product or runtime and not a commitment to deliver or operate trading infrastructure.
 
 ## Available now (verified public scope)
 
 - XRPL-native XRP versus issued-asset identity demonstration using currency plus issuer.
-- Twenty-five offline Python tests with synthetic, non-sensitive inputs; includes a bounded chain-scoped graph traversal primitive that has **no** live data connector.
+- An offline Python test suite with synthetic, non-sensitive inputs; includes a bounded chain-scoped graph traversal primitive that has **no** live data connector. Test counts change as contributors add cases.
 - Contribution and publication criteria for public research.
 - A standalone interactive **synthetic evidence graph portal** built without external services or user credentials. It is not a live blockchain explorer.
 
@@ -35,6 +35,16 @@ The following are open proposals. Scope and priority are subject to review.
    - Acceptance: staged E0–E7 adoption, source/chain semantics and falsifiers, explicit truncation and incomplete sources; no wallet/user inference. See the [cross-chain engine RFC](docs/CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md).
 11. **Read-only observation tooling (later proposal):** A deterministic, offline evidence-fixture validator and optional bounded public-source adapters, with abstention for stale, incomplete or contradictory inputs.
    - Acceptance: no autonomous accusation, wallet actions, market trading, duplicate monitoring scheduler, or unreviewed user-data collection.
+
+## Additional proposed research: AI and automation (not implemented)
+
+1. **Agent and tool interoperability:** Study public MCP/A2A specifications through versioned synthetic request/response examples, without asserting authenticated authority.
+2. **Durable workflow failure cases:** Test duplicates, out-of-order responses, interrupted work, cancellation, retries, source freshness and missing approvals offline.
+3. **Model-output verification:** Challenge untrusted tool text, contradictory outputs and unsupported claims; define deterministic refusal and abstention conditions.
+4. **Software provenance:** Compare dependency, artifact-integrity and supply-chain verification standards; pin sources and review licenses before imports.
+5. **Open-source reciprocity:** Prefer public standard conformance, small upstream fixes and independently useful adapters rather than duplicated agents or schedulers.
+
+See the [AI and automation research proposal](docs/AI_AUTOMATION_RESEARCH.md). Separate public-only source review and ordinary GitHub CI apply to any future implementation.
 
 ## Possible later topics (not implemented or committed)
 

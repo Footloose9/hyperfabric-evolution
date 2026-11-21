@@ -2,7 +2,7 @@
 
 ## In plain English: what is Hyperfabric Evolution?
 
-**Hyperfabric Evolution — Public Lab** is an early-stage, community-facing open-source initiative focused on the accuracy and explainability of public blockchain protocol data. It begins with XRP Ledger examples.
+**Hyperfabric Evolution — Public Lab** is an early-stage, independent open-source initiative for transparent, reproducible research spanning blockchain data, AI agents, automation, interoperability and software provenance. Its working examples began with the XRP Ledger.
 
 It aims to make important distinctions inspectable rather than accepting a ticker, screenshot, price, or automated conclusion on trust. The initial demonstration addresses XRPL token identity: a currency label alone is not enough to identify an issued asset because the issuer matters.
 
@@ -10,13 +10,17 @@ This is a **public research and education sandbox**; it is not a finished market
 
 ## Who is it for?
 
-People who want to understand public XRPL mechanics, test claims about public data, improve documentation, or contribute deterministic and reproducible code. Coding experience is useful but not required to report confusing terminology or suggest test cases.
+People who want to understand XRPL mechanics, study trustworthy agents and workflows, test technical claims, improve documentation, or contribute deterministic and reproducible code. Coding experience is useful but not required to suggest test cases.
 
 ## What does the current code do?
 
-It models native XRP separately from issued tokens and creates a stable representation that includes an issued token's currency and issuer. The new synthetic-only evidence graph models typed, directed funding and venue relationships on explicitly separate networks with visible traversal limits; it refuses real wallet identifiers and unverified cross-network links. The program runs locally, offline. The public code is verified by 25 unit tests, including 16 synthetic graph cases. These show expected and rejected inputs, not live-network correctness.
+It models native XRP separately from issued tokens and creates a stable representation that includes an issued token's currency and issuer. The new synthetic-only evidence graph models typed, directed funding and venue relationships on explicitly separate networks with visible traversal limits; it refuses real wallet identifiers and unverified cross-network links. The program runs locally, offline. Its deterministic test suite grows with contributions. These examples show accepted and rejected synthetic inputs, not live-network correctness or production safety.
 
 A separate static browser portal visualizes fictional graph nodes and edges. Its interactions run in the browser without a live node, provider or RPC. It currently **does not** verify an XRPL account checksum; the illustrative account strings are placeholders, not real wallet records. It has no live ledger access, trust-line inspection, balance lookups, or transaction functions.
+
+## Does the public lab currently run AI agents or autonomous workflows?
+
+**No.** Agent interoperability and automation are proposed public research tracks. No deployed agent fleet, hosted model, scheduler or action executor exists here. The proposed first project is a synthetic agent-to-tool conformance test, not proof of real caller authority. See [AI and automation research](AI_AUTOMATION_RESEARCH.md).
 
 ## Is this a blockchain forensics or threat-monitoring engine?
 
@@ -28,7 +32,7 @@ A separate static browser portal visualizes fictional graph nodes and edges. Its
 
 ## Does the repository expose the full underlying project?
 
-**No.** This repository contains independently reviewed public-only code and documentation. It is not a mirror, backup, architectural specification, source export, or operational control panel for anything private. No unpublished invention is automatically open source because this repository exists.
+**No.** This repository contains independently reviewed public-only code and documentation. Hyperfabric Evolution is independent of the Hyperledger Fabric project and does not claim formal affiliation. It is not a mirror, backup, architectural specification, source export, or operational control panel for anything private. No unpublished invention is automatically open source because this repository exists.
 
 ## Can I contribute without coding?
 
