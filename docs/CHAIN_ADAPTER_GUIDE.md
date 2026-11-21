@@ -39,7 +39,7 @@ Different chains may have incompatible objects and finality semantics. A common 
 
 **Cosmos / IBC:** Keep chain-id, denom trace, module event interpretation, IBC packet and channel evidence separate. A displayed denomination is not a cryptographically proven same-asset relation to another chain. Research adapters remain proposed.
 
-**Bitcoin / UTXO chains:** Use inputs, outputs, outpoints, script and confirmation/reorg semantics. Do not shoehorn UTXOs into an "account sends account" model, or infer common ownership from shared inputs alone. Research adapters remain proposed.
+**Bitcoin / UTXO chains:** The [independently authored offline Bitcoin UTXO/outpoint fixture](BITCOIN_UTXO_EVIDENCE.md) now implements a **synthetic-only** non-coinbase transaction evidence contract and negative tests for missing inputs, faulty source claims and common-controller heuristics. It is not a live adapter, consensus/Script verifier or global UTXO-set monitor. Preserve `(txid,vout)`, scriptPubKey, satoshi values, source coverage and distinct mempool/confirmed/reorg statuses; do not turn input/output edges into an "account sends account" model or infer common ownership from shared inputs. Further live read-only Bitcoin adapters remain research proposals under [issue #22](https://github.com/Footloose9/hyperfabric-evolution/issues/22).
 
 These are **research invitations**, not shipping claims. Follow the [public chain scope](CHAIN_SCOPE.md) and [engine RFC](CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md).
 

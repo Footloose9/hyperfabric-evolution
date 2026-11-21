@@ -8,7 +8,8 @@
 | Xahau | Nothing yet | XAH, URITokens, Hooks, network-specific event fixtures and differences from XRPL |
 | Ethereum | Nothing yet | EIP-155 chain identity, public account/contract references, block provenance |
 | Base / other EVM | Nothing yet | Explicit network separation and contract-asset identity tests |
-| Solana, Cosmos, Bitcoin | Nothing yet | Independently sourced protocol standards and synthetic fixtures, if contributors propose them |
+| Bitcoin | [Offline fictional UTXO/outpoint evidence fixture](BITCOIN_UTXO_EVIDENCE.md) with satoshi arithmetic, synthetic inclusion claims and refusal tests only | Additional coinbase/SegWit/reorg fixtures; later independently reviewed read-only provider adapter; **no live Bitcoin support** |
+| Solana, Cosmos | Nothing yet | Independently sourced protocol standards and synthetic fixtures through issues #20 and #21 |
 
 ## Important correction to our example
 

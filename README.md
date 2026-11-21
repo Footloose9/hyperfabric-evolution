@@ -105,6 +105,7 @@ Only files separately reviewed for public release belong here; a GitHub permissi
 - [AI and automation research](docs/AI_AUTOMATION_RESEARCH.md) — public standards and synthetic conformance proposals
 - [Chain and standards scope](docs/CHAIN_SCOPE.md) — what is actually implemented and what remains proposed
 - [Chain adapter contributor guide](docs/CHAIN_ADAPTER_GUIDE.md) — how XRPL, Xahau, EVM, Solana, Cosmos and Bitcoin communities can propose tests without live wallets
+- [Bitcoin UTXO/outpoint synthetic evidence fixture](docs/BITCOIN_UTXO_EVIDENCE.md) — first offline Bitcoin-specific outpoint and reorganization teaching tests; **not a live Bitcoin connector or wallet**
 - [XRPL typed-event conformance](docs/XRPL_TYPED_EVENT_CONFORMANCE.md) — deterministic, synthetic-only Payment/Offer and MPT test contract (not a live ledger decoder)
 - [Upstream leverage catalog](docs/UPSTREAM_LEVERAGE.md) — 18 verified public discovery candidates and specific reuse opportunities
 - [Source-and-license reuse policy](docs/UPSTREAM_REUSE_POLICY.md) — dependencies, upstream PRs, interoperability, forks and admission gates
