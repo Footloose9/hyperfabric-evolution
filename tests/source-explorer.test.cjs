@@ -46,6 +46,17 @@ test("synthetic finality claim refuses", () => {
   const x = data()[0]; x.validated = true;
   assert.throws(() => explorer.validateObservation(x), /live finality/);
 });
+test("nonexistent calendar dates and non-UTC inputs refuse", () => {
+  for (const value of ["2026-02-31T00:00:00Z", "2025-02-29T00:00:00Z",
+    "2026-13-01T00:00:00Z", "2026-01-01T00:00:00+00:00"]) {
+    const x = data()[0]; x.observed_at = value;
+    assert.throws(() => explorer.validateObservation(x), /invalid observed UTC/, value);
+  }
+});
+test("valid leap-day UTC is accepted verbatim", () => {
+  const x = data()[0]; x.observed_at = "2024-02-29T23:59:59Z";
+  assert.equal(explorer.validateObservation(x).observed_at, x.observed_at);
+});
 test("missing or malformed source hash refuses", () => {
   const x = data()[0]; x.source_hash = "DEADBEEF";
   assert.throws(() => explorer.validateObservation(x), /hash/);

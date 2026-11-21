@@ -86,8 +86,12 @@
     assert(typeof observation.raw_digest === "string" &&
       /^[A-Fa-f0-9]{64}$/.test(observation.raw_digest), "invalid fabricated raw digest");
     assert(typeof observation.observed_at === "string" &&
-      /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(observation.observed_at) &&
-      !Number.isNaN(Date.parse(observation.observed_at)), "invalid observed UTC");
+      /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(observation.observed_at),
+      "invalid observed UTC");
+    var observedMillis = Date.parse(observation.observed_at);
+    assert(Number.isFinite(observedMillis) &&
+      new Date(observedMillis).toISOString().replace(".000Z", "Z") === observation.observed_at,
+      "invalid observed UTC");
     assert(typeof observation.event_type === "string" && observation.event_type.length > 0,
       "event type required");
     assert(COVERAGE.includes(observation.coverage), "unrecognized coverage classification");

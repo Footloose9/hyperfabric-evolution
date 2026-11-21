@@ -30,6 +30,8 @@ class SourceExplorerContractTest(unittest.TestCase):
         self.assertIn('aria-live="polite"', html)
         self.assertIn('id="observation-rows"', html)
         self.assertIn('src="source-explorer.js"', html)
+        self.assertIn('href="source-explorer.md"', html)
+        self.assertNotIn('blob/main/docs/source-explorer.md', html)
         self.assertNotIn("<script src=\"https://", html)
         self.assertNotIn("<iframe", html)
 
