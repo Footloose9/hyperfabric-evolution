@@ -6,6 +6,7 @@ Contributions are welcome to this **public-only, independent** Hyperfabric Evolu
 
 - Public-protocol explanations with citations to public specifications
 - Deterministic, read-only tooling using entirely public or synthetic data
+- Synthetic offline tests for public agent/tool interoperability, workflow recovery, model-output evaluation and provenance failures
 - Test cases with fabricated examples, documentation, and accessibility fixes
 - Defensive validation, error handling, reproducible methodology
 

@@ -1,14 +1,20 @@
 # Hyperfabric Evolution
 
-**An open-source, community-oriented lab for transparent blockchain exploration, chain-aware asset identity and reproducible protocol research — starting with the XRP Ledger (XRPL).**
+**An independent, community-oriented open-source lab for reproducible blockchain research, AI/agent interoperability, automation reliability, and verifiable software.**
 
-Our goal is to make public ledger information easier to **identify correctly, inspect independently, reproduce, and discuss**. We are opening a small, deliberately independent collection of educational code and transparent research methods so that community members can help shape useful tools.
+Our goal is to make important technical claims **inspectable, independently testable, and reproducible**. Our implemented examples began with XRP Ledger (XRPL) identity and synthetic chain-aware evidence. We also invite public, standards-based research into AI agents, automation and software provenance, clearly separating implemented results from proposed work.
 
-**Project stage: early public preview.** This repository is not a finished exchange, trading bot, token project, or complete product. The current implementation is a small, offline XRPL identity example plus a synthetic cross-chain evidence-graph primitive, with an offline, deterministic test suite. No live ledger explorer, wallet, threat monitor or production forensic engine is implemented. The wider direction is open for community discussion; features listed as ideas are not promises.
+**Project stage: early public preview.** The implemented code remains an offline XRPL identity example, synthetic chain-aware evidence tools and deterministic tests. No live ledger explorer, wallet, trading engine, threat monitor, production forensic service, deployed AI agents or autonomous workflow system exists in this public repository. Additional research areas are proposals, not releases or product commitments.
 
 ## Explore the interactive research portal
 
 A self-contained, browser-based **synthetic evidence graph** lets newcomers explore chain-aware relationships and see how evidence types differ. No wallet or API key is needed, and the demo never requests live ledger data. The verified, published portal is at [Hyperfabric Evolution](https://footloose9.github.io/hyperfabric-evolution/); its complete source is in [`docs/index.html`](docs/index.html), [`docs/site.js`](docs/site.js), and [`docs/site.css`](docs/site.css).
+
+## Public research areas
+
+The community tracks cover **blockchain and cross-chain data**, **AI/agent interoperability**, **automation and workflow reliability**, **trust and provenance**, and **accessible, reproducible research**. Blockchain research remains a first-class area.
+
+See [community tracks](docs/COMMUNITY_TRACKS.md) and the [AI and automation research proposal](docs/AI_AUTOMATION_RESEARCH.md). A proposed agent fixture does not constitute a deployed agent runtime.
 
 ## What problem are we solving?
 
@@ -25,6 +31,7 @@ That is one concrete example of why verifiable data models matter. The longer-te
 | Chain-scoped synthetic evidence graph | Bounded, typed traversal without real ledger input or attribution | [`hyperfabric_public/evidence_graph.py`](hyperfabric_public/evidence_graph.py) |
 | XRPL synthetic typed-event conformance | Offline decisions for fabricated native/issued/MPT Payment and Offer observations; not a live decoder | [Conformance guide](docs/XRPL_TYPED_EVENT_CONFORMANCE.md) |
 | Interactive public research portal | Static, offline-data visualization of synthetic chains and typed edges; **not a live explorer** | [`docs/index.html`](docs/index.html) |
+| AI and automation interoperability | **Research proposal; not implemented** | [Proposal](docs/AI_AUTOMATION_RESEARCH.md) |
 | Community contribution process | Open | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Read-only explorer, wallet UI, live ledger data, Xahau/EVM and other chain adapters | **Not implemented** | [Community tracks](docs/COMMUNITY_TRACKS.md) |
 
@@ -44,7 +51,7 @@ For a no-clone introduction, see [Getting started](docs/GETTING_STARTED.md). Non
 
 ## How can the community contribute?
 
-**Everyone:** Share the hardest-to-verify information you encounter on XRPL **or another blockchain**, and describe what a transparent explanation or reproducible test would look like. Cross-chain contributors are welcome; proposed support is not implemented support.
+**Everyone:** Share hard-to-verify claims or reproducible failures involving blockchain data, AI agents, software automation or provenance. Describe a synthetic example or negative test. Proposed support is not implemented support.
 
 **Developers:** Review the source, propose synthetic test cases, improve documentation, or select a clearly scoped issue. Keep examples read-only and independent of private data.
 
@@ -62,13 +69,15 @@ Three useful starting questions:
 
 ## Reuse existing open-source work before rebuilding
 
+Our existing public upstream register focuses on blockchain and evidence tooling. The [AI and automation proposal](docs/AI_AUTOMATION_RESEARCH.md) adds exploratory upstream references without approving new dependencies or running services.
+
 We maintain a **dated [18-project upstream discovery catalog](docs/UPSTREAM_LEVERAGE.md)** covering XRPL, Xahau, EVM, Solana, Cosmos, Bitcoin, forensic graphs, threat detection, OpenClaw and public standards. The [machine-readable source register](docs/upstream_candidates.json) records GitHub-reported licenses, source dates and candidate uses. The [reuse policy](docs/UPSTREAM_REUSE_POLICY.md) explains how to choose a dependency, a thin adapter, an upstream contribution or a justified fork; no upstream code has been imported merely by listing it.
 
 Have an existing library or explorer that solves one of our issues? Submit an [upstream reuse proposal](https://github.com/Footloose9/hyperfabric-evolution/issues/new/choose) with a reproducible public example and license evidence. We prefer collaboration and compatibility over duplicate implementations.
 
 ## Public-only and safety boundaries
 
-This repository is a **standalone public lab**, not a mirror of any private software, internal architecture, unreleased invention, or operational service. The public code is reviewable; no live trading, signing, account control, private key handling, or financial automation is included or authorized. Do not publish private wallet data, credentials, internal documents, personal information, or unsupported allegations.
+This repository is a **standalone public lab**, not a mirror of any private software, internal architecture, unreleased invention, or operational service. Hyperfabric Evolution is independent of the separate Hyperledger Fabric project; it does not claim affiliation with its stewards. The public code is reviewable; no live trading, signing, account control, private key handling, or financial automation is included or authorized. Do not publish private wallet data, credentials, internal documents, personal information, or unsupported allegations.
 
 Only files separately reviewed for public release belong here; a GitHub permission or a green secret scan does **not** establish rights to disclose an invention. See [Publication policy](PUBLICATION_POLICY.md), [Security](SECURITY.md), and [Community conduct](CODE_OF_CONDUCT.md).
 
@@ -77,7 +86,8 @@ Only files separately reviewed for public release belong here; a GitHub permissi
 - [Project overview / FAQ](docs/PROJECT_OVERVIEW.md) — plain-language explanation and limits
 - [Getting started](docs/GETTING_STARTED.md) — try the example and interpret the results
 - [Public roadmap](ROADMAP.md) — shipped work versus proposals
-- [Community research tracks](docs/COMMUNITY_TRACKS.md) — explorer, asset identity, wallet interoperability and other chains
+- [Community research tracks](docs/COMMUNITY_TRACKS.md) — blockchain, AI, automation, provenance and accessibility
+- [AI and automation research](docs/AI_AUTOMATION_RESEARCH.md) — public standards and synthetic conformance proposals
 - [Chain and standards scope](docs/CHAIN_SCOPE.md) — what is actually implemented and what remains proposed
 - [Chain adapter contributor guide](docs/CHAIN_ADAPTER_GUIDE.md) — how XRPL, Xahau, EVM, Solana, Cosmos and Bitcoin communities can propose tests without live wallets
 - [XRPL typed-event conformance](docs/XRPL_TYPED_EVENT_CONFORMANCE.md) — deterministic, synthetic-only Payment/Offer and MPT test contract (not a live ledger decoder)
