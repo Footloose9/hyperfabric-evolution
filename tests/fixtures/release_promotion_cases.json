@@ -1,0 +1,407 @@
+{
+  "schema": "hf.public.synthetic.release-promotion.v1",
+  "source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "artifact_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "rollback_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "baseline": {
+    "reviewed_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "public_class": "PUBLIC_ORIGINAL",
+    "provenance_qualified": true,
+    "rights_reviewed": true,
+    "ci_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ci_passed": true,
+    "ci_receipt": "synthetic-ci-run-001",
+    "staged_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "staged_artifact_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "staging_passed": true,
+    "approval_kind": "PUBLIC_MAIN_MERGE",
+    "approval_scope": "PUBLIC_PAGES",
+    "approval_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "approval_artifact_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "approval_verified": true,
+    "approval_receipt": "synthetic-public-approval-001",
+    "released_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "released_artifact_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "deployment_receipt_verified": true,
+    "observed_source_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "observed_artifact_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "observation_fresh": true,
+    "rollback_target_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "rollback_observed_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "rollback_receipt_verified": true,
+    "wallet_signer_qualified": false
+  },
+  "cases": [
+    {
+      "id": "source_ci_qualified",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "MODEL_PASS"
+    },
+    {
+      "id": "compromised_pr_not_qualified",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:PROVENANCE_NOT_QUALIFIED",
+      "override": {
+        "provenance_qualified": false
+      }
+    },
+    {
+      "id": "unknown_source_rights",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:PROVENANCE_NOT_QUALIFIED",
+      "override": {
+        "rights_reviewed": false
+      }
+    },
+    {
+      "id": "missing_source_class",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:PROVENANCE_NOT_QUALIFIED",
+      "override": {
+        "public_class": null
+      }
+    },
+    {
+      "id": "wrong_source_review_sha",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:PROVENANCE_NOT_QUALIFIED",
+      "override": {
+        "reviewed_source_sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "ci_wrong_commit",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:CI_SOURCE_OR_RESULT",
+      "override": {
+        "ci_source_sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "ci_failed",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:CI_SOURCE_OR_RESULT",
+      "override": {
+        "ci_passed": false
+      }
+    },
+    {
+      "id": "ci_receipt_missing",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:CI_SOURCE_OR_RESULT",
+      "override": {
+        "ci_receipt": ""
+      }
+    },
+    {
+      "id": "stage_qualified",
+      "from_state": "CI_PASSED",
+      "to_state": "STAGED",
+      "expected": "MODEL_PASS"
+    },
+    {
+      "id": "stale_build_source",
+      "from_state": "CI_PASSED",
+      "to_state": "STAGED",
+      "expected": "HOLD:STAGE_SOURCE_OR_DIGEST",
+      "override": {
+        "staged_source_sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "stage_digest_wrong",
+      "from_state": "CI_PASSED",
+      "to_state": "STAGED",
+      "expected": "HOLD:STAGE_SOURCE_OR_DIGEST",
+      "override": {
+        "staged_artifact_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "staging_tests_failed",
+      "from_state": "CI_PASSED",
+      "to_state": "STAGED",
+      "expected": "HOLD:STAGE_SOURCE_OR_DIGEST",
+      "override": {
+        "staging_passed": false
+      }
+    },
+    {
+      "id": "pages_approval_example",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "MODEL_PASS"
+    },
+    {
+      "id": "missing_approval",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "HOLD:APPROVAL_NOT_QUALIFIED",
+      "override": {
+        "approval_verified": false
+      }
+    },
+    {
+      "id": "wrong_scope_approval",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "HOLD:APPROVAL_NOT_QUALIFIED",
+      "override": {
+        "approval_scope": "PRODUCT_WEB"
+      }
+    },
+    {
+      "id": "wrong_source_approval",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "HOLD:APPROVAL_NOT_QUALIFIED",
+      "override": {
+        "approval_source_sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "wrong_artifact_approval",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "HOLD:APPROVAL_NOT_QUALIFIED",
+      "override": {
+        "approval_artifact_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "missing_approval_receipt",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "HOLD:APPROVAL_NOT_QUALIFIED",
+      "override": {
+        "approval_receipt": ""
+      }
+    },
+    {
+      "id": "product_cannot_reuse_public_merge",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "HOLD:APPROVAL_NOT_QUALIFIED",
+      "track": "PRODUCT_WEB"
+    },
+    {
+      "id": "product_hypothetical_explicit_approval",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "MODEL_PASS",
+      "track": "PRODUCT_WEB",
+      "override": {
+        "approval_kind": "EXPLICIT_PRODUCT_APPROVAL",
+        "approval_scope": "PRODUCT_WEB"
+      }
+    },
+    {
+      "id": "public_package_tag_approval",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "MODEL_PASS",
+      "track": "PUBLIC_PACKAGE",
+      "override": {
+        "approval_kind": "PUBLIC_TAG_RELEASE",
+        "approval_scope": "PUBLIC_PACKAGE"
+      }
+    },
+    {
+      "id": "pages_release_example",
+      "from_state": "PROMOTION_APPROVED",
+      "to_state": "RELEASED",
+      "expected": "MODEL_PASS"
+    },
+    {
+      "id": "release_source_mismatch",
+      "from_state": "PROMOTION_APPROVED",
+      "to_state": "RELEASED",
+      "expected": "HOLD:RELEASE_MISMATCH",
+      "override": {
+        "released_source_sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "release_artifact_mismatch",
+      "from_state": "PROMOTION_APPROVED",
+      "to_state": "RELEASED",
+      "expected": "HOLD:RELEASE_MISMATCH",
+      "override": {
+        "released_artifact_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "missing_deployment_receipt",
+      "from_state": "PROMOTION_APPROVED",
+      "to_state": "RELEASED",
+      "expected": "HOLD:RELEASE_MISMATCH",
+      "override": {
+        "deployment_receipt_verified": false
+      }
+    },
+    {
+      "id": "wallet_signer_missing",
+      "from_state": "PROMOTION_APPROVED",
+      "to_state": "RELEASED",
+      "expected": "HOLD:WALLET_SIGNER_NOT_QUALIFIED",
+      "track": "WALLET_BINARY",
+      "override": {
+        "approval_kind": "EXPLICIT_WALLET_APPROVAL",
+        "approval_scope": "WALLET_BINARY",
+        "wallet_signer_qualified": false
+      }
+    },
+    {
+      "id": "wallet_hypothetical_model_only",
+      "from_state": "PROMOTION_APPROVED",
+      "to_state": "RELEASED",
+      "expected": "MODEL_PASS",
+      "track": "WALLET_BINARY",
+      "override": {
+        "approval_kind": "EXPLICIT_WALLET_APPROVAL",
+        "approval_scope": "WALLET_BINARY",
+        "wallet_signer_qualified": true
+      }
+    },
+    {
+      "id": "live_observation_example",
+      "from_state": "RELEASED",
+      "to_state": "OBSERVED",
+      "expected": "MODEL_PASS"
+    },
+    {
+      "id": "deployment_source_mismatch",
+      "from_state": "RELEASED",
+      "to_state": "OBSERVED",
+      "expected": "HOLD:OBSERVATION_MISMATCH",
+      "override": {
+        "observed_source_sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "deployment_byte_mismatch",
+      "from_state": "RELEASED",
+      "to_state": "OBSERVED",
+      "expected": "HOLD:OBSERVATION_MISMATCH",
+      "override": {
+        "observed_artifact_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "observation_stale",
+      "from_state": "RELEASED",
+      "to_state": "OBSERVED",
+      "expected": "HOLD:OBSERVATION_STALE",
+      "override": {
+        "observation_fresh": false
+      }
+    },
+    {
+      "id": "observation_claim_as_string",
+      "from_state": "RELEASED",
+      "to_state": "OBSERVED",
+      "expected": "HOLD:OBSERVATION_STALE",
+      "override": {
+        "observation_fresh": "true"
+      }
+    },
+    {
+      "id": "rollback_after_observation",
+      "from_state": "OBSERVED",
+      "to_state": "ROLLED_BACK",
+      "expected": "MODEL_PASS"
+    },
+    {
+      "id": "rollback_before_observation",
+      "from_state": "RELEASED",
+      "to_state": "ROLLED_BACK",
+      "expected": "MODEL_PASS"
+    },
+    {
+      "id": "rollback_wrong_restore",
+      "from_state": "OBSERVED",
+      "to_state": "ROLLED_BACK",
+      "expected": "HOLD:ROLLBACK_UNVERIFIED",
+      "override": {
+        "rollback_observed_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "rollback_missing_receipt",
+      "from_state": "OBSERVED",
+      "to_state": "ROLLED_BACK",
+      "expected": "HOLD:ROLLBACK_UNVERIFIED",
+      "override": {
+        "rollback_receipt_verified": false
+      }
+    },
+    {
+      "id": "rollback_unknown_target",
+      "from_state": "OBSERVED",
+      "to_state": "ROLLED_BACK",
+      "expected": "HOLD:ROLLBACK_UNVERIFIED",
+      "override": {
+        "rollback_target_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    },
+    {
+      "id": "illegal_jump_from_review",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "RELEASED",
+      "expected": "HOLD:INVALID_TRANSITION"
+    },
+    {
+      "id": "illegal_regression",
+      "from_state": "OBSERVED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:INVALID_TRANSITION"
+    },
+    {
+      "id": "unknown_release_class",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:UNKNOWN_RELEASE_CLASS",
+      "track": "PRIVATE_PRODUCTION"
+    },
+    {
+      "id": "invalid_source_sha",
+      "from_state": "SOURCE_REVIEWED",
+      "to_state": "CI_PASSED",
+      "expected": "HOLD:INVALID_SOURCE_SHA",
+      "source_sha": "main"
+    },
+    {
+      "id": "invalid_artifact_digest",
+      "from_state": "CI_PASSED",
+      "to_state": "STAGED",
+      "expected": "HOLD:INVALID_ARTIFACT_DIGEST",
+      "artifact_digest": "not-a-digest"
+    },
+    {
+      "id": "approval_boolean_spoof",
+      "from_state": "STAGED",
+      "to_state": "PROMOTION_APPROVED",
+      "expected": "HOLD:APPROVAL_NOT_QUALIFIED",
+      "override": {
+        "approval_verified": "true"
+      }
+    },
+    {
+      "id": "staging_boolean_spoof",
+      "from_state": "CI_PASSED",
+      "to_state": "STAGED",
+      "expected": "HOLD:STAGE_SOURCE_OR_DIGEST",
+      "override": {
+        "staging_passed": "true"
+      }
+    }
+  ]
+}

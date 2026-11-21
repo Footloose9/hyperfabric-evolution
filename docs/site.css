@@ -31,7 +31,8 @@ button { cursor: pointer; }
 .skip-link { position: absolute; left: 12px; top: -80px; padding: 10px 16px; background: var(--mint); color: var(--bg); z-index: 999; font-weight: 800; }
 .skip-link:focus { top: 12px; }
 .ambient { position: absolute; pointer-events: none; border-radius: 50%; filter: blur(96px); opacity: .26; z-index: 0; }
-.ambient--one { width: 700px; height: 700px; background: radial-gradient(circle, #2c6c8c, transparent 65%); top: -220px; right: -240px; }
+/* Decorative glow must not expand the document scrollport. */
+.ambient--one { width: 700px; height: 700px; background: radial-gradient(circle, #2c6c8c, transparent 65%); top: -220px; right: 0; }
 .ambient--two { width: 620px; height: 620px; background: radial-gradient(circle, #382b8d, transparent 66%); top: 620px; left: -330px; opacity: .22; }
 .site-header { background: rgba(6, 14, 23, .88); border-bottom: 1px solid rgba(150, 210, 220, .1); backdrop-filter: blur(18px); position: sticky; top: 0; z-index: 50; }
 .nav-shell { min-height: 80px; display: flex; gap: 25px; align-items: center; justify-content: space-between; }
@@ -271,6 +272,13 @@ h3 { letter-spacing: -.5px; line-height: 1.3; }
   .contribute-steps { grid-template-columns: 1fr; max-width: 250px; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
+/* A sixth navigation link needs a two-row header before tablet width. */
+@media (min-width: 831px) and (max-width: 1150px) {
+  .nav-shell { flex-wrap: wrap; gap: 12px; padding: 12px 0; }
+  .main-nav { order: 3; width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .nav-github { margin-left: auto; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
 }
