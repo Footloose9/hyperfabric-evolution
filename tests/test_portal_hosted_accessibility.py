@@ -95,8 +95,18 @@ class TestHostedPortalAccessibility(unittest.TestCase):
             };
             return {
               innerWidth:window.innerWidth,
+              clientWidth:document.documentElement.clientWidth,
+              visualWidth:window.visualViewport && window.visualViewport.width,
               pageWidth:document.documentElement.scrollWidth,
               bodyWidth:document.body.scrollWidth,
+              bodyOverflow:getComputedStyle(document.body).overflowX,
+              potentialOverflow:[...document.querySelectorAll("body *")].map(e=>{
+                  const r=e.getBoundingClientRect();
+                  return {tag:e.tagName,css:String(e.className).slice(0,65),
+                          width:Math.round(r.width),left:Math.round(r.left),
+                          right:Math.round(r.right)};
+              }).filter(e=>e.right > document.documentElement.clientWidth+4
+                            ||e.left < -4).slice(0,30),
               rootTitle:document.title,
               nav:rect(nav),
               navLinks:[...nav.querySelectorAll("a")].map(a => ({
@@ -124,6 +134,7 @@ class TestHostedPortalAccessibility(unittest.TestCase):
     def test_desktop_landmarks_graph_and_semantics(self):
         set_viewport(self.driver, 1280, 900)
         observed = self.read_layout()
+        print("DESKTOP_OVERFLOW_DIAGNOSTIC",json.dumps(observed),flush=True)
         self.assertEqual(observed["innerWidth"], 1280)
         self.assertLessEqual(observed["pageWidth"], 1282)
         self.assertLessEqual(observed["bodyWidth"], 1282)
@@ -190,6 +201,7 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         for width, expected_track_columns in ((390, 1), (320, 1)):
             set_viewport(self.driver, width, 844, mobile=True)
             layout=self.read_layout()
+            print("MOBILE_OVERFLOW_DIAGNOSTIC",width,json.dumps(layout),flush=True)
             self.assertEqual(layout["innerWidth"],width)
             self.assertLessEqual(
                 layout["pageWidth"],width+2,
