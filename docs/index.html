@@ -18,17 +18,30 @@
 <header class="site-header">
   <div class="container nav-shell">
     <a class="brand" href="#top" aria-label="Hyperfabric Evolution home">
-      <span class="brand-mark" aria-hidden="true">H<span>/</span>E</span>
-      <span class="brand-name">Hyperfabric <strong>Evolution</strong><small>PUBLIC BLOCKCHAIN + AI + SECURITY RESEARCH</small></span>
+      <span class="brand-mark" aria-hidden="true">HE</span>
+      <span class="brand-name">Hyperfabric <strong>Evolution</strong><small>OPEN RESEARCH / ALL BUILDERS WELCOME</small></span>
     </a>
     <nav aria-label="Primary navigation" class="main-nav">
-      <a href="#lab">Synthetic demo</a>
+      <a href="#lab">Try the demos</a>
       <a href="./source-explorer.html">Source explorer</a>
-      <a href="#live-preview">Live XRPL</a>
-      <a href="#research-tracks">Research tracks</a>
+      <a href="#live-preview">XRPL viewer</a>
+      <a href="#research-tracks">Research areas</a>
       <a href="./ai-contribute.html">Contribute with AI</a>
-      <a href="#contribute">Contribute</a>
+      <a href="#contribute">Community</a>
     </nav>
+    <details class="mobile-nav">
+      <summary>Menu <span aria-hidden="true">▾</span></summary>
+      <nav class="mobile-nav-links" aria-label="Mobile navigation">
+        <a href="#lab">Try the demos</a>
+        <a href="./source-explorer.html">Source explorer</a>
+        <a href="#live-preview">XRPL viewer</a>
+        <a href="#networks">Blockchain networks</a>
+        <a href="#research-tracks">Research areas</a>
+        <a href="./ai-contribute.html#launch">Contribute with AI</a>
+        <a href="#contribute">Community</a>
+        <a href="https://github.com/Footloose9/hyperfabric-evolution">View on GitHub</a>
+      </nav>
+    </details>
     <a class="nav-github" href="https://github.com/Footloose9/hyperfabric-evolution" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
   </div>
 </header>
@@ -37,37 +50,48 @@
   <section class="hero section" id="top">
     <div class="container hero-grid">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> OPEN SOURCE <span class="eyebrow-divider">/</span> EVIDENCE FIRST <span class="eyebrow-divider">/</span> COMMUNITY DRIVEN</div>
-        <h1>Follow the evidence.<br><em>Challenge the inference.</em></h1>
-        <p class="lead">Independent, reproducible research in blockchain evidence, AI-agent/tool interoperability, workflow reliability and software trust. Security, privacy, cryptographic and communication protocols are additional public research directions. Explore synthetic evidence tools or manually inspect provider-reported XRPL data, with clear limits.</p>
+        <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> OPEN SOURCE <span class="eyebrow-divider">/</span> PEOPLE FIRST <span class="eyebrow-divider">/</span> EVIDENCE DRIVEN</div>
+        <h1>Build openly.<br><em>Verify everything.</em></h1>
+        <p class="lead">Join a public research community building testable tools for blockchains, AI, privacy, security, cryptography and automation. Developers, researchers, independent builders and newcomers can all contribute.</p>
         <div class="hero-actions">
-          <a class="button button--secondary" href="./ai-contribute.html">Bring your AI to the project</a>
-          <a class="button button--primary" href="#lab">Explore synthetic evidence <span aria-hidden="true">↗</span></a>
-          <a class="button button--secondary" href="#live-preview">Try read-only XRPL <span aria-hidden="true">↗</span></a>
+          <a class="button button--primary" href="./ai-contribute.html#launch">Contribute with your AI</a>
+          <a class="button button--secondary" href="#lab">See what works <span aria-hidden="true">↗</span></a>
+          <a class="button button--secondary" href="#networks">Explore blockchain research <span aria-hidden="true">↗</span></a>
         </div>
-        <p class="integrity-note"><span aria-hidden="true">◎</span> Synthetic graph data stays fabricated. The separate live XRPL preview is manual, read-only, and provider-reported. No keys. No live transaction signing or submission. No trading.</p>
+        <p class="integrity-note"><span aria-hidden="true">◎</span> Working public examples: offline synthetic demos and an optional manual XRPL read-only viewer. Bitcoin, Ethereum and other chain integrations are research priorities, not live adapters. No keys. No wallet or signing required.</p>
       </div>
       <div class="hero-panel" aria-label="The evidence-first workflow">
-        <div class="panel-head"><span>RESEARCH PIPELINE</span><span class="mini-tag">PUBLIC / REPRODUCIBLE</span></div>
-        <div class="pipeline-step"><span class="pipeline-number">01</span><div><strong>Source</strong><small>Ledger and protocol provenance</small></div><span class="pipeline-symbol" aria-hidden="true">◇</span></div>
+        <div class="panel-head"><span>HOW WE BUILD</span><span class="mini-tag">PUBLIC / TESTABLE</span></div>
+        <div class="pipeline-step"><span class="pipeline-number">01</span><div><strong>Start with evidence</strong><small>Public sources and explicit assumptions</small></div><span class="pipeline-symbol" aria-hidden="true">◇</span></div>
         <div class="pipeline-connector" aria-hidden="true"></div>
-        <div class="pipeline-step"><span class="pipeline-number">02</span><div><strong>Model</strong><small>Typed edges, exact asset identity</small></div><span class="pipeline-symbol" aria-hidden="true">⌁</span></div>
+        <div class="pipeline-step"><span class="pipeline-number">02</span><div><strong>Build a small test</strong><small>Reproducible, chain-specific examples</small></div><span class="pipeline-symbol" aria-hidden="true">⌁</span></div>
         <div class="pipeline-connector" aria-hidden="true"></div>
-        <div class="pipeline-step"><span class="pipeline-number">03</span><div><strong>Falsify</strong><small>Negative controls and alternative explanations</small></div><span class="pipeline-symbol" aria-hidden="true">⊘</span></div>
-        <div class="panel-foot"><span class="status-dot" aria-hidden="true"></span> Synthetic research engine · E0 stage</div>
+        <div class="pipeline-step"><span class="pipeline-number">03</span><div><strong>Challenge the claim</strong><small>Failures and ordinary alternatives matter</small></div><span class="pipeline-symbol" aria-hidden="true">⊘</span></div>
+        <div class="panel-foot"><span class="status-dot" aria-hidden="true"></span> Public research examples · Not production services</div>
       </div>
     </div>
     <div class="container metrics" aria-label="Current project milestones">
-      <div class="metric"><span class="metric-number">CI</span><span class="metric-label">OFFLINE TESTS IN CI</span></div>
-      <div class="metric"><span class="metric-number">E0</span><span class="metric-label">SYNTHETIC GRAPH PROTOTYPE</span></div>
-      <div class="metric"><span class="metric-number">0</span><span class="metric-label">SIGNING OR TRANSACTION SUBMISSIONS</span></div>
-      <div class="metric"><span class="metric-number">XRPL</span><span class="metric-label">MANUAL READ-ONLY MAINNET PREVIEW</span></div>
+      <div class="metric"><span class="metric-number">OPEN</span><span class="metric-label">PUBLIC CODE AND REPRODUCIBLE TESTS</span></div>
+      <div class="metric"><span class="metric-number">DEMO</span><span class="metric-label">OFFLINE SYNTHETIC EXPLORERS</span></div>
+      <div class="metric"><span class="metric-number">XRPL</span><span class="metric-label">MANUAL READ-ONLY CHAIN PREVIEW</span></div>
+      <div class="metric"><span class="metric-number">NEXT</span><span class="metric-label">BITCOIN AND ETHEREUM RESEARCH</span></div>
+    </div>
+  </section>
+
+  <section class="section section--compact start-section" id="start" aria-labelledby="start-title">
+    <div class="container">
+      <div class="section-heading"><div><p class="kicker">NEW HERE? START WITH ONE STEP</p><h2 id="start-title">Everyone has a way to contribute.</h2></div><p>Choose what fits you. No specialist knowledge, wallet or private access is required to start.</p></div>
+      <div class="start-grid">
+        <article class="start-card"><p class="start-number">01 / DISCOVER</p><h3>Understand the mission</h3><p>See what is working, what is still research, and why independent verification matters.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/docs/PROJECT_OVERVIEW.md">Read the two-minute overview <span aria-hidden="true">↗</span></a></article>
+        <article class="start-card start-card--highlight"><p class="start-number">02 / CONTRIBUTE</p><h3>Bring your AI assistant</h3><p>Choose ChatGPT, Claude, Grok or another AI. Let it help find an open task; you approve the changes.</p><a href="./ai-contribute.html#launch">Launch your AI contributor <span aria-hidden="true">↗</span></a></article>
+        <article class="start-card"><p class="start-number">03 / BUILD</p><h3>Help solve a real problem</h3><p>Developers, designers and researchers can start with a small issue and submit a tested pull request.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues">Browse available public issues <span aria-hidden="true">↗</span></a></article>
+      </div>
     </div>
   </section>
 
   <section class="section section--compact" id="mission">
     <div class="container">
-      <div class="section-heading"><div><p class="kicker">THE RESEARCH MISSION</p><h2>Make claims inspectable.</h2></div><p>Technical transparency should include the source, method, assumptions, and limitations—not just a plausible chart, model output or protocol claim.</p></div>
+      <div class="section-heading"><div><p class="kicker">THE RESEARCH MISSION</p><h2>Open tools. Evidence you can check.</h2></div><p>Technical transparency should include the source, method, assumptions, and limitations—not just a plausible chart, model output or protocol claim.</p></div>
       <div class="four-grid">
         <article class="feature-card">
           <span class="feature-glyph" aria-hidden="true">⌗</span><p class="feature-id">01 / VERIFY</p>
@@ -139,7 +163,7 @@
   <section class="section section--muted" id="live-preview" aria-labelledby="live-preview-title">
     <div class="container">
       <div class="section-heading">
-        <div><p class="kicker">PUBLISHED RESEARCH UTILITY / XRPL MAINNET</p><h2 id="live-preview-title">Read a real ledger. Keep its source visible.</h2></div>
+        <div><p class="kicker">OUR FIRST LIMITED LIVE CHAIN PREVIEW</p><h2 id="live-preview-title">XRPL: inspect public ledger data, read-only.</h2></div>
         <p>Unlike the fictional graph above, this standalone viewer makes manual, read-only requests to a public XRP Ledger provider. The result is a provider report, not independently verified consensus.</p>
       </div>
       <div class="live-preview-grid">
@@ -166,16 +190,16 @@
 
   <section class="section section--muted" id="networks">
     <div class="container">
-      <div class="section-heading"><div><p class="kicker">MULTICHAIN COLLABORATION</p><h2>One method. Chain-specific truth.</h2></div><p>Each network needs its own semantics, asset identity, source validation and finality rules. Proposed research is not implemented chain support.</p></div>
+      <div class="section-heading"><div><p class="kicker">BLOCKCHAIN RESEARCH / ALL NETWORKS WELCOME</p><h2>Bitcoin, Ethereum, XRPL and beyond.</h2></div><p>Bitcoin and Ethereum are priority public contribution tracks. XRPL hosts our first limited live read-only preview. Each network needs distinct evidence rules; research does not equal live integration.</p></div>
       <div class="network-grid">
-        <article class="network-card is-implemented"><div class="network-icon">X</div><div><div class="network-topline">XRP Ledger <span class="network-state network-state--implemented">Educational code + manual read-only preview</span></div><p>Native XRP, issued identity, AMM/DEX event research and synthetic evidence graphs.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/16">XRPL research tasks ↗</a></div></article>
-        <article class="network-card"><div class="network-icon">XH</div><div><div class="network-topline">Xahau <span class="network-state">Proposed</span></div><p>Distinct network, native asset and Hooks semantics. Need source-backed test vectors.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/10">Xahau comparison ↗</a></div></article>
-        <article class="network-card"><div class="network-icon">Ξ</div><div><div class="network-topline">Ethereum / EVM <span class="network-state">Proposed</span></div><p>Chain IDs, account and contract identity, execution receipts and reorg evidence.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/11">EVM research tasks ↗</a></div></article>
-        <article class="network-card"><div class="network-icon">◎</div><div><div class="network-topline">Solana <span class="network-state">Research welcome</span></div><p>Instructions, mints, commitments and source-complete transaction observations.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/discussions">Propose a Solana track ↗</a></div></article>
-        <article class="network-card"><div class="network-icon">◉</div><div><div class="network-topline">Cosmos ecosystems <span class="network-state">Research welcome</span></div><p>Chain namespaces, denom/IBC provenance, finality and module-specific events.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/discussions">Propose a Cosmos track ↗</a></div></article>
-        <article class="network-card"><div class="network-icon">₿</div><div><div class="network-topline">Bitcoin <span class="network-state">Research welcome</span></div><p>UTXO graph semantics, script types, reorgs and limits of common-input heuristics.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/discussions">Propose a Bitcoin track ↗</a></div></article>
+        <article class="network-card network-card--priority"><div class="network-icon">BTC</div><div><div class="network-topline">Bitcoin <span class="network-state">Research priority · no live adapter</span></div><p>Model spendable outputs, confirmations and reorganizations without guessing who owns an address.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/22">Contribute to Bitcoin research ↗</a></div></article>
+        <article class="network-card network-card--priority"><div class="network-icon">ETH</div><div><div class="network-topline">Ethereum / EVM <span class="network-state">Research priority · no live adapter</span></div><p>Test network IDs, contract identity and transaction evidence across EVM chains without treating matching token names as proof.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/11">Contribute to Ethereum research ↗</a></div></article>
+        <article class="network-card is-implemented"><div class="network-icon">XRP</div><div><div class="network-topline">XRP Ledger <span class="network-state network-state--implemented">First pilot · manual read-only</span></div><p>Our first working provider-limited preview; separate synthetic work covers XRP, issued assets and evidence graphs.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/16">XRPL research tasks ↗</a></div></article>
+        <article class="network-card"><div class="network-icon">SOL</div><div><div class="network-topline">Solana <span class="network-state">Proposed synthetic fixtures</span></div><p>Research token-mint identity, instructions and confirmation evidence with fictional examples first.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/20">Explore Solana tasks ↗</a></div></article>
+        <article class="network-card"><div class="network-icon">XAH</div><div><div class="network-topline">Xahau <span class="network-state">Proposed synthetic fixtures</span></div><p>Study a distinct network, its native asset and Hooks without assuming XRPL equivalence.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/10">Explore Xahau tasks ↗</a></div></article>
+        <article class="network-card"><div class="network-icon">IBC</div><div><div class="network-topline">Cosmos / IBC <span class="network-state">Proposed synthetic fixtures</span></div><p>Test chain-specific denominations and traceable transfer evidence without claiming verified bridges.</p><a href="https://github.com/Footloose9/hyperfabric-evolution/issues/21">Explore Cosmos tasks ↗</a></div></article>
       </div>
-      <div class="network-footnote"><span class="status-dot" aria-hidden="true"></span> Python research code remains educational and synthetic; a separate manual XRPL Mainnet viewer reads public ledger data. Other network adapters are proposals.</div>
+      <div class="network-footnote"><span class="status-dot" aria-hidden="true"></span> Research welcome on every chain. Proposed Bitcoin, Ethereum, Solana, Xahau and Cosmos adapters are not live; only the optional XRPL viewer reads third-party ledger data.</div>
     </div>
   </section>
 
@@ -227,6 +251,6 @@
   </section>
 </main>
 
-<footer class="footer"><div class="container footer-inner"><div><strong>H/E</strong> <span>Hyperfabric Evolution · Public Research Lab</span></div><div><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/CONTRIBUTING.md">Contributing</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/LICENSE">MIT license</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/SECURITY.md">Security</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/PUBLICATION_POLICY.md">Publication policy</a><a href="https://github.com/Footloose9/hyperfabric-evolution">Source ↗</a></div></div></footer>
+<footer class="footer"><div class="container footer-inner"><div><strong>HE</strong> <span>Hyperfabric Evolution · Open Research Community</span></div><div><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/CONTRIBUTING.md">Contributing</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/LICENSE">MIT license</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/SECURITY.md">Security</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/PUBLICATION_POLICY.md">Publication policy</a><a href="https://github.com/Footloose9/hyperfabric-evolution">Source ↗</a></div></div></footer>
 </body>
 </html>
