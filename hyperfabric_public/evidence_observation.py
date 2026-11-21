@@ -60,10 +60,12 @@ class SyntheticAssetRef:
         _enum("asset kind", self.kind, _ASSET_TYPES)
         _synthetic("asset_id", self.asset_id)
         _synthetic("issuer_id", self.issuer_id, optional=True)
-        if self.kind in {"issued", "mpt"} and self.issuer_id is None:
-            raise ValueError("issued/mpt identity requires a distinct synthetic issuer")
-        if self.kind not in {"issued", "mpt"} and self.issuer_id is not None:
-            raise ValueError("issuer cannot be attached to this asset kind")
+        if self.kind == "issued" and self.issuer_id is None:
+            raise ValueError("issuer-qualified issued assets require a synthetic issuer")
+        if self.kind != "issued" and self.issuer_id is not None:
+            raise ValueError("issuer_id is not part of this asset kind's identity")
+        if self.kind == "mpt" and not self.asset_id.startswith("sim:mpt_issuance_"):
+            raise ValueError("mpt asset_id must identify a fictional MPT issuance, not a ticker")
 
 
 @dataclass(frozen=True)
