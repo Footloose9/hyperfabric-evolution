@@ -35,6 +35,15 @@ class SourceExplorerContractTest(unittest.TestCase):
         self.assertNotIn("<script src=\"https://", html)
         self.assertNotIn("<iframe", html)
 
+    def test_published_homepage_discovers_explorer_and_documentation_is_current(self) -> None:
+        homepage = (DOCS / "index.html").read_text(encoding="utf-8")
+        self.assertIn('href="./source-explorer.html"', homepage)
+        self.assertEqual(homepage.count('href="./source-explorer.html"'), 1)
+        docs = (DOCS / "source-explorer.md").read_text(encoding="utf-8")
+        self.assertIn("PR #47", docs)
+        self.assertNotIn("isolated, unmerged implementation candidate", docs)
+        self.assertNotIn("Final maintainer review remains required", docs)
+
     @unittest.skipUnless(shutil.which("node"), "Node.js not installed")
     def test_javascript_validation_and_falsifiers(self) -> None:
         run = subprocess.run(
