@@ -9,6 +9,7 @@ from .evidence_graph import (
     EvidenceGraph,
     EvidenceNode,
     SyntheticEvent,
+    SyntheticLedgerGap,
     TraversalResult,
 )
 
@@ -18,5 +19,6 @@ __all__ = [
     "EvidenceGraph",
     "EvidenceNode",
     "SyntheticEvent",
+    "SyntheticLedgerGap",
     "TraversalResult",
 ]

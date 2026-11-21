@@ -38,6 +38,31 @@ Required invariants:
 - Expansion accepts explicit hop and node budgets, reports whether either bound truncates the result, never silently declares global completeness.
 - Output represents **observed graph adjacency in fabricated fixtures**, not common human control, coordinated bots, malice or profit.
 
+### Falsifying examples and declared coverage gaps
+
+The offline tests in `tests/test_graph_falsifiers.py` use fictional accounts,
+events and labels. They demonstrate counterexamples to topology-only inference:
+
+| Synthetic observation | Invalid inference | Expected graph behavior |
+| --- | --- | --- |
+| Two accounts use the same AMM at the same height | Common control or a transfer between them | Independent directed `used_venue` edges; no reverse link |
+| One account sponsors fees for two others | Sponsorship is a transfer or proof of ownership | Default lineage excludes `fee_sponsored`; explicit relation filtering preserves it |
+| Funding branches reconverge and form a cycle | All reached accounts share an owner | Preserve source events and direction; terminate at explicit budgets |
+| A ledger interval is declared missing | The observed subgraph is complete | Report a coverage gap even if neither budget is exhausted |
+| Two assets share a fictional display symbol | The assets are interchangeable across chains | Separate synthetic keys and networks; reject unproven cross-network edges |
+
+A caller can pass `coverage_gaps=[SyntheticLedgerGap("xrpl:synthetic", 11, 13)]`
+to `EvidenceGraph`. The inclusive interval is a **caller-declared synthetic
+coverage limitation**, not a detected ledger outage. Traversal returns sorted,
+deduplicated `coverage_gaps` for the networks of its reached nodes, and
+`has_open_frontier` is true if a relevant gap or a traversal budget leaves an
+open frontier. Gaps are network-wide in this small model, not filtered by
+transaction time, asset, provider or case window. They do not claim that any
+particular unseen edge exists. Sparse event heights alone do not prove missing
+coverage. An empty gap list or a false frontier flag still cannot prove global
+completeness; they describe only the supplied synthetic graph and declared
+limitations. Actual ledger coverage verification remains a future adapter task.
+
 ## Event-derived anomaly metrics, not guilt scores
 
 Do not score an *address/person* as fraudulent from graph distance or token names. If useful, compute **separate reproducible event metrics** with explicit denominators and source:
