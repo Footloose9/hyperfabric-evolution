@@ -131,3 +131,68 @@ test("account hash or ledger-index mismatch is refused",async()=>{
 test("HTTP provider refusal does not become synthetic fallback",async()=>{
   await assert.rejects(()=>view.readLedger(async()=>({ok:false,status:429})),/HTTP success/);
 });
+
+test("isolated DOM fixture: no automatic RPC; manual clicks render pinned real-source claims",async()=>{
+  const vm = require("node:vm");
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const source = fs.readFileSync(path.resolve(__dirname,"../docs/xrpl-live.js"),"utf8");
+  const elements = {};
+  for (const id of ["read-ledger","read-account","ledger-result","account-result","public-address"]) {
+    elements[id] = {textContent:"",disabled:false,value:id==="public-address"?ADDR:"",
+      addEventListener(name,handler){if(name==="click")this.click=handler;}};
+  }
+  let onReady = null;
+  const document = {
+    getElementById(id){return elements[id]||null;},
+    addEventListener(name,cb){if(name==="DOMContentLoaded")onReady=cb;}
+  };
+  const calls = [];
+  const fakeFetch = async (url,opts) => {
+    const wire=JSON.parse(opts.body);
+    calls.push(wire);
+    const value=wire.method==="ledger" ? ledger : account;
+    return {ok:true,json:async()=>value};
+  };
+  const sandbox={document,fetch:fakeFetch,setTimeout,clearTimeout};
+  vm.runInNewContext(source,sandbox,{filename:"xrpl-live.js",timeout:3000});
+  assert.equal(typeof onReady,"function");
+  onReady();
+  assert.equal(calls.length,0,"initial render must not perform RPC");
+  assert.equal(typeof elements["read-ledger"].click,"function");
+  assert.equal(typeof elements["read-account"].click,"function");
+  await elements["read-ledger"].click();
+  assert.equal(calls.length,1);
+  assert.match(elements["ledger-result"].textContent,/validated mainnet ledger/);
+  assert.match(elements["ledger-result"].textContent,/Closed \(reported UTC\):/);
+  assert.match(elements["ledger-result"].textContent,/Not independently cross-checked/i);
+  await elements["read-account"].click();
+  assert.equal(calls.length,3,"one header call, two calls for account");
+  assert.equal(calls[1].method,"ledger");
+  assert.equal(calls[2].method,"account_info");
+  assert.equal(calls[2].params[0].ledger_hash,HASH);
+  assert.match(elements["account-result"].textContent,/Pinned ledger hash:/);
+  assert.match(elements["account-result"].textContent,/9007199254740993\.000000/);
+  assert.equal(elements["read-account"].disabled,false);
+});
+test("isolated DOM fixture: provider failure visibly reports UNAVAILABLE and never zero",async()=>{
+  const vm = require("node:vm"),fs = require("node:fs"),path=require("node:path");
+  const source=fs.readFileSync(path.resolve(__dirname,"../docs/xrpl-live.js"),"utf8");
+  const items={};
+  for (const id of ["read-ledger","read-account","ledger-result","account-result","public-address"]){
+    items[id]={value:ADDR,textContent:"",disabled:false,
+      addEventListener(name,handler){if(name==="click")this.click=handler;}};
+  }
+  let ready;
+  const document={
+    getElementById(id){return items[id]||null;},
+    addEventListener(name,cb){if(name==="DOMContentLoaded")ready=cb;}
+  };
+  vm.runInNewContext(source,{document,fetch:async()=>({ok:false,status:429}),setTimeout,clearTimeout},
+    {filename:"xrpl-live.js",timeout:3000});
+  ready();
+  await items["read-account"].click();
+  assert.match(items["account-result"].textContent,/^UNAVAILABLE/);
+  assert.doesNotMatch(items["account-result"].textContent,/holds 0/);
+  assert.equal(items["read-ledger"].disabled,false);
+});
