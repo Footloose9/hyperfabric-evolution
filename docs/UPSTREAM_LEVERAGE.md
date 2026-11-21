@@ -2,6 +2,8 @@
 
 **Status:** public, source-backed discovery snapshot (November 20, 2026). **No upstream source has been merged, forked or installed by this audit.** This is a *curated starting inventory*, not an exhaustive inventory of every blockchain project or a guarantee of package security.
 
+For additional exploratory AI-agent and workflow references, see [AI and automation research](AI_AUTOMATION_RESEARCH.md). Those references are not part of the 18-project evidence register or approved dependencies.
+
 See the machine-readable [18-project evidence register](upstream_candidates.json) for source URLs, GitHub-reported license identifiers, activity dates, stage, and exact reuse proposals. These are repository-level observations; dependency-tree, file-level, trademark and patent obligations require a separate review before importing code.
 
 ## The reuse strategy
