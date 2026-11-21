@@ -138,6 +138,13 @@ class AgentToolConformanceTests(unittest.TestCase):
         self.assertEqual(self.engine.verify("sim:job", now_tick=4).stage,
                          Stage.VERIFIED)
 
+    def test_previous_attempt_identical_replay_is_not_new_evidence(self):
+        self.engine.observe(self.receipt())
+        self.engine.retry("sim:job", now_tick=3)
+        with self.assertRaisesRegex(ConformanceError, "STALE_OR_FUTURE_ATTEMPT"):
+            self.engine.observe(self.receipt())
+        self.assertEqual(self.engine.snapshot("sim:job").stage, Stage.REQUESTED)
+
     def test_retry_limit_is_explicit_and_terminal(self):
         self.assertEqual(self.engine.retry("sim:job", now_tick=3).attempt, 2)
         snap = self.engine.retry("sim:job", now_tick=4)
@@ -160,9 +167,11 @@ class AgentToolConformanceTests(unittest.TestCase):
                                     "OBSERVATION_PRECEDES_CURRENT_ATTEMPT"):
             self.engine.observe(self.receipt(attempt=2, observed_tick=2))
 
-    def test_retry_revokes_prior_attempt_approval(self):
-        self.engine.decide("sim:job", decision_id="sim:approval",
-                           approver="sim:reviewer", allow=True)
+    def test_early_approval_refused_and_not_inherited_by_retry(self):
+        with self.assertRaisesRegex(ConformanceError,
+                                    "VERIFIED_EVIDENCE_REQUIRED_FOR_APPROVAL"):
+            self.engine.decide("sim:job", decision_id="sim:approval",
+                               approver="sim:reviewer", allow=True)
         s = self.engine.retry("sim:job", now_tick=3)
         self.assertFalse(s.approval_recorded)
         self.engine.observe(self.receipt(event_id="sim:retry", attempt=2,
@@ -170,6 +179,64 @@ class AgentToolConformanceTests(unittest.TestCase):
         self.engine.verify("sim:job", now_tick=4)
         with self.assertRaisesRegex(ConformanceError, "EXPLICIT_APPROVAL_REQUIRED"):
             self.engine.accept("sim:job", now_tick=5)
+
+    def test_observed_but_unverified_cannot_receive_affirmative_approval(self):
+        self.engine.observe(self.receipt())
+        with self.assertRaisesRegex(ConformanceError,
+                                    "VERIFIED_EVIDENCE_REQUIRED_FOR_APPROVAL"):
+            self.engine.decide("sim:job", decision_id="sim:approval",
+                               approver="sim:reviewer", allow=True)
+        self.assertEqual(self.engine.snapshot("sim:job").stage, Stage.OBSERVED)
+
+    def test_denial_before_evidence_is_permitted_but_terminal(self):
+        self.assertEqual(self.engine.decide(
+            "sim:job", decision_id="sim:denied",
+            approver="sim:reviewer", allow=False).stage, Stage.REFUSED)
+        with self.assertRaisesRegex(ConformanceError, "TASK_NOT_AWAITING"):
+            self.engine.observe(self.receipt())
+
+    def test_accepted_is_immutable_against_conflicting_event_and_task(self):
+        self.verified()
+        self.engine.decide("sim:job", decision_id="sim:approval",
+                           approver="sim:reviewer", allow=True)
+        accepted = self.engine.accept("sim:job", now_tick=4)
+        with self.assertRaisesRegex(ConformanceError, "TERMINAL_TASK_IMMUTABLE"):
+            self.engine.observe(self.receipt(payload="substituted"))
+        with self.assertRaisesRegex(ConformanceError, "TERMINAL_TASK_IMMUTABLE"):
+            self.engine.submit(Task("sim:job", "sim:agent", "read_public",
+                                    "sim:other", 10, 2))
+        with self.assertRaisesRegex(ConformanceError, "TERMINAL_TASK_IMMUTABLE"):
+            self.engine.decide("sim:job", decision_id="sim:different",
+                               approver="sim:reviewer", allow=False)
+        self.assertEqual(self.engine.snapshot("sim:job"), accepted)
+
+    def test_cancelled_is_immutable_against_conflicting_replay(self):
+        self.engine.observe(self.receipt())
+        cancelled = self.engine.cancel("sim:job")
+        with self.assertRaisesRegex(ConformanceError, "TERMINAL_TASK_IMMUTABLE"):
+            self.engine.observe(self.receipt(payload="modified"))
+        self.assertEqual(self.engine.snapshot("sim:job"), cancelled)
+
+    def test_refused_is_immutable_against_conflicting_task_and_decision(self):
+        refused = self.engine.decide(
+            "sim:job", decision_id="sim:denied",
+            approver="sim:reviewer", allow=False)
+        with self.assertRaisesRegex(ConformanceError, "TERMINAL_TASK_IMMUTABLE"):
+            self.engine.submit(Task("sim:job", "sim:agent", "read_public",
+                                    "sim:other", 10, 2))
+        with self.assertRaisesRegex(ConformanceError, "TERMINAL_TASK_IMMUTABLE"):
+            self.engine.decide("sim:job", decision_id="sim:different",
+                               approver="sim:reviewer", allow=True)
+        self.assertEqual(self.engine.snapshot("sim:job"), refused)
+
+    def test_duplicate_affirmative_decision_is_idempotent_after_acceptance(self):
+        self.verified()
+        self.engine.decide("sim:job", decision_id="sim:approval",
+                           approver="sim:reviewer", allow=True)
+        accepted = self.engine.accept("sim:job", now_tick=4)
+        self.assertEqual(self.engine.decide(
+            "sim:job", decision_id="sim:approval",
+            approver="sim:reviewer", allow=True), accepted)
 
     def test_cancellation_is_terminal_and_idempotent(self):
         self.assertEqual(self.engine.cancel("sim:job").stage, Stage.CANCELLED)

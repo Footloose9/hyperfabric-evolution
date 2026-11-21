@@ -43,10 +43,14 @@ self-reported source/ticks, opaque payload, and claimed SHA-256.
 3. `verify`: compare source identity, reported result status, digest, synthetic
    expiry, event/tick order, and inert data category. This is an **internal fixture**
    check, not a cryptographic proof of a real provider.
-4. `decide`: record an explicit synthetic approver decision. An unknown approver,
-   denial, conflicting decision, or omitted approval does not grant acceptance.
-5. `accept`: require verified evidence, positive decision and unexpired task/source.
-   It changes ONLY the in-memory fixture state; it neither dispatches nor signs.
+4. `decide`: record a synthetic approver decision. An **affirmative** decision
+   requires previously verified evidence and binds to the exact task attempt,
+   response event ID and digest. A denial may occur earlier. An unknown approver,
+   conflicting decision, or omitted approval cannot grant acceptance.
+5. `accept`: require verified evidence, an evidence-bound affirmative decision
+   and unexpired task/source. It changes ONLY the in-memory fixture state;
+   it neither dispatches nor signs. Accepted, refused and cancelled records are
+   terminal and immutable against contradictory later replay.
 6. `retry`/`cancel`: enforce caller-selected budgets, monotonic synthetic ticks
    and irreversible cancellation.
 
@@ -61,7 +65,9 @@ No step above creates those controls by implication.
 | --- | --- |
 | Missing result, unknown actor, wrong capability, or missing approval | No `ACCEPTED` or external effect |
 | Out-of-order replies to separate task IDs | Correct task correlation |
-| Stale retry, duplicate event mutation or conflicting observations | Refused or explicitly `UNRESOLVED` |
+| Stale retry (including exact old-attempt replay), duplicate event mutation or conflicting observations | Refused or explicitly `UNRESOLVED` |
+| Affirmative approval before verification or approval reused across attempts | Refused; approval binds exact verified attempt and event digest |
+| Conflicting replay after `ACCEPTED`, `REFUSED` or `CANCELLED` | Terminal record remains unchanged |
 | Wrong claimed source or invalid payload digest | `UNRESOLVED` |
 | Expired source, expired task or tick rollback | No acceptance |
 | Tool error or incomplete/untrusted observation | No false verified effect |
@@ -106,6 +112,19 @@ Real conformance would require explicitly selected specification releases,
 official SDK or protocol fixtures, licensing/NOTICE review, and independent
 positive/negative interoperability tests. Its generic state terminology
 must not be mistaken for an official conformance certification.
+
+**Reference licensing (repository root LICENSE inspection, not legal approval):**
+The independent public Hyperfabric Evolution repository uses MIT.
+At the inspected MCP repository root, LICENSE describes a transition to
+Apache-2.0: new code and specification contributions under Apache-2.0,
+other documentation under CC-BY-4.0, and older works remaining MIT where
+relicensing consent was not obtained (root LICENSE Git blob
+`4a93985763241755401a10678395303de4e720ba`).
+The inspected A2A repository root LICENSE is Apache-2.0 (Git blob
+`d645695673349e3947e8e5ae42332d0ac3164cd7`).
+Neither repository's source or specification prose was copied here.
+Any later dependency or specification redistribution requires exact
+component/version/NOTICE verification, not an assumption from root metadata.
 
 ## Public provenance and release boundary
 

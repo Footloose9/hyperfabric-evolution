@@ -107,7 +107,8 @@ class _Record:
     attempt: int = 1
     reason: str = "AWAITING_EVIDENCE"
     receipt: ToolReceipt | None = None
-    decision: tuple[str, str, bool] | None = None
+    # Decision is bound to the exact task attempt and verified event/digest.
+    decision: tuple[str, str, bool, int, str | None, str | None] | None = None
     last_tick: int = 0
 
 
@@ -167,6 +168,8 @@ class SyntheticConformance:
         if task.key in self._tasks:
             r = self._tasks[task.key]
             if r.task != task:
+                if r.stage in (Stage.ACCEPTED, Stage.REFUSED, Stage.CANCELLED):
+                    raise ConformanceError("TERMINAL_TASK_IMMUTABLE")
                 r.stage, r.reason = Stage.UNRESOLVED, "CONFLICTING_TASK_ID"
                 raise ConformanceError(r.reason)
             return self.snapshot(task.key)
@@ -186,9 +189,13 @@ class SyntheticConformance:
         previous = self._events.get(evidence.event_id)
         if previous is not None:
             if previous != evidence:
+                if r.stage in (Stage.ACCEPTED, Stage.REFUSED, Stage.CANCELLED):
+                    raise ConformanceError("TERMINAL_TASK_IMMUTABLE")
                 r.stage, r.reason = Stage.UNRESOLVED, "CONFLICTING_EVENT_ID"
                 raise ConformanceError(r.reason)
-            return self.snapshot(evidence.task_id)  # idempotent replay
+            if evidence.attempt != r.attempt:
+                raise ConformanceError("STALE_OR_FUTURE_ATTEMPT")
+            return self.snapshot(evidence.task_id)  # same-attempt idempotent replay
         if r.stage not in (Stage.REQUESTED, Stage.OBSERVED):
             raise ConformanceError("TASK_NOT_AWAITING_RESULT")
         if evidence.attempt != r.attempt:
@@ -240,16 +247,25 @@ class SyntheticConformance:
         if type(allow) is not bool:
             raise ConformanceError("DECISION_NOT_BOOLEAN")
         r = self._record(task_id)
-        decision = (decision_id, approver, allow)
+        if approver not in self._approvers:
+            raise ConformanceError("UNKNOWN_APPROVER")
+        if r.stage in (Stage.ACCEPTED, Stage.CANCELLED) and r.decision is None:
+            raise ConformanceError("TERMINAL_TASK_IMMUTABLE")
+        evidence_id = r.receipt.event_id if r.receipt else None
+        evidence_digest = r.receipt.digest if r.receipt else None
+        decision = (decision_id, approver, allow, r.attempt, evidence_id,
+                    evidence_digest)
         if r.decision is not None:
             if r.decision == decision:
                 return self.snapshot(task_id)
+            if r.stage in (Stage.ACCEPTED, Stage.REFUSED, Stage.CANCELLED):
+                raise ConformanceError("TERMINAL_TASK_IMMUTABLE")
             r.stage, r.reason = Stage.REFUSED, "CONFLICTING_DECISIONS"
             raise ConformanceError(r.reason)
         if r.stage not in (Stage.REQUESTED, Stage.OBSERVED, Stage.VERIFIED):
             raise ConformanceError("TERMINAL_OR_UNRESOLVED_TASK")
-        if approver not in self._approvers:
-            raise ConformanceError("UNKNOWN_APPROVER")
+        if allow and r.stage != Stage.VERIFIED:
+            raise ConformanceError("VERIFIED_EVIDENCE_REQUIRED_FOR_APPROVAL")
         r.decision = decision
         if not allow:
             r.stage, r.reason = Stage.REFUSED, "EXPLICIT_DENIAL"
@@ -263,6 +279,10 @@ class SyntheticConformance:
         self._advance_clock(r, now_tick)
         if r.decision is None or not r.decision[2]:
             raise ConformanceError("EXPLICIT_APPROVAL_REQUIRED")
+        if r.receipt is None or r.decision[3:] != (
+            r.attempt, r.receipt.event_id, r.receipt.digest
+        ):
+            raise ConformanceError("APPROVAL_EVIDENCE_BINDING_MISMATCH")
         if now_tick > r.task.expires_tick or (
             r.receipt is not None and now_tick > r.receipt.expires_tick
         ):
