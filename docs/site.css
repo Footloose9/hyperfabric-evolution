@@ -240,6 +240,10 @@ h3 { letter-spacing: -.5px; line-height: 1.3; }
   .research-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 570px) {
+  /* Prevent long network-status badges from forcing horizontal scrolling. */
+  .network-card { min-width: 0; gap: 12px; padding: 18px; }
+  .network-card>div:last-child { min-width: 0; }
+  .network-state { white-space: normal; overflow-wrap: anywhere; }
   .main-nav { flex-wrap: wrap; justify-content: flex-start; }
   .main-nav a { padding: 5px 0; }
   .live-preview-panel, .live-preview-limits { padding: 22px 18px; }
