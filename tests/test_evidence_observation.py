@@ -86,6 +86,19 @@ class ObservationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "issuer"):
             asset(kind="native")
 
+    def test_mpt_issuance_identity_not_issuer_or_ticker(self):
+        first = asset(kind="mpt", asset_id="sim:mpt_issuance_a", issuer_id=None)
+        second = asset(kind="mpt", asset_id="sim:mpt_issuance_b", issuer_id=None)
+        self.assertNotEqual(first, second)
+        self.assertIsNone(first.issuer_id)
+        self.assertEqual(observation(asset=first).asset, first)
+        for changes in (
+            {"kind": "mpt", "asset_id": "sim:usd", "issuer_id": None},
+            {"kind": "mpt", "asset_id": "sim:mpt_issuance_a", "issuer_id": "sim:issuer_a"},
+        ):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                asset(**changes)
+
     def test_synthetic_identifiers_only(self):
         for bad in ("rRealWalletAddress", "https://rpc.example.org", "sim:UPPER", "", None):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
