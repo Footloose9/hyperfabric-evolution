@@ -44,6 +44,15 @@ Hyperfabric Evolution does not need to rebuild a forensic Cassandra/Spark backen
 3. **No ticker-only or amount-only cross-chain joins:** Matching symbols or equal amounts across two networks never establish asset equivalence.
 4. **No silent completeness:** Missing `source_hash`, `UNKNOWN` completeness, `CONFLICTED`/`DISPUTED` provenance, stale provider snapshots (`observed_at_epoch - provider_updated_at_epoch > max_age_seconds`), and truncated frontiers (`neighbors_truncated=True`, `next_page`, `floor_fields`) are explicitly surfaced or rejected.
 
+### Deterministic envelope-integrity gate (pre-merge v1 contract)
+
+The canonical packet digest now covers **all decision-bearing synthetic envelope fields**: schema/version, inspected upstream commit, provenance class **and status**, network, freshness timestamps/window, source completeness (including notes, floor, approximation, truncation, and pagination), and the deterministically sorted nodes/events/edges/cross-chain-claim body. `source_hash` is the lowercase SHA-256 of that complete canonical JSON envelope. It is not recursively included in the hashed data.
+
+**Materialization always verifies the envelope hash by default.** A mismatched digest, or an explicit attempt to turn verification off with `verify_canonical_hash=False`, raises `DisputedProvenanceError`. This is an integrity/self-consistency test for the *synthetic assertion*, **not** cryptographic authentication of upstream GraphSense data, a trusted timestamp, a consensus certificate, or proof of source completeness.
+
+`BridgeTranslationResult.expand` returns a `BridgeTraversalResult` compatible with existing `TraversalResult` fields. It exposes `source_completeness_status`, `source_incomplete` and `traversal_has_open_frontier` independently, while `has_open_frontier` is their logical union. Fully exploring all **observed** nodes cannot imply an unobserved page, partial upstream source or approximate observation is complete. Explicit `require_complete=True` still rejects incomplete source observations.
+
+The canonical sample digest and negative tests changed within the **unmerged** `hf.graphsense.bridge.v1` proposal. No previously released v1 wire format or production client was migrated; do not silently reinterpret older unreviewed fixtures as validated records.
 ## 4. License and NOTICE obligations
 
 Inspection of commit `2977ec9b1a0e563d3940fdf08df16e3569befab0` shows:
@@ -63,7 +72,7 @@ Inspection of commit `2977ec9b1a0e563d3940fdf08df16e3569befab0` shows:
 ## 5. Performance and resource assumptions
 
 - **Upstream bounds observed:** `GraphSummaryRequest` and `GraphCompareRequest` enforce `MAX_GRAPH_NODES = 100` combined transactions and addresses per request; neighbor/link endpoints paginate via `next_page` and expose `neighbors_truncated` / `AggregateCutoff` when external backend call budgets truncate history.
-- **Bridge runtime bounds:** `GraphSenseBridgePacket.to_evidence_graph` runs offline in memory in `O(|V| + |E|)` time with zero network calls, zero database drivers, and zero disk I/O. Traversal via `EvidenceGraph.expand` requires caller-supplied `max_hops` and `max_nodes` bounds, and `ProviderFreshness` requires an explicit `max_age_seconds` window.
+- **Bridge runtime bounds:** `GraphSenseBridgePacket.to_evidence_graph` runs offline in memory with zero network calls, zero database drivers, and zero disk I/O. Sorting and hashing the canonical packet envelope can require `O((|V| + |E|) log (|V| + |E|))` time; constructing the graph remains `O(|V| + |E|)` after validation. Bounded traversal requires caller-supplied `max_hops` and `max_nodes`; `ProviderFreshness` requires an explicit `max_age_seconds` window. Traversal and source-completeness flags remain distinct.
 - **No continuous polling or crawling:** No background syncing, RPC loops, or automated address sweeps exist in this contract.
 
 ## 6. Upstream issue/PR vs. maintaining a fork

@@ -561,6 +561,27 @@ class SyntheticBridgeEdge:
 
 
 @dataclass(frozen=True)
+class BridgeTraversalResult(TraversalResult):
+    """Bounded traversal with independent source-observation completeness.
+
+    This preserves TraversalResult fields and distinguishes a fully traversed
+    observed subgraph from a fully observed source. Neither property proves
+    consensus, controller identity, or global financial finality.
+    """
+
+    source_completeness_status: str = "UNKNOWN"
+    source_incomplete: bool = True
+
+    @property
+    def traversal_has_open_frontier(self) -> bool:
+        return self.depth_limit_reached or self.node_limit_reached
+
+    @property
+    def has_open_frontier(self) -> bool:
+        return self.traversal_has_open_frontier or self.source_incomplete
+
+
+@dataclass(frozen=True)
 class BridgeTranslationResult:
     """Result of validating and converting a synthetic GraphSense packet into EvidenceGraph."""
 
@@ -585,11 +606,22 @@ class BridgeTranslationResult:
         max_hops: int,
         max_nodes: int,
         relations: frozenset[str] | set[str] | None = None,
-    ) -> TraversalResult:
+    ) -> BridgeTraversalResult:
         if relations is None:
-            return self.graph.expand(seeds, max_hops=max_hops, max_nodes=max_nodes)
-        return self.graph.expand(
-            seeds, max_hops=max_hops, max_nodes=max_nodes, relations=relations
+            traversal = self.graph.expand(seeds, max_hops=max_hops, max_nodes=max_nodes)
+        else:
+            traversal = self.graph.expand(
+                seeds, max_hops=max_hops, max_nodes=max_nodes, relations=relations
+            )
+        return BridgeTraversalResult(
+            seeds=traversal.seeds,
+            nodes=traversal.nodes,
+            edges=traversal.edges,
+            depth_limit_reached=traversal.depth_limit_reached,
+            node_limit_reached=traversal.node_limit_reached,
+            provenance_class=traversal.provenance_class,
+            source_completeness_status=self.completeness.status,
+            source_incomplete=not self.completeness.is_complete,
         )
 
 
@@ -663,12 +695,20 @@ class GraphSenseBridgePacket:
             raise BridgeValidationError("completeness must be ObservationCompleteness")
 
     def canonical_payload(self) -> dict[str, Any]:
-        """Return the canonical sorted body covered by the deterministic source hash."""
+        """Return the full decision-bearing synthetic envelope for hashing.
+
+        Version 1 is pre-merge: its pinned hash covers provenance, freshness,
+        and source completeness as well as the sorted graph body.
+        This verifies self-consistency, not a live provider's authenticity.
+        """
         return {
             "schema_version": self.schema_version,
             "upstream_commit": self.upstream_commit,
             "provenance_class": self.provenance_class,
+            "provenance_status": self.provenance_status,
             "network": self.network,
+            "freshness": self.freshness.to_dict(),
+            "completeness": self.completeness.to_dict(),
             "nodes": [
                 n.to_dict() for n in sorted(self.nodes, key=lambda item: item.key)
             ],
@@ -718,16 +758,20 @@ class GraphSenseBridgePacket:
             raise TruncatedFrontierError(
                 "observation is truncated or partial while require_complete=True"
             )
-        if verify_canonical_hash and self.source_hash != self.canonical_payload_hash():
+        if not verify_canonical_hash:
             raise DisputedProvenanceError(
-                "packet source_hash does not match canonical payload digest"
+                "canonical envelope digest verification is mandatory for materialization"
+            )
+        if self.source_hash != self.canonical_payload_hash():
+            raise DisputedProvenanceError(
+                "packet source_hash does not match complete canonical envelope digest"
             )
 
     def to_evidence_graph(
         self,
         *,
         require_complete: bool = False,
-        verify_canonical_hash: bool = False,
+        verify_canonical_hash: bool = True,
     ) -> BridgeTranslationResult:
         """Validate all gates and translate into a read-only chain-scoped EvidenceGraph."""
         self._validate_provenance_and_completeness(
@@ -801,10 +845,7 @@ class GraphSenseBridgePacket:
 
     def to_dict(self) -> dict[str, Any]:
         payload = self.canonical_payload()
-        payload["provenance_status"] = self.provenance_status
         payload["source_hash"] = self.source_hash
-        payload["freshness"] = self.freshness.to_dict()
-        payload["completeness"] = self.completeness.to_dict()
         return payload
 
     @classmethod

@@ -2,6 +2,7 @@
 
 No live GraphSense server, network I/O, wallet keys, or real ledger addresses.
 """
+from dataclasses import replace
 from pathlib import Path
 import unittest
 
@@ -39,7 +40,7 @@ KNOWN_EVENT_HASH_2 = "2" * 64
 KNOWN_EVENT_HASH_3 = "3" * 64
 KNOWN_BRIDGE_PROOF_HASH = "a" * 64
 KNOWN_PACKET_SHA256 = (
-    "748edf6e3a80b3abda2fb0400a330c04dacea0adff53d1cc7ce8940a23748d20"
+    "91cb88ba4063367a9ae1fabc2c6980ed22625d14710605858b6a436666bdecc3"
 )
 
 
@@ -532,6 +533,91 @@ class GraphSenseBridgeNegativeTests(unittest.TestCase):
                 "sim:alice", "sim:bob", "same_controller", "sim:ev1", "xrpl:synthetic"
             )
 
+
+
+class GraphSenseEnvelopeIntegrityRegressionTests(unittest.TestCase):
+    """Adversarial maintainer cases for the previously reported four defects."""
+
+    def test_completeness_tamper_cannot_reuse_verified_envelope_hash(self):
+        packet = _build_packet()
+        tampered = replace(packet, completeness=ObservationCompleteness(status="PARTIAL"))
+        self.assertNotEqual(packet.canonical_payload_hash(), tampered.canonical_payload_hash())
+        with self.assertRaises(DisputedProvenanceError):
+            tampered.to_evidence_graph()  # Integrity is mandatory by default.
+
+    def test_freshness_tamper_cannot_reuse_verified_envelope_hash(self):
+        packet = _build_packet()
+        newer = ProviderFreshness(
+            observed_at_epoch=1_700_000_121,
+            provider_updated_at_epoch=1_700_000_061,
+            max_age_seconds=300,
+        )
+        tampered = replace(packet, freshness=newer)
+        self.assertNotEqual(packet.canonical_payload_hash(), tampered.canonical_payload_hash())
+        with self.assertRaises(DisputedProvenanceError):
+            tampered.to_evidence_graph()
+
+    def test_provenance_status_and_all_completeness_fields_are_hash_bound(self):
+        packet = _build_packet()
+        changed_status = replace(packet, provenance_status="UNKNOWN")
+        changed_notes = replace(
+            packet,
+            completeness=ObservationCompleteness(
+                status="COMPLETE",
+                notes=("new_synthetic_source_qualification",),
+            ),
+        )
+        self.assertNotEqual(packet.canonical_payload_hash(), changed_status.canonical_payload_hash())
+        self.assertNotEqual(packet.canonical_payload_hash(), changed_notes.canonical_payload_hash())
+        self.assertIn("provenance_status", packet.canonical_payload())
+        self.assertIn("freshness", packet.canonical_payload())
+        self.assertIn("completeness", packet.canonical_payload())
+
+    def test_invalid_digest_refused_by_default_and_cannot_disable_validation(self):
+        packet = _build_packet()
+        bad_hash = replace(packet, source_hash="0" * 64)
+        with self.assertRaises(DisputedProvenanceError):
+            bad_hash.to_evidence_graph()
+        with self.assertRaises(DisputedProvenanceError):
+            packet.to_evidence_graph(verify_canonical_hash=False)
+        tampered_json = packet.to_dict()
+        tampered_json["completeness"]["status"] = "PARTIAL"
+        with self.assertRaises(DisputedProvenanceError):
+            GraphSenseBridgePacket.from_dict(tampered_json).to_evidence_graph()
+
+    def test_fully_traversed_partial_source_is_still_open(self):
+        incomplete = _build_packet(
+            completeness=ObservationCompleteness(
+                status="PARTIAL",
+                neighbors_truncated=True,
+            )
+        ).to_evidence_graph(require_complete=False)
+        traversal = incomplete.expand(["sim:alice"], max_hops=12, max_nodes=100)
+        self.assertFalse(traversal.traversal_has_open_frontier)
+        self.assertTrue(traversal.source_incomplete)
+        self.assertEqual(traversal.source_completeness_status, "PARTIAL")
+        self.assertTrue(traversal.has_open_frontier)
+
+    def test_complete_source_with_unbounded_observed_graph_has_no_open_frontier(self):
+        complete = _build_packet().to_evidence_graph(require_complete=True)
+        traversal = complete.expand(["sim:alice"], max_hops=12, max_nodes=100)
+        self.assertFalse(traversal.traversal_has_open_frontier)
+        self.assertFalse(traversal.source_incomplete)
+        self.assertEqual(traversal.source_completeness_status, "COMPLETE")
+        self.assertFalse(traversal.has_open_frontier)
+
+    def test_approximate_source_is_incomplete_even_when_status_is_complete(self):
+        packet = _build_packet(
+            completeness=ObservationCompleteness(
+                status="COMPLETE",
+                approximate_fields=("total_received",),
+            )
+        )
+        result = packet.to_evidence_graph(require_complete=False)
+        self.assertFalse(result.is_complete_observation)
+        traversal = result.expand(["sim:alice"], max_hops=12, max_nodes=100)
+        self.assertTrue(traversal.source_incomplete)
+        self.assertTrue(traversal.has_open_frontier)
 
 if __name__ == "__main__":
     unittest.main()
