@@ -272,6 +272,13 @@ h3 { letter-spacing: -.5px; line-height: 1.3; }
   .contribute-steps { grid-template-columns: 1fr; max-width: 250px; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
+/* A sixth navigation link needs a two-row header before tablet width. */
+@media (min-width: 831px) and (max-width: 1150px) {
+  .nav-shell { flex-wrap: wrap; gap: 12px; padding: 12px 0; }
+  .main-nav { order: 3; width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .nav-github { margin-left: auto; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
 }

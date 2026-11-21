@@ -52,6 +52,10 @@ python -m unittest discover -s tests -v
 
 For a no-clone introduction, see [Getting started](docs/GETTING_STARTED.md). Non-programmers can contribute documentation, test ideas, or public-protocol questions.
 
+## Contribute with the AI assistant you already use
+
+The [AI contributor quickstart](docs/ai-contribute.html) lets anyone copy one public-only prompt into their own AI assistant, check current issues, and prepare a small, reviewable contribution. No project-hosted AI, wallet or separate account is required. The human contributor approves proposed file changes and GitHub write actions. The [written universal prompt](docs/AI_CONTRIBUTOR_BOOTSTRAP.md) is freely inspectable. AI access and coding tools vary; no tool or test result is assumed.
+
 ## How can the community contribute?
 
 **Everyone:** Share hard-to-verify claims or reproducible failures involving blockchain data, AI agents, automation, security, privacy, cryptographic/communication standards or provenance. Describe a synthetic example or negative test. A research topic is not a claim of implemented support.
