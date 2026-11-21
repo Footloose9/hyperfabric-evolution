@@ -184,11 +184,9 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         self.assertIn("XRPL", roles[2]["name"])
 
         # Genuine graph JS: selection updates pressed state without network.
-        role_button = self.driver.element('.filter-button[data-mode="roles"]')
-        self.driver.api(
-            "POST",self.driver.prefix+"/element/"+role_button+"/value",
-            {"text":"\ue007"},  # W3C native Send Keys: Enter to actual button
-        )
+        # The desktop uses an actual W3C window resize, not a CDP mobile
+        # emulation that can leave WebDriver's pointer coordinates misaligned.
+        self.driver.click('.filter-button[data-mode="roles"]')
         graph = self.driver.execute("""
             return {
               rolesPressed:document.querySelector('[data-mode="roles"]')
