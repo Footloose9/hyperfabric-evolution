@@ -1,0 +1,24 @@
+  :root { background:#0c1424; color:#e5edf9; font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif }
+  * { box-sizing:border-box }
+  body { max-width:920px; margin:0 auto; padding:20px }
+  a { color:#8bc9ff }
+  a:focus-visible,button:focus-visible,input:focus-visible { outline:3px solid #ffdc78; outline-offset:3px }
+  header { margin-bottom:24px }
+  h1 { font-size:clamp(1.7rem,4vw,2.6rem); line-height:1.12 }
+  .tag { color:#9bb4d2; font-size:.86rem; letter-spacing:.08em; text-transform:uppercase }
+  .panel { background:#162138; border:1px solid #455a7d; border-radius:12px; padding:22px; margin:20px 0 }
+  .status { padding:14px; margin-top:14px; min-height:62px; color:#f6f9ff;
+     border-left:3px solid #7fa7d5; background:#0b172c; white-space:pre-wrap;
+     overflow-wrap:anywhere; }
+  label { display:block; font-weight:650; margin-bottom:8px }
+  input { width:100%; padding:12px; margin:0 0 12px; border:1px solid #8d9bb5;
+    border-radius:7px; background:#0b172c; color:#fff; font:inherit }
+  button { padding:12px 17px; border:1px solid #7ac3ff; border-radius:8px; background:#174678;
+    color:#fff; font:inherit; font-weight:650; cursor:pointer; }
+  button:disabled { opacity:.52; cursor:wait }
+  small, .muted { color:#b3c5dc }
+  p { max-width:78ch }
+  .warn { padding:14px; background:#2b2440; border-left:3px solid #f6c86b }
+  ul { padding-left:24px }
+  footer { margin-top:40px; border-top:1px solid #405374; padding-top:20px }
+  @media (max-width:580px) {body{padding:14px}.panel{padding:14px}}

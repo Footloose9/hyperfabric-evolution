@@ -1,0 +1,538 @@
+/* Hyperfabric Evolution: original, asset-free industrial cyber / steampunk skin.
+ * Presentation only: no data, requests, scripts, interaction or status logic.
+ * Readability, reduced motion and existing semantic markup take precedence.
+ */
+body.forge-home, body.forge-ai, body.forge-explorer, body.forge-xrpl {
+  --bg: #080d0e;
+  --surface: #111a1d;
+  --surface-2: #172125;
+  --surface-3: #1c292b;
+  --line: #65523d;
+  --text: #f5ebd7;
+  --muted: #bbc5be;
+  --faint: #a4b1a7;
+  --mint: #9cf5b5;
+  --mint-dim: #223f33;
+  --violet: #b5b1de;
+  --amber: #f0b96e;
+  --radius: 12px;
+  --shadow: 0 22px 65px rgba(0,0,0,.44);
+  color: var(--text);
+  color-scheme: dark;
+  background-color: #080d0e;
+  background-image:
+    radial-gradient(ellipse at 78% 11%, rgba(59,93,66,.19) 0%, transparent 38%),
+    radial-gradient(ellipse at 0% 45%, rgba(111,59,23,.17) 0%, transparent 44%),
+    repeating-linear-gradient(0deg, transparent 0, transparent 47px, rgba(169,128,75,.045) 48px, transparent 49px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 47px, rgba(169,128,75,.045) 48px, transparent 49px);
+}
+body.forge-home ::selection, body.forge-ai ::selection,
+body.forge-explorer ::selection, body.forge-xrpl ::selection {
+  background:#c88e52; color:#10120f;
+}
+body.forge-home a:focus-visible, body.forge-ai a:focus-visible,
+body.forge-explorer a:focus-visible, body.forge-xrpl a:focus-visible,
+body.forge-home button:focus-visible, body.forge-ai button:focus-visible,
+body.forge-explorer button:focus-visible, body.forge-xrpl button:focus-visible,
+body.forge-explorer select:focus-visible, body.forge-xrpl input:focus-visible,
+body.forge-ai textarea:focus-visible, body.forge-home [tabindex]:focus-visible {
+  outline: 3px solid #ffe3a0; outline-offset: 3px;
+}
+/* Victorian engraved display lettering, paired with legible digital data. */
+body.forge-home h1, body.forge-home h2,
+body.forge-ai h1, body.forge-ai h2,
+body.forge-explorer h1, body.forge-xrpl h1 {
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  font-weight: 700;
+  letter-spacing: -.055em;
+}
+body.forge-home h1, body.forge-ai h1 {
+  text-shadow: 0 2px 0 rgba(0,0,0,.5), 0 0 48px rgba(80,255,161,.08);
+}
+body.forge-home h1 em, body.forge-home h2 em,
+body.forge-ai h1 em, body.forge-ai h2 em {color:#a4f3b9;}
+body.forge-home .kicker, body.forge-home .eyebrow,
+body.forge-ai .kicker, body.forge-ai .eyebrow {
+  color:#e2b783;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing:1.65px;
+}
+body.forge-home .site-header, body.forge-ai .site-header {
+  background: linear-gradient(180deg, rgba(24,34,34,.98), rgba(8,15,16,.98));
+  border-bottom: 2px solid #947148;
+  box-shadow: 0 7px 24px rgba(0,0,0,.4), inset 0 -1px 0 #3c7658;
+  backdrop-filter: none;
+}
+body.forge-home .site-header:before, body.forge-ai .site-header:before {
+  content:""; pointer-events:none; display:block; position:absolute;
+  top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, transparent 1%, #aa7b4b 15%, #315948 48%, #bf915a 82%, transparent 99%);
+}
+body.forge-home .brand-mark, body.forge-ai .brand-mark {
+  border:1px solid #e8b67a; color:#071e17;
+  background:linear-gradient(135deg,#f2c889,#967048 47%,#9df8bd 49%,#3d865e);
+  border-radius:8px; transform:none;
+  box-shadow:inset 0 2px 0 rgba(255,240,194,.42), 0 0 0 3px #162a27, 0 0 25px rgba(141,235,181,.15);
+}
+body.forge-home .brand-name strong, body.forge-ai .brand-name strong {color:#dfb781;}
+body.forge-home .brand-name small, body.forge-ai .brand-name small {color:#b7aa91;}
+body.forge-home .main-nav a,body.forge-ai .main-nav a,
+body.forge-home .nav-github,body.forge-ai .nav-github {color:#d0ddce;}
+body.forge-home .main-nav a:hover,body.forge-ai .main-nav a:hover {color:#a4ffc2;}
+body.forge-home .nav-github {
+  border-color:#8b6e48; border-radius:7px;
+  background:linear-gradient(180deg,#23302c,#121c1b);
+}
+body.forge-home .hero, body.forge-ai .ai-hero {isolation:isolate;}
+body.forge-home .hero:before, body.forge-ai .ai-hero:before {
+  content:""; position:absolute; pointer-events:none; z-index:-1;
+  width:min(590px,80vw); aspect-ratio:1; right:0; top:5%;
+  opacity:.18; border-radius:50%;
+  border:2px solid #c09055;
+  background:
+    radial-gradient(circle, transparent 30%, #5b492e 30.3%, transparent 31%, transparent 39%, #416953 39.3%, transparent 40%, transparent 49%,#a7753f 49.3%,transparent 50%),
+    repeating-conic-gradient(from 5deg, rgba(225,170,101,.38) 0deg 4deg, transparent 5deg 28deg, rgba(225,170,101,.38) 29deg 32deg);
+  mask-image:radial-gradient(circle,transparent 0 17%,#000 19% 74%,transparent 76%);
+}
+body.forge-home .ambient--one {opacity:.16; filter:blur(98px); background:radial-gradient(circle,#4db481,transparent 64%);}
+body.forge-home .ambient--two {opacity:.1; background:radial-gradient(circle,#a86a36,transparent 64%);}
+body.forge-home .pulse,body.forge-home .status-dot,
+body.forge-ai .ai-terminal-dot {background:#9cf5b5; box-shadow:0 0 14px rgba(103,243,153,.58);}
+body.forge-home .hero-panel, body.forge-ai .ai-overview {
+  background:linear-gradient(145deg,#1d2926,#101b1c 60%,#121918);
+  border:1px solid #9d7749;
+  border-radius:11px;
+  box-shadow:0 25px 55px rgba(0,0,0,.42), inset 0 0 0 4px #151d1b, inset 0 0 0 5px rgba(183,143,91,.19);
+  position:relative;
+}
+body.forge-home .hero-panel:after, body.forge-ai .ai-overview:after {
+  content:"";position:absolute;pointer-events:none;inset:9px;
+  background-image:radial-gradient(circle at 5px 5px,#d3a36c 0 2px,#4c3828 2px 4px,transparent 4px),
+                   radial-gradient(circle at calc(100% - 5px) calc(100% - 5px),#d3a36c 0 2px,#4c3828 2px 4px,transparent 4px);
+  background-size:100% 100%;background-repeat:no-repeat;
+}
+body.forge-home .hero-panel {transform:none;}
+body.forge-home .panel-head,body.forge-home .panel-foot {color:#d7c6a4;}
+body.forge-home .panel-head {border-bottom-color:#7d6343;}
+body.forge-home .mini-tag,body.forge-home .demo-tag {
+  color:#b4f6c1;background:#17392d;border-color:#579575;
+}
+body.forge-home .pipeline-step {
+  background:linear-gradient(90deg,rgba(37,49,42,.72),rgba(10,22,22,.78));
+  border:1px solid #6b5841; border-radius:5px;
+}
+body.forge-home .pipeline-number {
+  color:#f3d0a0;background:#403323;border:1px solid #916c3d;border-radius:4px;
+}
+body.forge-home .pipeline-symbol,body.forge-home .metric-number {color:#a8f4c0;}
+body.forge-home .metrics {border-top-color:#8a6742;}
+body.forge-home .metric {border-right-color:#614c35;}
+body.forge-home .metric-label {color:#c6ba9c;}
+body.forge-home .section--muted,body.forge-ai .section--muted {
+  background:linear-gradient(180deg,rgba(23,31,27,.78),rgba(11,20,20,.94));
+  border-color:rgba(166,126,73,.26);
+}
+body.forge-home .feature-card,body.forge-home .track-card,
+body.forge-home .network-card,body.forge-home .research-rules,
+body.forge-ai .ai-step,body.forge-ai .ai-prompt-shell {
+  border:1px solid #6d5438;
+  border-radius:8px;
+  background:linear-gradient(150deg,rgba(31,42,37,.98),rgba(10,23,23,.98));
+  box-shadow:inset 0 1px 0 rgba(221,180,113,.11),0 14px 35px rgba(0,0,0,.15);
+}
+body.forge-home .feature-card:hover,body.forge-home .track-card:hover {
+  border-color:#d6a467; background:linear-gradient(150deg,#26382d,#112526);
+}
+body.forge-home .feature-glyph,body.forge-home .track-number,
+body.forge-home .feature-id,body.forge-home .rules-heading {color:#e1b47a;}
+body.forge-home .button,body.forge-ai .button {border-radius:5px;}
+body.forge-home .button--primary,body.forge-ai .button--primary {
+  color:#091611;border:1px solid #e9d5a9;
+  background:linear-gradient(125deg,#c69759,#efd095 42%,#91efaf 96%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.26),0 8px 20px rgba(0,0,0,.25);
+}
+body.forge-home .button--secondary,body.forge-ai .button--secondary {
+  background:linear-gradient(180deg,#243730,#162523);
+  border:1px solid #906c49;color:#f2e7d0;
+}
+body.forge-home .button:hover,body.forge-ai .button:hover {filter:brightness(1.1);}
+body.forge-home .lab-shell {border-color:#9b784a;background:#0b1718;border-radius:9px;}
+body.forge-home .lab-toolbar {background:linear-gradient(90deg,#25372e,#122521);border-color:#8b6c43;}
+body.forge-home .graph-area {
+  background-color:#0b1817;
+  background-image:linear-gradient(rgba(157,212,165,.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(157,212,165,.055) 1px,transparent 1px);
+}
+body.forge-home .graph-controls {background:#182822;border-color:#5b513b;}
+body.forge-home .filter-button.is-active {background:#294537;border-color:#bb9863;color:#e5ffd9;}
+body.forge-home .graph-inspector {background:#172522;}
+body.forge-home .graph-legend {border-color:#70583d;}
+body.forge-home .network-card.is-implemented {border-color:#a48653;background:#21382c;}
+body.forge-home .network-icon {border:1px solid #846647;background:#26372f;border-radius:6px;color:#f3d5ad;}
+body.forge-home .network-state {white-space:normal;}
+body.forge-home .contribute-box {
+  background:linear-gradient(135deg,rgba(49,62,43,.96),rgba(14,29,26,.97)),
+             repeating-linear-gradient(90deg,#84663b 0 1px,transparent 1px 38px);
+  border:2px solid #a18053;border-radius:13px;
+  box-shadow:inset 0 0 0 5px rgba(9,18,18,.75),0 24px 64px rgba(0,0,0,.3);
+}
+body.forge-home .footer,body.forge-ai .footer {
+  background:#0a1112;border-top:2px solid #7c6040;
+}
+body.forge-ai .ai-overview-label,body.forge-ai .ai-step-number,
+body.forge-ai .ai-terminal-dot,body.forge-ai .ai-prompt-toolbar {color:#e2b883;}
+body.forge-ai .ai-prompt-toolbar {background:linear-gradient(90deg,#26382c,#192820);border-color:#977448;}
+body.forge-ai #starter-prompt {
+  background:#071411;color:#c6f5c9;border-color:#9b764b;
+  box-shadow:inset 0 0 30px rgba(10,45,26,.28);
+}
+body.forge-ai .ai-copy-status {color:#a8f2b5;}
+body.forge-ai .ai-hero-tags span {background:#26372b;color:#e9d5af;border-color:#997249;}
+body.forge-ai .ai-next {border-color:#8b6b42;}
+/* Companion public tools keep their own layout semantics. */
+body.forge-explorer,body.forge-xrpl {color:#eee8d5;}
+body.forge-explorer .header,body.forge-xrpl header {
+  border-color:#9b784c;
+  background:linear-gradient(180deg,rgba(30,40,32,.68),rgba(12,23,21,.14));
+}
+body.forge-explorer .header a,body.forge-xrpl header a {color:#a4f5bc;}
+body.forge-explorer .flag,body.forge-xrpl .tag {
+  color:#ebc08c;border-color:#90714a;
+}
+body.forge-explorer .eyebrow {color:#e2b783;}
+body.forge-explorer .warning,body.forge-xrpl .warn {
+  background:#312920;border-left-color:#f0bb75;color:#f5e8d0;
+}
+body.forge-explorer .table-wrap,body.forge-explorer .detail-card,
+body.forge-explorer .route-card,body.forge-explorer .method-card,
+body.forge-xrpl .panel {
+  background:linear-gradient(145deg,#192721,#111d1d);border-color:#9b7849;
+  border-radius:7px;
+}
+body.forge-explorer th,body.forge-explorer dt {color:#edc697;}
+body.forge-explorer td,body.forge-explorer dd {color:#d1e6d5;}
+body.forge-explorer tbody tr:hover {background:#2a3829;}
+body.forge-explorer select,body.forge-explorer button,
+body.forge-xrpl input,body.forge-xrpl button {
+  color:#f6edda;background:#182d25;border:1px solid #94734c;
+  border-radius:5px;
+}
+body.forge-explorer button:hover,body.forge-xrpl button:hover {background:#2a4934;}
+body.forge-xrpl .status {background:#0b1b18;border-left-color:#81e7a6;color:#edfade;}
+body.forge-xrpl .panel h2 {color:#f3d1a0;}
+body.forge-xrpl footer,body.forge-explorer footer {border-color:#8e6c46;}
+body.forge-explorer a,body.forge-xrpl a {color:#9cf4b9;}
+@media (max-width:830px){
+  body.forge-home .hero-panel,body.forge-ai .ai-overview {box-shadow:inset 0 0 0 3px #131c1a,0 18px 30px rgba(0,0,0,.2);}
+}
+@media (prefers-reduced-motion:reduce){
+  body.forge-home *,body.forge-ai *,body.forge-explorer *,body.forge-xrpl * {
+    transition:none!important;animation:none!important;scroll-behavior:auto!important;
+  }
+}
+
+/* Public-facing R001: the brass-and-neon forge. Decorative art stays CSS-only.
+   Smoked bronze is structural; luminous emerald is primary; violet and cobalt
+   distinguish research priorities without communicating success/failure alone. */
+body.forge-home {
+  --forge-brass: #bc945d;
+  --forge-brass-light: #edcb91;
+  --forge-emerald: #9afcc2;
+  --forge-violet: #c4b0ff;
+  --forge-cobalt: #80c6ff;
+  background-image:
+    radial-gradient(ellipse at 72% 12%, rgba(86,56,137,.19),transparent 37%),
+    radial-gradient(ellipse at 7% 37%, rgba(39,123,76,.15),transparent 43%),
+    radial-gradient(ellipse at 92% 65%, rgba(27,90,158,.13),transparent 40%),
+    repeating-linear-gradient(0deg, transparent 0 46px, rgba(171,132,81,.055) 47px, transparent 48px),
+    repeating-linear-gradient(90deg, transparent 0 46px, rgba(171,132,81,.055) 47px, transparent 48px);
+}
+body.forge-home .brand-mark {
+  font: 900 17px/1 ui-monospace,Consolas,monospace;
+  letter-spacing: -.07em;
+  text-shadow: 0 1px rgba(252,229,172,.8);
+}
+body.forge-home .brand-name small {letter-spacing: 1.05px;}
+body.forge-home .hero {padding-top:clamp(64px,7vw,108px);padding-bottom:42px;}
+body.forge-home .hero-grid {align-items:start;}
+body.forge-home .hero-copy {padding-top:18px;}
+body.forge-home .hero h1 {
+  font-size: clamp(45px,5.7vw,76px);
+  line-height:1.07;
+  letter-spacing:-.056em;
+  max-width:760px;
+}
+body.forge-home .hero h1 em {
+  color:#a7fdc4;
+  text-shadow:0 0 36px rgba(49,246,152,.17);
+}
+body.forge-home .hero .lead {
+  max-width:690px;
+  color:#e8e0d0;
+  font-size:clamp(16px,1.47vw,19px);
+  line-height:1.73;
+  margin-top:29px;
+}
+body.forge-home .hero-actions {gap:12px;align-items:stretch;}
+body.forge-home .hero .hero-actions .button {min-height:54px;text-align:center;}
+body.forge-home .hero .hero-actions .button--primary {
+  color:#101710;
+  border:2px solid #f4d59d;
+  background:linear-gradient(116deg,#b4854c 0%,#f0cd88 28%,#9eeba8 82%,#57c79b 100%);
+  box-shadow:inset 0 1px 0 rgba(255,245,206,.7),0 0 28px rgba(99,255,148,.12);
+}
+body.forge-home .hero .hero-actions .button--secondary {
+  border-color:#b68c57;
+  color:#f4e4c5;
+  background:linear-gradient(180deg,rgba(49,49,40,.93),rgba(16,26,27,.95));
+}
+body.forge-home .hero .hero-actions .button--secondary:last-child {
+  border-color:#8673b0;
+}
+body.forge-home .integrity-note {
+  max-width:740px;
+  margin-top:18px;
+  color:#d1c5b2;
+  line-height:1.65;
+  font-size:12px;
+}
+body.forge-home .hero-panel {
+  border:2px solid var(--forge-brass);
+  border-radius:13px;
+  background:
+    linear-gradient(150deg,rgba(46,53,41,.98),rgba(10,24,23,.99)) padding-box,
+    linear-gradient(135deg,#f1d095,#825d37 23%,#d3ad71 46%,#745538 75%,#f0c994) border-box;
+  box-shadow:inset 0 0 0 1px rgba(250,216,150,.55),
+             inset 0 0 0 6px rgba(15,23,21,.93),
+             0 14px 48px rgba(0,0,0,.48),
+             0 0 26px rgba(86,58,135,.09);
+}
+body.forge-home .hero-panel .panel-head {
+  color:#efd5a9;
+  border-bottom:1px solid #886b48;
+}
+body.forge-home .hero-panel .pipeline-step {
+  border:1px solid rgba(174,135,80,.65);
+  background:linear-gradient(90deg,rgba(27,40,31,.95),rgba(12,27,28,.91));
+  box-shadow:inset 0 1px 0 rgba(255,212,148,.09);
+}
+body.forge-home .hero-panel .pipeline-step:nth-of-type(2) {border-left:3px solid #a9f5bc;}
+body.forge-home .hero-panel .pipeline-step:nth-of-type(4) {border-left:3px solid #bc9cff;}
+body.forge-home .hero-panel .pipeline-step:nth-of-type(6) {border-left:3px solid #8cc8ff;}
+body.forge-home .hero-panel .pipeline-step small {color:#d0cabc;}
+body.forge-home .metrics {
+  margin-top:51px;
+  border-top:2px solid #906c43;
+  padding-top:23px;
+}
+body.forge-home .metric-number {color:#f0d5a4;font-weight:800;}
+body.forge-home .metric:nth-child(2) .metric-number {color:#a5f9bd;}
+body.forge-home .metric:nth-child(3) .metric-number {color:#97c9fa;}
+body.forge-home .metric:nth-child(4) .metric-number {color:#ccafff;}
+body.forge-home .metric-label {color:#d1c6b2;letter-spacing:1.05px;line-height:1.6;}
+body.forge-home .start-section {padding-top:76px;padding-bottom:80px;}
+body.forge-home .start-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:17px;
+}
+body.forge-home .start-card {
+  position:relative;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  padding:27px 27px 29px;
+  border:2px solid #af854e;
+  border-radius:11px;
+  background:linear-gradient(154deg,#2e3028 0%,#152321 45%,#10191d 100%);
+  box-shadow:inset 0 0 0 1px #e6bf80,
+             inset 0 0 0 6px #17201d,
+             0 17px 42px rgba(0,0,0,.19);
+}
+body.forge-home .start-card:after {
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  inset:9px;
+  border:1px solid rgba(189,148,88,.17);
+  border-radius:5px;
+}
+body.forge-home .start-card--highlight {
+  border-color:#b69a62;
+  background:linear-gradient(150deg,#25372d 0%,#142b24 50%,#1a1a31 100%);
+  box-shadow:inset 0 0 0 1px #f5cf97,inset 0 0 0 6px #17261e,
+             0 0 29px rgba(76,227,132,.095),0 17px 42px rgba(0,0,0,.22);
+}
+body.forge-home .start-number {
+  margin:0 0 18px;
+  color:#ebbb79;
+  font:800 12px/1.5 ui-monospace,Consolas,monospace;
+  letter-spacing:1.2px;
+}
+body.forge-home .start-card--highlight .start-number {color:#b2fbd0;}
+body.forge-home .start-card h3 {margin:0 0 12px;font-size:22px;color:#faf0da;}
+body.forge-home .start-card p:not(.start-number) {
+  color:#d3d6ce;
+  margin:0 0 23px;
+  font-size:14px;
+  line-height:1.72;
+}
+body.forge-home .start-card a {
+  color:#b6f5c5;
+  font-weight:800;
+  margin-top:auto;
+  text-decoration-thickness:1px;
+  text-underline-offset:5px;
+}
+body.forge-home .start-card a:hover {color:#f2cf96;}
+body.forge-home .feature-card,body.forge-home .track-card {
+  border:2px solid #9b7649;
+  box-shadow:inset 0 0 0 1px rgba(246,202,131,.42),
+             inset 0 0 0 5px rgba(17,28,26,.8),
+             0 16px 34px rgba(0,0,0,.15);
+}
+body.forge-home .feature-card:nth-child(2),body.forge-home .track-card:nth-child(2) {
+  border-top-color:#9980d9;
+}
+body.forge-home .feature-card:nth-child(3),body.forge-home .track-card:nth-child(3) {
+  border-top-color:#79b7e7;
+}
+body.forge-home .feature-card:nth-child(4),body.forge-home .track-card:nth-child(4) {
+  border-top-color:#9ace9f;
+}
+body.forge-home .network-card {
+  border:1px solid #a17f53;
+  border-radius:8px;
+  background:linear-gradient(155deg,#29312a,#132220);
+  box-shadow:inset 0 0 0 1px rgba(230,191,131,.24),0 9px 26px rgba(0,0,0,.15);
+}
+body.forge-home .network-card--priority {
+  border-color:#9873c4;
+  border-top:3px solid #c6affb;
+  background:linear-gradient(153deg,#2e2a38,#1a242b 50%,#122522);
+}
+body.forge-home .network-card--priority:nth-child(2) {border-top-color:#80c6ff;}
+body.forge-home .network-card.is-implemented {
+  border-color:#9bbf83;
+  border-top:3px solid #a4f6b8;
+}
+body.forge-home .network-icon {
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.4px;
+  color:#f4deb3;
+  background:linear-gradient(145deg,#59442d,#253d31 60%,#14272a);
+  border:1px solid #e0b47d;
+  width:53px;
+  height:53px;
+  flex-shrink:0;
+}
+body.forge-home .network-card--priority .network-icon {border-color:#b6a1e9;}
+body.forge-home .network-card:nth-child(2) .network-icon {border-color:#86c9ed;}
+body.forge-home .network-card a {color:#aeedbb;}
+body.forge-home .network-state {color:#d4d1bf;}
+body.forge-home .network-card--priority .network-state {
+  border-color:#9980d9;
+  color:#e1d2ff;
+}
+body.forge-home .network-card--priority:nth-child(2) .network-state {
+  border-color:#6ca9d4;
+  color:#cbeaff;
+}
+body.forge-home .network-card .network-topline {overflow-wrap:anywhere;}
+body.forge-home .contribute-box {
+  border:2px solid #d8a871;
+  box-shadow:inset 0 0 0 1px rgba(250,212,152,.75),
+             inset 0 0 0 7px rgba(23,30,26,.82),
+             0 0 42px rgba(93,49,151,.17),
+             0 25px 58px rgba(0,0,0,.34);
+}
+@media(max-width:1050px) {
+  body.forge-home .start-grid {grid-template-columns:1fr;}
+  body.forge-home .start-card {padding:22px 25px;}
+}
+@media(max-width:570px) {
+  body.forge-home .hero {padding-top:52px;padding-bottom:30px;}
+  body.forge-home .hero h1 {font-size:clamp(39px,11.2vw,52px);line-height:1.1;}
+  body.forge-home .hero .lead {font-size:16px;line-height:1.67;}
+  body.forge-home .hero .hero-actions .button {width:100%;}
+  body.forge-home .start-section {padding-top:58px;padding-bottom:58px;}
+  body.forge-home .start-card {padding:22px 19px;}
+  body.forge-home .metrics {margin-top:32px;}
+  body.forge-home .metric-label {font-size:10px;letter-spacing:.55px;}
+}
+/* Mobile native details menu replaces three rows of always-visible navigation. */
+body.forge-home .mobile-nav {display:none;}
+@media(max-width:830px) {
+  body.forge-home .nav-shell {
+    min-height:72px;
+    flex-wrap:nowrap;
+    gap:12px;
+    padding:11px 0;
+    position:relative;
+  }
+  body.forge-home .brand {min-width:0;flex:1;}
+  body.forge-home .brand-mark {flex-shrink:0;}
+  body.forge-home .brand-name {min-width:0;}
+  body.forge-home .brand-name small {line-height:1.35;}
+  body.forge-home .main-nav,body.forge-home .nav-github {display:none;}
+  body.forge-home .mobile-nav {display:block;margin-left:auto;flex-shrink:0;}
+  body.forge-home .mobile-nav summary {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-width:77px;
+    min-height:47px;
+    border:1px solid #bf945e;
+    border-radius:7px;
+    padding:8px 12px;
+    background:linear-gradient(155deg,#2a3b2c,#14221e);
+    color:#f5e7c9;
+    font-weight:800;
+    cursor:pointer;
+    list-style:none;
+  }
+  body.forge-home .mobile-nav summary::-webkit-details-marker {display:none;}
+  body.forge-home .mobile-nav summary:focus-visible {
+    outline:3px solid #ffe3a0;
+    outline-offset:4px;
+  }
+  body.forge-home .mobile-nav[open] summary {
+    background:linear-gradient(135deg,#4e3c2c,#213a31);
+    color:#fff1c9;
+  }
+  body.forge-home .mobile-nav-links {
+    position:absolute;
+    right:0;
+    top:calc(100% + 5px);
+    width:min(340px,calc(100vw - 30px));
+    z-index:80;
+    display:flex;
+    flex-direction:column;
+    padding:9px;
+    border:2px solid #b28b58;
+    border-radius:9px;
+    background:#111c1b;
+    box-shadow:0 20px 42px rgba(0,0,0,.6),inset 0 0 0 1px #e6bf81;
+  }
+  body.forge-home .mobile-nav-links a {
+    min-height:45px;
+    display:flex;
+    align-items:center;
+    padding:10px 13px;
+    border-radius:5px;
+    color:#f0e8d7;
+    font-weight:750;
+    text-decoration:none;
+  }
+  body.forge-home .mobile-nav-links a:hover,
+  body.forge-home .mobile-nav-links a:focus-visible {
+    background:#264336;
+    color:#b7fbd0;
+  }
+}
+@media(max-width:375px) {
+  body.forge-home .brand-mark {width:43px;height:43px;}
+  body.forge-home .brand-name small {font-size:7px;letter-spacing:.45px;}
+}

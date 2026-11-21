@@ -31,7 +31,8 @@ button { cursor: pointer; }
 .skip-link { position: absolute; left: 12px; top: -80px; padding: 10px 16px; background: var(--mint); color: var(--bg); z-index: 999; font-weight: 800; }
 .skip-link:focus { top: 12px; }
 .ambient { position: absolute; pointer-events: none; border-radius: 50%; filter: blur(96px); opacity: .26; z-index: 0; }
-.ambient--one { width: 700px; height: 700px; background: radial-gradient(circle, #2c6c8c, transparent 65%); top: -220px; right: -240px; }
+/* Decorative glow must not expand the document scrollport. */
+.ambient--one { width: 700px; height: 700px; background: radial-gradient(circle, #2c6c8c, transparent 65%); top: -220px; right: 0; }
 .ambient--two { width: 620px; height: 620px; background: radial-gradient(circle, #382b8d, transparent 66%); top: 620px; left: -330px; opacity: .22; }
 .site-header { background: rgba(6, 14, 23, .88); border-bottom: 1px solid rgba(150, 210, 220, .1); backdrop-filter: blur(18px); position: sticky; top: 0; z-index: 50; }
 .nav-shell { min-height: 80px; display: flex; gap: 25px; align-items: center; justify-content: space-between; }
@@ -186,6 +187,29 @@ h3 { letter-spacing: -.5px; line-height: 1.3; }
 .footer-inner strong { font-size: 22px; color: var(--mint); letter-spacing: -2px; }
 .footer-inner span { color: var(--faint); font-size: 12px; }
 .footer a { color: #adc3cf; font-size: 12px; text-decoration: none; }
+
+/* Public read-only XRPL preview: self-contained, accessible and source-cautious. */
+.live-preview-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; align-items: stretch; }
+.live-preview-panel, .live-preview-limits { border: 1px solid #315967; border-radius: var(--radius); padding: 32px; background: rgba(11, 30, 43, .86); }
+.live-preview-panel { background: linear-gradient(135deg, #143b40, #101e2e); }
+.live-preview-label, .track-number { margin: 0 0 12px; color: var(--mint); font-size: 11px; font-weight: 850; letter-spacing: 1.1px; }
+.live-preview-panel h3 { font-size: clamp(22px, 3vw, 32px); line-height: 1.25; margin: 0 0 18px; }
+.live-preview-panel > p:not(.live-preview-label), .live-preview-limits li { color: #bdd2da; line-height: 1.8; font-size: 14px; }
+.live-preview-panel .button { margin: 10px 0 2px; }
+.live-preview-panel .live-preview-small { color: #c0d5dc; font-size: 12px; margin: 14px 0 0; }
+.live-preview-limits h3 { margin: 0 0 18px; font-size: 19px; }
+.live-preview-limits ul { margin: 0 0 20px; padding-left: 22px; }
+.live-preview-limits li + li { margin-top: 12px; }
+.live-preview-limits a { display: inline-block; padding: 5px 0; }
+.track-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+.track-card { border: 1px solid var(--line); border-radius: 15px; background: var(--surface); padding: 25px; min-width: 0; display: flex; flex-direction: column; }
+.track-card h3 { margin: 0 0 10px; font-size: 19px; line-height: 1.4; }
+.track-card p:not(.track-number) { color: #b5c9d3; font-size: 13px; line-height: 1.75; margin: 0 0 20px; }
+.track-card a { margin-top: auto; color: var(--mint); font-size: 13px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.track-card:hover, .track-card:focus-within { border-color: #4c8b90; }
+.track-next { color: #b5c9d3; margin: 24px 0 0; line-height: 1.8; }
+.track-next a { color: var(--mint); text-underline-offset: 3px; }
+
 @media (max-width: 1080px) {
   .hero-grid { gap: 26px; grid-template-columns: 1fr .8fr; }
   h1 { letter-spacing: -2.8px; }
@@ -196,6 +220,8 @@ h3 { letter-spacing: -.5px; line-height: 1.3; }
   .research-grid { gap: 35px; }
 }
 @media (max-width: 830px) {
+  .live-preview-grid { grid-template-columns: 1fr; }
+  .track-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .site-header { position: relative; }
   .nav-shell { flex-wrap: wrap; padding: 16px 0; gap: 15px; }
   .brand { min-width: auto; }
@@ -215,6 +241,14 @@ h3 { letter-spacing: -.5px; line-height: 1.3; }
   .research-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 570px) {
+  /* Prevent long network-status badges from forcing horizontal scrolling. */
+  .network-card { min-width: 0; gap: 12px; padding: 18px; }
+  .network-card>div:last-child { min-width: 0; }
+  .network-state { white-space: normal; overflow-wrap: anywhere; }
+  .main-nav { flex-wrap: wrap; justify-content: flex-start; }
+  .main-nav a { padding: 5px 0; }
+  .live-preview-panel, .live-preview-limits { padding: 22px 18px; }
+  .track-grid { grid-template-columns: 1fr; }
   .container { width: min(100% - 30px, 1200px); }
   .brand-name { font-size: 12px; }
   .brand-name small { font-size: 8px; letter-spacing: 1px; }
@@ -238,6 +272,13 @@ h3 { letter-spacing: -.5px; line-height: 1.3; }
   .contribute-steps { grid-template-columns: 1fr; max-width: 250px; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
+/* A sixth navigation link needs a two-row header before tablet width. */
+@media (min-width: 831px) and (max-width: 1150px) {
+  .nav-shell { flex-wrap: wrap; gap: 12px; padding: 12px 0; }
+  .main-nav { order: 3; width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .nav-github { margin-left: auto; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
 }

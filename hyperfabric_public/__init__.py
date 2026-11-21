@@ -9,6 +9,7 @@ from .evidence_graph import (
     EvidenceGraph,
     EvidenceNode,
     SyntheticEvent,
+    SyntheticLedgerGap,
     TraversalResult,
 )
 from .graphsense_bridge import (
@@ -55,6 +56,7 @@ __all__ = [
     "SyntheticBridgeEvent",
     "SyntheticBridgeNode",
     "SyntheticEvent",
+    "SyntheticLedgerGap",
     "TraversalResult",
     "TruncatedFrontierError",
 ]
