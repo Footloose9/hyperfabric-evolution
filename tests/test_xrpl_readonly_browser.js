@@ -14,6 +14,14 @@ const account = {
   result: {status:"success",validated:true, ledger_index:108466979,
     ledger_hash:HASH,account_data:{Account:ADDR,Balance:"9007199254740993000000"}}
 };
+// Keep deterministic historical parser fixtures, but use a recent ledger
+// when testing live-display behavior with the actual device clock.
+const recentSeconds = Math.floor(Date.now()/1000)-5;
+const recentLedger = {result:{...ledger.result,ledger:{
+  ...ledger.result.ledger,
+  close_time:recentSeconds-946684800,
+  close_time_iso:new Date(recentSeconds*1000).toISOString()
+}}};
 
 test("strictly typed, provider-reported validated ledger", () => {
   const x=view.parseLedger(ledger);
@@ -80,7 +88,7 @@ test("manual validated ledger request passes no authentication or wallet data",a
   let seen;
   const fake=async(url,options)=>{
     seen={url,options};
-    return {ok:true,json:async()=>ledger};
+    return {ok:true,json:async()=>recentLedger};
   };
   const x=await view.readLedger(fake);
   assert.equal(x.ledger_index,108466979);
@@ -100,7 +108,7 @@ test("manual account request first pins a specific validated ledger hash",async(
   const fake=async(url,options)=>{
     const wire=JSON.parse(options.body);
     seen.push(wire);
-    return {ok:true,json:async()=>wire.method==="ledger" ? ledger : account};
+    return {ok:true,json:async()=>wire.method==="ledger" ? recentLedger : account};
   };
   const x=await view.readAccount(ADDR,fake);
   assert.equal(x.xrp,"9007199254740993.000000");
@@ -116,17 +124,26 @@ test("manual account request first pins a specific validated ledger hash",async(
 test("account hash or ledger-index mismatch is refused",async()=>{
   const mismatchHash=async(url,options)=>{
     const wire=JSON.parse(options.body);
-    return {ok:true,json:async()=>wire.method==="ledger" ? ledger :
+    return {ok:true,json:async()=>wire.method==="ledger" ? recentLedger :
       {result:{...account.result,ledger_hash:"B".repeat(64)}}};
   };
   const mismatchIndex=async(url,options)=>{
     const wire=JSON.parse(options.body);
-    return {ok:true,json:async()=>wire.method==="ledger" ? ledger :
+    return {ok:true,json:async()=>wire.method==="ledger" ? recentLedger :
       {result:{...account.result,ledger_index:108466978}}};
   };
   await assert.rejects(()=>view.readAccount(ADDR,mismatchHash),/disagrees/);
   await assert.rejects(()=>view.readAccount(ADDR,mismatchIndex),/disagrees/);
   assert.throws(()=>view.parseAccount({result:{...account.result,ledger_hash:null}},ADDR),/hash/);
+});
+test("live-display freshness rejects stale or future source data",async()=>{
+  const old=async()=>({ok:true,json:async()=>ledger});
+  await assert.rejects(()=>view.readLedger(old),/stale|future|time/);
+  const future=JSON.parse(JSON.stringify(recentLedger));
+  const seconds=Math.floor(Date.now()/1000)+120;
+  future.result.ledger.close_time=seconds-946684800;
+  future.result.ledger.close_time_iso=new Date(seconds*1000).toISOString();
+  await assert.rejects(()=>view.readLedger(async()=>({ok:true,json:async()=>future})),/stale|future|time/);
 });
 test("HTTP provider refusal does not become synthetic fallback",async()=>{
   await assert.rejects(()=>view.readLedger(async()=>({ok:false,status:429})),/HTTP success/);
@@ -151,7 +168,7 @@ test("isolated DOM fixture: no automatic RPC; manual clicks render pinned real-s
   const fakeFetch = async (url,opts) => {
     const wire=JSON.parse(opts.body);
     calls.push(wire);
-    const value=wire.method==="ledger" ? ledger : account;
+    const value=wire.method==="ledger" ? recentLedger : account;
     return {ok:true,json:async()=>value};
   };
   const sandbox={document,fetch:fakeFetch,setTimeout,clearTimeout};

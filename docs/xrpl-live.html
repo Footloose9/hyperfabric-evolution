@@ -58,8 +58,10 @@
         <li>Native XRP balance only. Issued tokens require exact currency plus issuer;
           MPTs have different identities. This utility reports none of those balances.</li>
         <li>Queries always use XRPL Mainnet and a validated ledger. The provider-reported
-          ledger close time is shown, but independent freshness is not established.
-          Failed, malformed, or unvalidated responses are unavailable, never synthetic zero.</li>
+          ledger close time is shown. Live results more than 120 seconds old or more than
+          30 seconds ahead of the device clock are refused. An incorrect clock may cause
+          UNAVAILABLE; independent consensus and freshness are not established.
+          Failed, malformed, or unvalidated responses never become synthetic zero.</li>
         <li>The public provider may rate-limit, change policy, become unavailable, or return errors.
           A single provider's response is not independently authenticated consensus evidence.</li>
         <li>No wallet extension, signer, transaction builder, funded transaction, API key, cookie,

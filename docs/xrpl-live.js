@@ -124,10 +124,21 @@
       if (timeout !== null) { clearTimeout(timeout); }
     }
   }
+  function requireRecentLedger(ledger) {
+    // Device time is a bounded freshness heuristic, not cryptographic proof.
+    // Refuse stale or future observations; do not silently label them current.
+    var now = Date.now();
+    var closed = Date.parse(ledger.ledger_close_time_utc);
+    if (!Number.isFinite(now) || !Number.isFinite(closed) ||
+        now - closed > 120000 || closed - now > 30000) {
+      refuse("Ledger appears stale, in the future, or device time is incorrect. No current observation.");
+    }
+    return ledger;
+  }
   async function readLedger(fetcher) {
-    return parseLedger(await request("ledger", {
+    return requireRecentLedger(parseLedger(await request("ledger", {
       ledger_index: "validated", transactions: false, expand: false
-    }, fetcher));
+    }, fetcher)));
   }
   async function readAccount(address, fetcher) {
     checkAddressShape(address);
