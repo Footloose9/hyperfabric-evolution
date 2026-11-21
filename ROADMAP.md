@@ -2,6 +2,12 @@
 
 This roadmap describes **only independently reviewed public-source work**. Implemented examples span synthetic blockchain evidence and a limited manual XRPL read-only preview, plus offline synthetic agent/tool conformance and software-verification tests. Broader AI automation, security, privacy, cryptographic protocols and secure communication are **public research directions**, not deployed services or private-project disclosures. This is not a product-release or trading-infrastructure commitment.
 
+## Browse the public roadmap by research area
+
+The [public Research Hub](docs/research-hub.html) presents blockchain, cryptography, privacy, AI/automation, communications and software-security research in navigable sections; the [hosted version](https://footloose9.github.io/hyperfabric-evolution/research-hub.html) adds an explicitly user-triggered recent public GitHub issue sample. This document remains the version-controlled roadmap. **GitHub issue updates indicate public discussion/activity only**, not accepted implementation, protected runtime state, percent completion or delivered product functionality.
+
+New independently scoped research invitations: [Monero privacy evidence #58](https://github.com/Footloose9/hyperfabric-evolution/issues/58) and [Zano confidential-assets evidence #59](https://github.com/Footloose9/hyperfabric-evolution/issues/59). These remain *proposed fictional offline fixture work*; ordinary public observers cannot infer hidden transaction properties, and no live Monero or Zano adapter is available.
+
 ## Available now (verified public scope)
 
 - XRPL-native XRP versus issued-asset identity demonstration using currency plus issuer.
