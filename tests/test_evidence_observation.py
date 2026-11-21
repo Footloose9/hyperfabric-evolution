@@ -174,6 +174,32 @@ class ObservationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "digest mismatch"):
             EvidenceRegister().add(item)
 
+    def test_register_refuses_rehashed_invalid_inner_source(self):
+        item = observation()
+        object.__setattr__(item.source, "height", True)
+        object.__setattr__(item, "envelope_digest", item.expected_digest())
+        with self.assertRaisesRegex(ValueError, "height"):
+            EvidenceRegister().add(item)
+
+    def test_register_refuses_rehashed_invalid_outer_claim(self):
+        item = observation()
+        object.__setattr__(item, "claim_class", "DERIVED")
+        object.__setattr__(item, "envelope_digest", item.expected_digest())
+        with self.assertRaisesRegex(ValueError, "basis"):
+            EvidenceRegister().add(item)
+
+    def test_register_detaches_input_and_returned_records(self):
+        item = observation()
+        register = EvidenceRegister()
+        self.assertEqual(register.add(item), "ADDED")
+        object.__setattr__(item.source, "height", -1)
+        first_copy = register.by_id(item.observation_id)[0]
+        self.assertEqual(first_copy.source.height, 100)
+        object.__setattr__(first_copy.source, "height", -2)
+        second_copy = register.by_id(item.observation_id)[0]
+        self.assertEqual(second_copy.source.height, 100)
+        self.assertEqual(register.total, 1)
+
     def test_limits_and_type_guards(self):
         for value in (0, -1, True, 10001, "100"):
             with self.subTest(value=value), self.assertRaises(ValueError):

@@ -6,7 +6,7 @@ not truth or permission to publish its claims.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from hashlib import sha256
 from hmac import compare_digest
 import json
@@ -226,6 +226,25 @@ def make_observation(
     return EvidenceObservation(observation_id, network, asset, source, claim_class, direction, basis, digest)
 
 
+def _validated_snapshot(observation: EvidenceObservation) -> EvidenceObservation:
+    """Revalidate every nested field and detach the caller's mutable references.
+
+    Frozen dataclasses are not a security boundary: object.__setattr__ can bypass
+    their constructor guards. This is in-memory format enforcement, not custody.
+    """
+    if not isinstance(observation, EvidenceObservation):
+        raise ValueError("a verified-format evidence observation is required")
+    if not isinstance(observation.asset, SyntheticAssetRef) or not isinstance(
+        observation.source, SyntheticSource
+    ):
+        raise ValueError("invalid synthetic observation components")
+    return replace(
+        observation,
+        asset=replace(observation.asset),
+        source=replace(observation.source),
+    )
+
+
 class EvidenceRegister:
     """Bounded append-only synthetic register retaining contradictory records."""
 
@@ -237,23 +256,21 @@ class EvidenceRegister:
         self._count = 0
 
     def add(self, observation: EvidenceObservation) -> str:
-        if not isinstance(observation, EvidenceObservation):
-            raise ValueError("a verified-format evidence observation is required")
-        # Verify again, even if the object was externally mutated via object.__setattr__.
-        if not compare_digest(observation.envelope_digest, observation.expected_digest()):
-            raise ValueError("envelope digest mismatch")
-        entries = self._entries.get(observation.observation_id, [])
-        if observation in entries:
+        # Re-run constructors for asset, source, and outer claim, including
+        # their schema guards; a recomputed digest alone is not validation.
+        snapshot = _validated_snapshot(observation)
+        entries = self._entries.get(snapshot.observation_id, [])
+        if snapshot in entries:
             return "DUPLICATE"
         if self._count >= self._max_entries:
             return "CAPACITY_REJECTED"
-        self._entries.setdefault(observation.observation_id, []).append(observation)
+        self._entries.setdefault(snapshot.observation_id, []).append(snapshot)
         self._count += 1
         return "CONFLICT_RETAINED" if entries else "ADDED"
 
     def by_id(self, observation_id: str) -> tuple[EvidenceObservation, ...]:
         _synthetic("observation_id", observation_id)
-        return tuple(self._entries.get(observation_id, ()))
+        return tuple(_validated_snapshot(item) for item in self._entries.get(observation_id, ()))
 
     @property
     def total(self) -> int:
