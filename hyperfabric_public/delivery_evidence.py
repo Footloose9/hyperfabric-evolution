@@ -27,6 +27,7 @@ class DeliveryOutcome:
     status: str
     applied_sequences: tuple[int, ...] = ()
     missing_sequence: int | None = None
+    stale_applied_sequences: tuple[int, ...] = ()
 
 
 @dataclass
@@ -91,6 +92,7 @@ class DeliveryJournal:
             return DeliveryOutcome("GAP_PENDING", missing_sequence=stream.applied_sequence + 1)
 
         applied: list[int] = []
+        stale_applied: list[int] = []
         input_status = "OBSERVED"
         while stream.applied_sequence + 1 in stream.pending:
             next_sequence = stream.applied_sequence + 1
@@ -100,11 +102,14 @@ class DeliveryJournal:
                       else "OBSERVED")
             if current is record:
                 input_status = status
+            if status == "STALE_OBSERVATION":
+                stale_applied.append(next_sequence)
             stream.highest_source_height = max(
                 stream.highest_source_height, current.source_height)
             stream.applied_sequence = next_sequence
             applied.append(next_sequence)
-        return DeliveryOutcome(input_status, tuple(applied))
+        return DeliveryOutcome(input_status, tuple(applied),
+                               stale_applied_sequences=tuple(stale_applied))
 
     def snapshot(self, stream_id: str) -> tuple[int, int, tuple[int, ...], int]:
         """(applied sequence, maximum source height, gaps held, unique records)."""

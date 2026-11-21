@@ -83,10 +83,59 @@ class DeliveryFailureTests(unittest.TestCase):
         self.assertEqual(self.journal.ingest(record).status, "DUPLICATE")
         self.assertEqual(self.journal.snapshot(STREAM), (0, -1, (3,), 1))
 
+    def test_stale_buffered_delivery_reports_all_drained_sequences(self):
+        # An out-of-order record is not evaluated for stream-relative staleness
+        # until it becomes contiguous. Its status must not vanish on gap repair.
+        journal = DeliveryJournal()
+        self.assertEqual(journal.ingest(event(1, 100)).status, "OBSERVED")
+        pending = journal.ingest(event(3, 90))
+        self.assertEqual(pending.status, "GAP_PENDING")
+        self.assertEqual(pending.stale_applied_sequences, ())
+        repaired = journal.ingest(event(2, 110))
+        self.assertEqual(repaired.status, "OBSERVED")
+        self.assertEqual(repaired.applied_sequences, (2, 3))
+        self.assertEqual(repaired.stale_applied_sequences, (3,))
+        self.assertEqual(journal.snapshot(STREAM), (3, 110, (), 3))
+
+    def test_multiple_stale_buffered_records_remain_visible(self):
+        journal = DeliveryJournal()
+        journal.ingest(event(1, 100))
+        journal.ingest(event(4, 80))
+        journal.ingest(event(3, 95))
+        outcome = journal.ingest(event(2, 110))
+        self.assertEqual(outcome.status, "OBSERVED")
+        self.assertEqual(outcome.applied_sequences, (2, 3, 4))
+        self.assertEqual(outcome.stale_applied_sequences, (3, 4))
+        self.assertEqual(journal.snapshot(STREAM), (4, 110, (), 4))
+
+    def test_stale_input_status_preserved_with_fresh_buffered_record(self):
+        journal = DeliveryJournal()
+        journal.ingest(event(1, 100))
+        journal.ingest(event(3, 140))
+        outcome = journal.ingest(event(2, 90))
+        self.assertEqual(outcome.status, "STALE_OBSERVATION")
+        self.assertEqual(outcome.applied_sequences, (2, 3))
+        self.assertEqual(outcome.stale_applied_sequences, (2,))
+        self.assertEqual(journal.snapshot(STREAM), (3, 140, (), 3))
+
+    def test_no_false_stale_from_buffered_fresh_record_or_duplicate(self):
+        journal = DeliveryJournal()
+        journal.ingest(event(1, 100))
+        buffered = event(3, 130)
+        journal.ingest(buffered)
+        outcome = journal.ingest(event(2, 110))
+        self.assertEqual(outcome.status, "OBSERVED")
+        self.assertEqual(outcome.applied_sequences, (2, 3))
+        self.assertEqual(outcome.stale_applied_sequences, ())
+        duplicate = journal.ingest(buffered)
+        self.assertEqual(duplicate.status, "DUPLICATE")
+        self.assertEqual(duplicate.stale_applied_sequences, ())
+
     def test_stale_height_cannot_reduce_maximum(self):
         self.journal.ingest(event(1, 100))
         result = self.journal.ingest(event(2, 90))
         self.assertEqual(result.status, "STALE_OBSERVATION")
+        self.assertEqual(result.stale_applied_sequences, (2,))
         self.assertEqual(self.journal.snapshot(STREAM), (2, 100, (), 2))
 
     def test_missing_source_cannot_mutate(self):
