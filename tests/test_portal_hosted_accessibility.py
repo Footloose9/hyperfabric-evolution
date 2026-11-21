@@ -182,7 +182,10 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         self.assertIn("XRPL", roles[2]["name"])
 
         # Genuine graph JS: selection updates pressed state without network.
-        self.driver.click('.filter-button[data-mode="roles"]')
+        self.driver.execute(
+            'document.querySelector(\'.filter-button[data-mode="roles"]\').focus();'
+        )
+        send_key(self.driver, "\ue007")  # Activate focused button with Enter.
         graph = self.driver.execute("""
             return {
               rolesPressed:document.querySelector('[data-mode="roles"]')
