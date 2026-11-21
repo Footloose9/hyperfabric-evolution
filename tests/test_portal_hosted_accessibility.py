@@ -97,6 +97,7 @@ class TestHostedPortalAccessibility(unittest.TestCase):
               innerWidth:window.innerWidth,
               clientWidth:document.documentElement.clientWidth,
               visualWidth:window.visualViewport && window.visualViewport.width,
+              visualScale:window.visualViewport && window.visualViewport.scale,
               pageWidth:document.documentElement.scrollWidth,
               bodyWidth:document.body.scrollWidth,
               bodyOverflow:getComputedStyle(document.body).overflowX,
@@ -132,7 +133,8 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         """)
 
     def test_desktop_landmarks_graph_and_semantics(self):
-        set_viewport(self.driver, 1280, 900)
+        self.driver.api("POST",self.driver.prefix+"/window/rect",
+                        {"width":1280,"height":900})
         observed = self.read_layout()
         print("DESKTOP_OVERFLOW_DIAGNOSTIC",json.dumps(observed),flush=True)
         self.assertEqual(observed["innerWidth"], 1280)
@@ -182,10 +184,11 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         self.assertIn("XRPL", roles[2]["name"])
 
         # Genuine graph JS: selection updates pressed state without network.
-        self.driver.execute(
-            'document.querySelector(\'.filter-button[data-mode="roles"]\').focus();'
+        role_button = self.driver.element('.filter-button[data-mode="roles"]')
+        self.driver.api(
+            "POST",self.driver.prefix+"/element/"+role_button+"/value",
+            {"text":"\ue007"},  # W3C native Send Keys: Enter to actual button
         )
-        send_key(self.driver, "\ue007")  # Activate focused button with Enter.
         graph = self.driver.execute("""
             return {
               rolesPressed:document.querySelector('[data-mode="roles"]')
@@ -212,7 +215,10 @@ class TestHostedPortalAccessibility(unittest.TestCase):
             layout=self.read_layout()
             print("MOBILE_OVERFLOW_DIAGNOSTIC",width,json.dumps(layout),flush=True)
             self.assertEqual(layout["clientWidth"],width)
-            self.assertEqual(layout["visualWidth"],width)
+            self.assertAlmostEqual(
+                layout["visualWidth"]*layout["visualScale"],width,delta=2,
+                msg="Emulated visual viewport must map to actual device pixels",
+            )
             self.assertLessEqual(layout["bodyWidth"],width+2)
             self.assertEqual(layout["bodyOverflow"],"hidden")
             self.assertTrue(all("ambient" in e["css"]
@@ -229,8 +235,7 @@ class TestHostedPortalAccessibility(unittest.TestCase):
                 self.assertGreater(link["height"],14)
                 self.assertGreaterEqual(link["left"],-2)
                 self.assertLessEqual(link["right"],width+2)
-            if width==390:
-                self.assertEqual(snapshot(self.driver,"mobile_390")[0],390)
+            self.assertEqual(snapshot(self.driver,"mobile_"+str(width))[0],width)
 
         # Keyboard-only access to first skip link from a fresh page.
         self.driver.api("POST",self.driver.prefix+"/url",
