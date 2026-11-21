@@ -1,6 +1,6 @@
 # Hyperfabric Evolution — public lab roadmap
 
-This page describes **only this public repository**. Blockchain is the implemented example domain; agentic AI and automation are additional proposed public research areas. The roadmap is a discussion aid, not a statement about any private product or runtime and not a commitment to deliver or operate trading infrastructure.
+This roadmap describes **only independently reviewed public-source work**. Implemented examples span synthetic blockchain evidence and a limited manual XRPL read-only preview, plus offline synthetic agent/tool conformance and software-verification tests. Broader AI automation, security, privacy, cryptographic protocols and secure communication are **public research directions**, not deployed services or private-project disclosures. This is not a product-release or trading-infrastructure commitment.
 
 ## Available now (verified public scope)
 
@@ -8,6 +8,10 @@ This page describes **only this public repository**. Blockchain is the implement
 - An offline Python test suite with synthetic, non-sensitive inputs; includes a bounded chain-scoped graph traversal primitive that has **no** live data connector. Test counts change as contributors add cases.
 - Contribution and publication criteria for public research.
 - A standalone interactive **synthetic evidence graph portal** built without external services or user credentials. It is not a live blockchain explorer.
+- The published **static synthetic Source Evidence Explorer**, with invented XRPL/Xahau/EVM source records, distinct asset identities, coverage limits and cross-chain falsifiers. It does not ingest live network events.
+- A separate, **manual XRPL Mainnet read-only viewer** that displays provider-reported ledger data and native-XRP balances upon user request. It does not independently verify consensus, identify account owners or sign transactions.
+- **Offline agent/tool evidence-conformance tests**, using fictional task identities, digest checks, simulated decisions, replay and cancellation refusal. These do not authenticate actors, execute tasks, implement production MCP/A2A or run an agent fleet.
+- Public-source contribution, provenance, privacy-disclosure and release-boundary tests; their simulated approvals are not real production authority.
 
 ## Next: proposed community-friendly improvements
 
@@ -23,8 +27,8 @@ The following are open proposals. Scope and priority are subject to review.
    - Acceptance: no private investigator records or person-identifying allegations.
 5. **Chain-aware identifier conformance:** Document XRPL classic-token currency shapes, case sensitivity and MPT issuance IDs; compare applicable CAIP-2/10/19 profiles using independently sourced synthetic examples.
    - Acceptance: negative tests for wrong network and wrong asset class; do not claim unsupported namespace registration.
-6. **Public explorer prototype:** Design a synthetic, offline read-only source/asset/event explorer with completeness and uncertainty indicators.
-   - Acceptance: reproducible fixtures, accessible desktop/mobile views, no live RPC or signing requirements. See [explorer proposal](docs/EXPLORER_PROPOSAL.md).
+6. **Expand the published synthetic explorer:** Extend the [offline Source Evidence Explorer](docs/source-explorer.html) with better source-quality falsifiers and accessibility tests. A complete live multichain indexer remains a separate proposal.
+   - Acceptance: invented fixtures, explicit unknown/partial coverage, accessible desktop/mobile views and no implicit RPC or signing. See [explorer proposal](docs/EXPLORER_PROPOSAL.md).
 7. **Wallet-neutral view-only model:** Propose synthetic account/asset/balance display contracts across separately identified chains, with explicit unknown/stale states.
    - Acceptance: no private keys, real account data, wallet coupling or financial authority. See [wallet interoperability proposal](docs/WALLET_INTEROP_PROPOSAL.md).
 8. **Other ecosystems:** Invite Xahau, EVM, Solana, Cosmos and Bitcoin contributors to identify source-backed, independently publishable protocol test cases.
@@ -36,15 +40,28 @@ The following are open proposals. Scope and priority are subject to review.
 11. **Read-only observation tooling (later proposal):** A deterministic, offline evidence-fixture validator and optional bounded public-source adapters, with abstention for stale, incomplete or contradictory inputs.
    - Acceptance: no autonomous accusation, wallet actions, market trading, duplicate monitoring scheduler, or unreviewed user-data collection.
 
-## Additional proposed research: AI and automation (not implemented)
+## AI and automation: offline tests implemented; deployed services still proposed
 
-1. **Agent and tool interoperability:** Study public MCP/A2A specifications through versioned synthetic request/response examples, without asserting authenticated authority.
+**Available as an offline synthetic model:** [Agent/tool evidence conformance](docs/AGENT_TOOL_CONFORMANCE_RFC.md) distinguishes requested, observed, verified, accepted and refused synthetic events. It cannot authenticate a real caller, run agents or establish an actual tool effect.
+
+1. **Agent and tool interoperability:** Extend public MCP/A2A specification comparisons using versioned synthetic request/response examples, without asserting authenticated authority or standards certification.
 2. **Durable workflow failure cases:** Test duplicates, out-of-order responses, interrupted work, cancellation, retries, source freshness and missing approvals offline.
 3. **Model-output verification:** Challenge untrusted tool text, contradictory outputs and unsupported claims; define deterministic refusal and abstention conditions.
 4. **Software provenance:** Compare dependency, artifact-integrity and supply-chain verification standards; pin sources and review licenses before imports.
 5. **Open-source reciprocity:** Prefer public standard conformance, small upstream fixes and independently useful adapters rather than duplicated agents or schedulers.
 
-See the [AI and automation research proposal](docs/AI_AUTOMATION_RESEARCH.md). Separate public-only source review and ordinary GitHub CI apply to any future implementation.
+See [AI and automation research](docs/AI_AUTOMATION_RESEARCH.md). Separate public-only source review and ordinary GitHub CI apply to any future implementation.
+
+## Proposed public research: security, privacy, cryptography and communications
+
+These are **open, standards-based research topics**, not implemented secure messaging, key custody, privacy infrastructure or a production security product.
+
+1. **Security assurance:** Publish threat models and fabricated adversarial test vectors for trust boundaries, authentication claims, untrusted tool inputs and software supply-chain integrity. Synthetic passing tests never certify a real system.
+2. **Privacy engineering:** Research data minimization, public/secret separation, leakage prevention, metadata exposure and independently testable privacy claims without collecting private user records.
+3. **Cryptographic protocol correctness:** Compare publicly documented hash, signature, proof, key-agreement and provenance formats using independently publishable, non-secret test vectors. No real issuer, signer or custody integration is implied.
+4. **Communication-protocol reliability and security:** Study public message identity, replay, delivery ordering, authentication boundaries and privacy trade-offs with fictional endpoints. No operational encrypted messaging service or private communication design is disclosed.
+
+Contributions must cite independently reviewable public standards, respect software licensing, pass privacy/publication review and distinguish model assumptions from deployed assurances.
 
 ## Possible later topics (not implemented or committed)
 
