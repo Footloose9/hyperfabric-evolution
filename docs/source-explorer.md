@@ -1,6 +1,6 @@
-# Source Evidence Explorer — public-original candidate
+# Source Evidence Explorer — published synthetic demonstration
 
-Status: **isolated, unmerged implementation candidate** for [public issue #8](https://github.com/Footloose9/hyperfabric-evolution/issues/8) and the [public explorer RFC](EXPLORER_PROPOSAL.md). This is independently authored public-only source. No private Atlas, Explorer, wallet, investigation or Root software was copied. Publication classification proposed for each file: PUBLIC_ORIGINAL (code, CSS, HTML, tests), PUBLIC_SYNTHETIC (fixtures). Final maintainer review remains required.
+Status: **public, static synthetic demonstration** merged through [PR #47](https://github.com/Footloose9/hyperfabric-evolution/pull/47) for [public issue #8](https://github.com/Footloose9/hyperfabric-evolution/issues/8) and the [public explorer RFC](EXPLORER_PROPOSAL.md). The source was independently reviewed and authored for public use; no private Atlas, Explorer, wallet, investigation or Root software was copied. Source, styles, markup and explanatory documentation are PUBLIC_ORIGINAL; the fabricated regression fixtures are PUBLIC_SYNTHETIC. GitHub Pages deployment is separately verified from Git merge acceptance.
 
 ## What works offline
 
@@ -22,4 +22,4 @@ All identity checks are restricted synthetic teaching checks, not full XRPL curr
 
 ## Testing and publication
 
-Run node --test tests/source-explorer.test.cjs in this candidate root. The Python standard-library integration test also invokes Node when available. Files are deliberately named separately from existing docs/index.html, docs/site.js, docs/site.css, docs/xrpl-live.* and ongoing community graph bridge work. After independent source/licensing/publication review, the candidate can be proposed as a standalone GitHub Pages route; homepage navigation is a separate conflict-aware follow-up.
+Run node --test tests/source-explorer.test.cjs in this candidate root. The Python standard-library integration test also invokes Node when available. Files are deliberately named separately from existing docs/index.html, docs/site.js, docs/site.css, docs/xrpl-live.* and ongoing community graph bridge work. The standalone demo is available as [the public Source Evidence Explorer](source-explorer.html). Homepage navigation was subsequently added as a separate, conflict-reviewed publication change. The source is still a synthetic educational demonstration, not a live ledger explorer or independently validated data provider.
