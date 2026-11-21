@@ -232,14 +232,6 @@ class TestHostedPortalAccessibility(unittest.TestCase):
                 pressed:document.querySelector('[data-mode="roles"]')
                     .getAttribute("aria-pressed"),focus:document.activeElement.className};
         """),flush=True)
-        self.driver.execute(
-            'document.querySelector(\'.filter-button[data-mode="roles"]\').click();'
-        )
-        print("GRAPH_DOM_EVENT_AFTER",self.driver.execute("""
-            return {edges:document.querySelector("#edge-count").textContent,
-                pressed:document.querySelector('[data-mode="roles"]')
-                    .getAttribute("aria-pressed")};
-        """),flush=True)
         graph = self.driver.execute("""
             return {
               rolesPressed:document.querySelector('[data-mode="roles"]')
@@ -254,7 +246,7 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         """)
         self.assertEqual(graph["rolesPressed"], "true")
         self.assertEqual(graph["flowsPressed"], "false")
-        self.assertGreater(graph["edges"], 0)
+        self.assertEqual(graph["edges"], 3, "Roles filter must show exactly the three synthetic role edges")
         self.assertEqual(graph["sourceRequests"], 0)
         self.assertIn("fabricated", graph["syntheticText"])
         self.assertGreaterEqual(snapshot(self.driver, "desktop_1280")[0], 1000)
