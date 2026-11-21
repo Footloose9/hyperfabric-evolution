@@ -77,7 +77,7 @@ class AIContributorBootstrapContract(unittest.TestCase):
         self.assertIn('addEventListener("click"', self.js)
         self.assertIn("navigator.clipboard.writeText(text)", self.js)
         self.assertIn("prompt.select()", self.js)
-        self.assertIn("Nothing is sent to an AI by this website.", self.page)
+        self.assertIn("Copy-only mode: no AI chat is launched", self.page)
 
 
 if __name__ == "__main__":

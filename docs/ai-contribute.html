@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./ai-contribute.css">
   <link rel="stylesheet" href="./retro-future.css">
   <script src="./ai-contribute.js" defer></script>
+  <script src="./ai-provider-launcher.js" defer></script>
 </head>
 <body class="ai-onboarding forge-ai">
   <a class="skip-link" href="#main">Skip to contributor instructions</a>
@@ -34,16 +35,17 @@
         <div>
           <p class="kicker">OPEN CHANNEL / HUMAN-LED / ANY AI ASSISTANT</p>
           <h1>Bring your AI.<br><em>Build what can be proven.</em></h1>
-          <p class="lead">You don't need to know this project's internal systems. Copy one public-only starter prompt into an AI assistant you already use. It can help find a useful issue, plan a small change and prepare a tested contribution for your approval.</p>
+          <p class="lead">You don't need to know this project's internal systems. Choose an assistant below. One tap opens it with our public starter prompt prefilled where supported, or copied for a quick paste. You decide when to press Send, what work to approve, and whether to submit a pull request.</p>
           <div class="ai-hero-tags"><span>No project account required</span><span>No wallet</span><span>You approve every change</span></div>
-          <a class="button button--secondary" href="#starter">Get the universal prompt</a>
+          <a class="button button--primary" href="#launch">Choose your AI</a>
+          <a class="button button--secondary" href="#starter">Inspect the starter prompt</a>
         </div>
         <aside class="ai-overview" aria-label="Contribution sequence">
           <p class="ai-overview-label">CONTRIBUTOR HANDSHAKE / 03 STEPS</p>
           <ol class="ai-overview-steps">
-            <li><strong>01 / COPY</strong><span>Take the public starter prompt</span></li>
-            <li><strong>02 / PASTE</strong><span>Use your existing AI assistant</span></li>
-            <li><strong>03 / REVIEW</strong><span>Approve one issue, tests and PR</span></li>
+            <li><strong>01 / CHOOSE</strong><span>Pick an assistant you already use</span></li>
+            <li><strong>02 / SEND</strong><span>Review the prefilled or copied prompt</span></li>
+            <li><strong>03 / APPROVE</strong><span>Decide which public task proceeds</span></li>
           </ol>
           <p class="ai-overview-foot">The AI does not join a worker swarm, gain credentials or merge anything by itself.</p>
         </aside>
@@ -51,12 +53,80 @@
     </section>
     <section class="section section--muted ai-steps-section" aria-labelledby="steps-title">
       <div class="container">
-        <div class="section-heading"><div><p class="kicker">NO INSTALLATION REQUIRED</p><h2 id="steps-title">Start contributing in three steps.</h2></div><p>Works with ChatGPT, Claude, Gemini, Copilot, local models or another assistant. Tool access differs; the prompt tells the AI to disclose limitations rather than pretend.</p></div>
+        <div class="section-heading"><div><p class="kicker">NO INSTALLATION REQUIRED</p><h2 id="steps-title">Contribute without relay work.</h2></div><p>Works with ChatGPT, Claude, Gemini, Copilot, local models or another assistant. Tool access differs; the prompt tells the AI to disclose limitations rather than pretend.</p></div>
         <div class="ai-steps">
-          <article class="ai-step"><span class="ai-step-number">01</span><h3>Copy the prompt</h3><p>One prompt tells the AI where to find current public rules, issues and tests. You can read or edit it before sharing.</p></article>
-          <article class="ai-step"><span class="ai-step-number">02</span><h3>Paste it into your AI</h3><p>Ask for a small issue that isn't already claimed. The AI should explain what it can really access and ask before making changes.</p></article>
-          <article class="ai-step"><span class="ai-step-number">03</span><h3>Review and contribute</h3><p>Approve a scoped change, inspect its diff and tests, then submit a pull request using your own GitHub permissions.</p></article>
+          <article class="ai-step"><span class="ai-step-number">01</span><h3>Pick your AI</h3><p>Tap ChatGPT, Claude, Grok, Gemini, a desktop coding assistant, or a local Open WebUI instance.</p></article>
+          <article class="ai-step"><span class="ai-step-number">02</span><h3>Review, then Send</h3><p>Supported assistants may prefill automatically. Otherwise, the prompt is copied for one paste. Never auto-send.</p></article>
+          <article class="ai-step"><span class="ai-step-number">03</span><h3>Approve useful work</h3><p>Your assistant checks open issues and tests before proposing one focused contribution for your approval.</p></article>
         </div>
+      </div>
+    </section>
+    <section class="section ai-launch-section" id="launch" aria-labelledby="launch-title">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">ONE TAP / YOUR OWN AI</p>
+            <h2 id="launch-title">Choose your AI. Open the channel.</h2>
+          </div>
+          <p>These links launch third-party services or installed desktop apps. The public starter prompt travels in the link only where prefill is offered. You always decide when to send it.</p>
+        </div>
+        <div class="ai-provider-grid" aria-label="Popular AI assistants">
+          <a class="ai-provider-card" data-ai-provider="chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">
+            <strong>ChatGPT</strong><span>Try prefilled composer</span><small>Open ChatGPT</small>
+          </a>
+          <a class="ai-provider-card" data-ai-provider="claude" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">
+            <strong>Claude</strong><span>Try prefilled composer</span><small>Open Claude</small>
+          </a>
+          <a class="ai-provider-card" data-ai-provider="grok" href="https://grok.com/" target="_blank" rel="noopener noreferrer">
+            <strong>Grok</strong><span>Prompt and send confirmation</span><small>Open Grok</small>
+          </a>
+          <a class="ai-provider-card" data-ai-provider="gemini" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">
+            <strong>Gemini</strong><span>Copy prompt and open</span><small>Open Gemini</small>
+          </a>
+        </div>
+        <p id="launch-guidance" class="ai-launch-guidance">If your AI does not prefill the text, paste from your clipboard and press Send. Login requirements and app-link support vary. <strong>Hyperfabric does not invoke an AI messaging API or press Send for you.</strong></p>
+        <details class="ai-more-providers">
+          <summary>More AI choices, desktop coding assistants and local models</summary>
+          <div class="ai-extra-grid">
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="codex" href="codex://new" target="_blank" rel="noopener noreferrer">
+              <strong>Codex desktop</strong><span>Documented composer prefill; app required</span>
+            </a>
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="claudeDesktop" href="claude://claude.ai/new" target="_blank" rel="noopener noreferrer">
+              <strong>Claude Desktop</strong><span>Documented prefill; app required</span>
+            </a>
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="claudeCode" href="https://claude.ai/code/new" target="_blank" rel="noopener noreferrer">
+              <strong>Claude Code</strong><span>Documented Code composer; account access needed</span>
+            </a>
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="copilot" href="https://copilot.microsoft.com/" target="_blank" rel="noopener noreferrer">
+              <strong>Microsoft Copilot</strong><span>Copy prompt and open</span>
+            </a>
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="perplexity" href="https://www.perplexity.ai/" target="_blank" rel="noopener noreferrer">
+              <strong>Perplexity</strong><span>Copy and open; no auto-search</span>
+            </a>
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="deepseek" href="https://chat.deepseek.com/" target="_blank" rel="noopener noreferrer">
+              <strong>DeepSeek</strong><span>Copy prompt and open</span>
+            </a>
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="mistral" href="https://chat.mistral.ai/chat" target="_blank" rel="noopener noreferrer">
+              <strong>Mistral Le Chat</strong><span>Copy prompt and open</span>
+            </a>
+            <a class="ai-provider-card ai-provider-card--compact" data-ai-provider="poe" href="https://poe.com/" target="_blank" rel="noopener noreferrer">
+              <strong>Poe</strong><span>Copy prompt and open</span>
+            </a>
+          </div>
+          <div class="ai-local-launch">
+            <div>
+              <h3>Local models via Open WebUI</h3>
+              <p>Already running Ollama, Open WebUI or a self-hosted model? Enter your own Open WebUI address. Its documented <code>?q=</code> option prefills the composer. A bare Ollama server or LM Studio API is not a browser chat interface.</p>
+              <label for="local-webui-url">Open WebUI address (only your device or an HTTPS server you choose)</label>
+              <input id="local-webui-url" type="url" spellcheck="false" value="http://127.0.0.1:3000/" autocomplete="off" aria-describedby="local-webui-hint">
+              <small id="local-webui-hint">No local service is installed or contacted by this page; the link opens only if you tap it.</small>
+            </div>
+            <a class="button button--secondary ai-local-button" data-ai-provider="webui" href="http://127.0.0.1:3000/" target="_blank" rel="noopener noreferrer">Open my local AI</a>
+          </div>
+        </details>
+        <p id="provider-status" class="ai-provider-status" role="status" aria-live="polite">Choose an assistant above. The page will also try to copy the public prompt, so you can paste it if prefill is unavailable.</p>
+        <noscript><p class="ai-launch-guidance">JavaScript is disabled. These links open the AI provider without a prompt; manually select and copy the full prompt in the next section.</p></noscript>
+        <p class="ai-provider-fineprint">Provider names identify third-party options, not sponsorship. The prompt is public, but prefilled URLs can appear in browser history or a provider's logs. Never insert private information. <a href="./AI_CONTRIBUTOR_BOOTSTRAP.md">View the complete prompt and launcher limitations</a>.</p>
       </div>
     </section>
     <section class="section ai-starter" id="starter" aria-labelledby="starter-title">
@@ -91,7 +161,7 @@ IF YOU LACK GITHUB OR TERMINAL TOOLS
 Say so. You can still examine public pages I provide, help select an issue, write a patch or tests for review, and guide me through a fork and pull request. Stop at each approval boundary.
 
 Start by stating what you can actually access, then identify safe, current, available contribution opportunities.</textarea>
-          <p id="copy-status" class="ai-copy-status" role="status" aria-live="polite">Ready to copy. Nothing is sent to an AI by this website.</p>
+          <p id="copy-status" class="ai-copy-status" role="status" aria-live="polite">Copy-only mode: no AI chat is launched or submitted by this button.</p>
           <p id="prompt-help" class="ai-prompt-help">If your browser blocks one-click copying, select the text and copy it manually. The <a href="./AI_CONTRIBUTOR_BOOTSTRAP.md">public written guide</a> contains the same prompt.</p>
         </div>
         <div class="ai-next">

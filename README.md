@@ -54,7 +54,7 @@ For a no-clone introduction, see [Getting started](docs/GETTING_STARTED.md). Non
 
 ## Contribute with the AI assistant you already use
 
-The [AI contributor quickstart](docs/ai-contribute.html) lets anyone copy one public-only prompt into their own AI assistant, check current issues, and prepare a small, reviewable contribution. No project-hosted AI, wallet or separate account is required. The human contributor approves proposed file changes and GitHub write actions. The [written universal prompt](docs/AI_CONTRIBUTOR_BOOTSTRAP.md) is freely inspectable. AI access and coding tools vary; no tool or test result is assumed.
+The [AI contributor quickstart](docs/ai-contribute.html) now offers **launch buttons for ChatGPT, Claude, Grok, Gemini, desktop coding assistants, and local Open WebUI**. On one click it requests copying the public prompt and opens the selected assistant with optional best-effort prefill. Visitors review and send; if a service rejects prefill, one paste is still needed. The AI checks current issues and prepares a small, reviewable contribution. No project-hosted AI, wallet or separate account is required. The human contributor approves proposed file changes and GitHub write actions. The [written universal prompt](docs/AI_CONTRIBUTOR_BOOTSTRAP.md) is freely inspectable. AI access and coding tools vary; no tool or test result is assumed.
 
 ## How can the community contribute?
 
