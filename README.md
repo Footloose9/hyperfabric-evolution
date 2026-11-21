@@ -4,11 +4,11 @@
 
 Our goal is to make important technical claims **inspectable, independently testable, and reproducible**. Our implemented examples began with XRP Ledger (XRPL) identity and synthetic chain-aware evidence. We also invite public, standards-based research into AI agents, automation and software provenance, clearly separating implemented results from proposed work.
 
-**Project stage: early public preview.** The implemented code remains an offline XRPL identity example, synthetic chain-aware evidence tools and deterministic tests. No live ledger explorer, wallet, trading engine, threat monitor, production forensic service, deployed AI agents or autonomous workflow system exists in this public repository. Additional research areas are proposals, not releases or product commitments.
+**Project stage: early public preview.** The public lab includes offline XRPL identity examples, synthetic evidence tools and a **separate, deployed manual XRPL Mainnet read-only viewer**. The viewer queries provider-reported validated ledger data and native-XRP balances for public addresses; it is not an independently verified consensus oracle. No full-featured explorer, wallet, trading engine, threat monitor, production forensic service, deployed AI agents or autonomous financial system exists here. Other research areas remain proposals.
 
 ## Explore the interactive research portal
 
-A self-contained, browser-based **synthetic evidence graph** lets newcomers explore chain-aware relationships and see how evidence types differ. No wallet or API key is needed, and the demo never requests live ledger data. The verified, published portal is at [Hyperfabric Evolution](https://footloose9.github.io/hyperfabric-evolution/); its complete source is in [`docs/index.html`](docs/index.html), [`docs/site.js`](docs/site.js), and [`docs/site.css`](docs/site.css).
+The public site offers two distinct experiences: a browser-based **synthetic evidence graph** using fabricated data, and a [manual XRPL Mainnet read-only viewer](https://footloose9.github.io/hyperfabric-evolution/xrpl-live.html) using real third-party provider observations. Neither needs a wallet or API key. The synthetic graph never fetches live data; the separate viewer only queries the provider when requested, discloses account-query privacy limits and cannot sign or submit transactions. The verified, published portal is at [Hyperfabric Evolution](https://footloose9.github.io/hyperfabric-evolution/); its complete source is in [`docs/index.html`](docs/index.html), [`docs/site.js`](docs/site.js), and [`docs/site.css`](docs/site.css).
 
 ## Public research areas
 
@@ -20,7 +20,7 @@ See [community tracks](docs/COMMUNITY_TRACKS.md) and the [AI and automation rese
 
 On the XRP Ledger, an issued token cannot be identified reliably by its ticker alone. Its identity includes both its **currency code and issuer account**. Two assets labeled `USD` can be different assets when their issuers differ. Native XRP, by contrast, has no issuer.
 
-That is one concrete example of why verifiable data models matter. The longer-term public research direction includes **read-only explorers, multi-chain identity, wallet-neutral view-only interoperability, reproducible public-ledger tools, and evidence-based threat monitoring**. These are proposed community workstreams, **not released functionality**. See the [community tracks](docs/COMMUNITY_TRACKS.md).
+That is one concrete example of why verifiable data models matter. The longer-term public research direction includes **read-only explorers, multi-chain identity, wallet-neutral view-only interoperability, reproducible public-ledger tools, and evidence-based threat monitoring**. The limited manual XRPL viewer is **already released as a noncommercial research preview**. Broader explorers, multi-chain adapters, wallet-neutral interoperability and threat-monitoring services remain proposed, not released products. See the [community tracks](docs/COMMUNITY_TRACKS.md).
 
 ## What works today?
 
@@ -30,10 +30,11 @@ That is one concrete example of why verifiable data models matter. The longer-te
 | Synthetic, offline unit tests | Reproducible, no RPC calls or secrets; test count evolves | [`tests/`](tests/) |
 | Chain-scoped synthetic evidence graph | Bounded, typed traversal without real ledger input or attribution | [`hyperfabric_public/evidence_graph.py`](hyperfabric_public/evidence_graph.py) |
 | XRPL synthetic typed-event conformance | Offline decisions for fabricated native/issued/MPT Payment and Offer observations; not a live decoder | [Conformance guide](docs/XRPL_TYPED_EVENT_CONFORMANCE.md) |
-| Interactive public research portal | Static, offline-data visualization of synthetic chains and typed edges; **not a live explorer** | [`docs/index.html`](docs/index.html) |
-| AI and automation interoperability | **Research proposal; not implemented** | [Proposal](docs/AI_AUTOMATION_RESEARCH.md) |
+| Interactive public research portal | Separate synthetic evidence graph, read-only viewer link and public research-track navigation | [`docs/index.html`](docs/index.html) |
+| Manual XRPL Mainnet ledger and native-XRP balance viewer | **Deployed noncommercial read-only preview**; provider-reported data, no independent consensus proof, signing or background polling | [Live viewer](https://footloose9.github.io/hyperfabric-evolution/xrpl-live.html) · [limitations](docs/XRPL_READONLY_LIVE_PILOT.md) |
+| AI and automation interoperability | **Public synthetic research, not deployed agent services** | [Proposal](docs/AI_AUTOMATION_RESEARCH.md) |
 | Community contribution process | Open | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
-| Read-only explorer, wallet UI, live ledger data, Xahau/EVM and other chain adapters | **Not implemented** | [Community tracks](docs/COMMUNITY_TRACKS.md) |
+| Full explorer, wallet UI, automated ledger ingestion, issued-token/MPT balance inspection, Xahau/EVM and other chain adapters | **Not implemented** | [Community tracks](docs/COMMUNITY_TRACKS.md) |
 
 The identity module checks a **restricted syntactic subset** of XRPL classic-token currency and account strings, **not** the full protocol's case-sensitive currency formats, XRP Ledger MPT identifiers, address checksums, canonical currency encoding, ledger existence, ownership, trust lines, balances, price, or network validity. It must not be used as a security or execution validator.
 
