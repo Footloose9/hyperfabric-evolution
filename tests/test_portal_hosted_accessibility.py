@@ -183,9 +183,21 @@ class TestHostedPortalAccessibility(unittest.TestCase):
         )
         self.assertIn("XRPL", roles[2]["name"])
 
-        # Genuine graph JS: selection updates pressed state without network.
-        # The desktop uses an actual W3C window resize, not a CDP mobile
-        # emulation that can leave WebDriver's pointer coordinates misaligned.
+        # ChromeDriver's implicit scroll can race html scroll-behavior:smooth.
+        # Bring the actual control into view immediately before native click.
+        target = self.driver.execute("""
+            const b=document.querySelector('.filter-button[data-mode="roles"]');
+            b.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"});
+            const r=b.getBoundingClientRect();
+            return {top:r.top,bottom:r.bottom,height:innerHeight,
+                    scrollY:window.scrollY,
+                    hit:document.elementFromPoint(r.left+r.width/2,
+                         r.top+r.height/2)===b};
+        """)
+        print("DESKTOP_GRAPH_TARGET",target,flush=True)
+        self.assertGreaterEqual(target["top"],0)
+        self.assertLessEqual(target["bottom"],target["height"])
+        self.assertTrue(target["hit"])
         self.driver.click('.filter-button[data-mode="roles"]')
         graph = self.driver.execute("""
             return {
