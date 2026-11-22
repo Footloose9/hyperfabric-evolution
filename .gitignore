@@ -2,6 +2,7 @@
 *
 !.gitignore
 !README.md
+!AGENTS.md
 !LICENSE
 !CONTRIBUTING.md
 !SECURITY.md
@@ -33,6 +34,9 @@
 !docs/AI_UPSTREAM_CANDIDATES.md
 !docs/ai_upstream_candidates.json
 !docs/RESEARCH_PORTFOLIO_COVERAGE.md
+!docs/AI_CONTRIBUTOR_BOOTSTRAP.md
+!docs/ai-contribute.html
+!docs/CONTRIBUTION_ASSURANCE_PROTOCOL.md
 !docs/index.html
 !docs/site.css
 !docs/site.js
@@ -71,5 +75,7 @@
 !tests/test_public_portal.py
 !tests/test_upstream_catalog.py
 !tests/test_ai_upstream_candidates.py
+!tests/contribution_integrity.py
+!tests/test_contribution_integrity.py
 !tests/test_xrpl_conformance.py
 !tests/capability-gallery.test.cjs
