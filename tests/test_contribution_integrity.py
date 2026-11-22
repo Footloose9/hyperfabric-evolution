@@ -85,6 +85,26 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         git(self.root, "commit", "-qm", "deletion")
         self.assertIn("deletion requires", " ".join(verify_pr_diff(self.root, self.base)))
 
+    def test_hidden_history_secret_is_not_hidden_by_later_deletion(self):
+        # New public objects stay in Git even if the final PR tree no longer has them.
+        historical = self.root / "docs" / "historical.txt"
+        historical.write_text("-----BEGIN " + "PRIVATE KEY-----\nsynthetic\n", encoding="utf-8")
+        git(self.root, "add", "-f", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "historical leak attempt")
+        git(self.root, "rm", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "hide previous commit")
+        issues = self.commit()
+        self.assertIn("historical object contains secret marker", " ".join(issues))
+
+    def test_hidden_history_binary_is_not_hidden_by_later_deletion(self):
+        historical = self.root / "docs" / "historical.txt"
+        historical.write_bytes(b"fictional\x00data")
+        git(self.root, "add", "-f", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "historical binary")
+        git(self.root, "rm", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "hide previous binary")
+        self.assertIn("historical binary object", " ".join(self.commit()))
+
     def test_deny_all_cannot_be_removed(self):
         self.assertIn("deny-all", " ".join(_exact_allowlist(b"!docs/\n")))
 
