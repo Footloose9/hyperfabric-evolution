@@ -347,6 +347,34 @@ class OfflineXRPLSourceTests(unittest.TestCase):
         obj["tx_json"]["hash"] = C
         self.assertEqual(evaluate(page(obj)).transactions[0].effect_state, "REFUSE")
 
+    def test_embedded_ledger_index_requires_integer_not_numeric_equality(self):
+        valid = tx()
+        valid["tx_json"]["ledger_index"] = 11
+        self.assertEqual(
+            evaluate(page(valid)).disposition, "SIMULATED_PAGE_OBSERVATION"
+        )
+
+        for invalid in (11.0, "11", None):
+            with self.subTest(inner_index=invalid):
+                item = tx()
+                item["tx_json"]["ledger_index"] = invalid
+                assessed = evaluate(page(item))
+                self.assertEqual(assessed.disposition, "INCONCLUSIVE")
+                self.assertEqual(
+                    assessed.transactions[0].reason, "INVALID_TRANSACTION_ANCHOR"
+                )
+
+        boolean_index = tx(ledger_index=1)
+        boolean_index["tx_json"]["ledger_index"] = True
+        boolean_page = page(boolean_index)
+        boolean_page["result"]["ledger_index_min"] = 1
+        boolean_page["result"]["ledger_index_max"] = 2
+        assessed = evaluate(boolean_page)
+        self.assertEqual(assessed.disposition, "INCONCLUSIVE")
+        self.assertEqual(
+            assessed.transactions[0].reason, "INVALID_TRANSACTION_ANCHOR"
+        )
+
     def test_malformed_metadata_or_result_code_never_assumed_success(self):
         for change in (
             {"TransactionResult": "telFAILED_PROCESSING"},

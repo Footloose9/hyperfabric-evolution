@@ -181,7 +181,9 @@ def _tx(entry: object, *, min_index: int, max_index: int,
             or ("hash" in tx and (
                 not isinstance(tx["hash"], str)
                 or tx["hash"].upper() != h.upper()))
-            or ("ledger_index" in tx and tx["ledger_index"] != idx)):
+            or ("ledger_index" in tx and (
+                type(tx["ledger_index"]) is not int
+                or tx["ledger_index"] != idx))):
         return incomplete("INVALID_TRANSACTION_ANCHOR", effect="REFUSE")
     if "AffectedNodes" in meta and not isinstance(meta["AffectedNodes"], list):
         return incomplete("MALFORMED_AFFECTED_NODES", effect="REFUSE")
