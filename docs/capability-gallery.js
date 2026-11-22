@@ -251,6 +251,9 @@
     ui["run-check"].addEventListener("click", runCheck);
     ui["reset-check"].addEventListener("click", showCase);
     showCase(); /* only renders static fictional input; never evaluates or fetches */
+    ui["case-picker"].disabled = false;
+    ui["run-check"].disabled = false;
+    ui["reset-check"].disabled = false;
     return true;
   }
   return {
