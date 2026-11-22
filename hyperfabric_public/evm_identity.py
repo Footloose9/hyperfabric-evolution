@@ -5,7 +5,7 @@ signer, balance lookup, address checksum or on-chain existence verification.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import re
 
 _CHAIN = re.compile(r"eip155:(0|[1-9][0-9]{0,31})\Z")
@@ -43,7 +43,7 @@ class EvmTokenIdentity:
     """Chain + ERC-20 contract; symbol is display text, not identity."""
     chain_id: str
     contract: str
-    symbol: str
+    symbol: str = field(compare=False)
 
     def __post_init__(self) -> None:
         _chain(self.chain_id)
@@ -76,7 +76,7 @@ class EvmLogEvidence:
             raise ValueError("typed ERC-20 asset required")
         if self.chain_id != self.asset.chain_id:
             raise ValueError("source chain differs from asset chain")
-        if self.state not in _STATES:
+        if not isinstance(self.state, str) or self.state not in _STATES:
             raise ValueError("unsupported confirmation/finality claim")
         if self.transaction_hash is not None:
             _hash(self.transaction_hash)

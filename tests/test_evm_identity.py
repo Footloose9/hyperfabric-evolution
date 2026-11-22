@@ -51,6 +51,8 @@ class EvmIdentityTests(unittest.TestCase):
         a = materialize(self.positives["ethereum-included"]).asset
         renamed = EvmTokenIdentity(a.chain_id, a.contract, "DIFFERENT")
         self.assertEqual(a.asset_type, renamed.asset_type)
+        self.assertEqual(a, renamed)  # display-only symbol is excluded from identity
+        self.assertEqual(hash(a), hash(renamed))
 
     def test_address_case_normalized_only_in_teaching_subset(self):
         a = materialize(self.positives["ethereum-included"]).asset
@@ -81,6 +83,14 @@ class EvmIdentityTests(unittest.TestCase):
         self.assertFalse(hasattr(value, "amount"))
         self.assertFalse(hasattr(value, "bridge_proof"))
         self.assertFalse(hasattr(value, "transfer_confirmed"))
+
+    def test_malformed_event_state_is_controlled_refusal(self):
+        for state in ([], {}, ["INCLUDED"], {"state": "UNKNOWN"}, 1, None):
+            with self.subTest(state=state):
+                case = copy.deepcopy(self.positives["ethereum-included"])
+                case["observation"]["state"] = state
+                with self.assertRaises(ValueError):
+                    materialize(case)
 
     def test_newline_and_nonstring_boundaries_refuse(self):
         for chain in ("eip155:1\n", "eip155:01", "sim:chain", None, 1):
