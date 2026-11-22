@@ -19,6 +19,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Check PR Git-object hygiene (not publication approval)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git cat-file -e "${BASE_SHA}:tests/contribution_integrity.py" 2>/dev/null; then
+            git show "${BASE_SHA}:tests/contribution_integrity.py" > /tmp/hf_contribution_integrity.py
+            python3 -B /tmp/hf_contribution_integrity.py --base "${BASE_SHA}" --head HEAD
+          else
+            echo "Bootstrap: PR-supplied guard, NOT trusted-base validation. Extra review required."
+            python3 -B tests/contribution_integrity.py --base "${BASE_SHA}" --head HEAD
+          fi
       - name: Verify Python environment
         run: python3 --version
       - name: Run deterministic offline tests
