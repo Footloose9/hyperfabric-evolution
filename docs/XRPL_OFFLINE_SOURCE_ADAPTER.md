@@ -22,7 +22,7 @@ The module is `hyperfabric_public/xrpl_offline_rpc_adapter.py`, exercised by `te
 | Pagination | `MARKER_PRESENT_PARTIAL` or `PAGE_END_ONLY`; no marker does **not** prove all ledger history was available |
 | Provider failures | `tooBusy` and other provider errors return `INCONCLUSIVE`; no indefinite retries or zero-filled values |
 | Contradictions | Malformed transaction or duplicate hash keeps whole-page state `INCONCLUSIVE`, with individual failure evidence retained |
-| Provider comparison | Contradictory same-hash event properties produce `CONFLICT`; matching separately labeled responses are still **unattested source claims** |
+| Provider comparison | Same-hash claims compare all fields of each fabricated transaction entry using an order-independent canonical JSON SHA-256; conflicting `tx_json`/`meta` produces `CONFLICT`, even when selected projected fields agree. Matching separately labeled responses are still **unattested source claims** |
 | Transaction results | `tesSUCCESS` and validated `tec...` outcomes are kept separate from intended effect; unsupported codes do not establish success |
 | Payment delivered value | Uses `meta.delivered_amount` only, **not** requested `Amount`/`DeliverMax`; absent, unavailable, zero or invalid values remain `INCONCLUSIVE` |
 | Asset identity | Native XRP has no issuer; a classic issued asset uses full `(currency, issuer)`; MPT uses a distinct **48-hex issuance ID**; numeric magnitudes and precision are bounded conservatively |
