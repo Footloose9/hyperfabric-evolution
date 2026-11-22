@@ -1,0 +1,55 @@
+{
+  "schema": "hf.bitcoin.synthetic_utxo.v1",
+  "network": "bitcoin:synthetic",
+  "provenance": "PUBLIC_SYNTHETIC",
+  "known_prevouts": [
+    {
+      "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+      "vout": 0,
+      "value_sats": 6000,
+      "script_pubkey_hex": "51"
+    },
+    {
+      "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+      "vout": 1,
+      "value_sats": 4000,
+      "script_pubkey_hex": "51"
+    }
+  ],
+  "transactions": [
+    {
+      "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "inputs": [
+        {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 0,
+          "sequence": 4294967295
+        },
+        {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 1,
+          "sequence": 4294967294
+        }
+      ],
+      "outputs": [
+        {
+          "vout": 0,
+          "value_sats": 7000,
+          "script_pubkey_hex": "51"
+        },
+        {
+          "vout": 1,
+          "value_sats": 2500,
+          "script_pubkey_hex": "51"
+        }
+      ],
+      "inclusion": {
+        "status": "CONFIRMED",
+        "block_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "block_height": 123,
+        "confirmations": 2,
+        "conflicting_txid": null
+      }
+    }
+  ]
+}
