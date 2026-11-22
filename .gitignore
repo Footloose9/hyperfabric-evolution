@@ -30,6 +30,9 @@
 !docs/index.html
 !docs/site.css
 !docs/site.js
+!docs/capability-gallery.html
+!docs/capability-gallery.css
+!docs/capability-gallery.js
 !.github/
 !.github/ISSUE_TEMPLATE/
 !.github/ISSUE_TEMPLATE/bug_report.md
@@ -56,3 +59,4 @@
 !tests/test_public_portal.py
 !tests/test_upstream_catalog.py
 !tests/test_xrpl_conformance.py
+!tests/capability-gallery.test.cjs
