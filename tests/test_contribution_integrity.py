@@ -137,6 +137,48 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         issues = self._transient_then_clean("docs/hidden.txt", "fictional")
         self.assertIn("historical unallowlisted path", " ".join(issues))
 
+
+    def test_unicode_line_separator_cannot_forge_deny_all(self):
+        # Python str.splitlines() recognizes U+2028 and U+0085, while Git
+        # reads .gitignore records as physical lines. Never normalize them
+        # into a synthetic valid '*' policy.
+        for label, separator in (
+            ("unicode-line-separator", "\u2028"),
+            ("unicode-next-line", "\u0085"),
+        ):
+            with self.subTest(label=label):
+                git(self.root, "reset", "--hard", self.base)
+                (self.root / "docs").mkdir(exist_ok=True)
+                malformed = "*" + separator + "!.gitignore\n!docs/\n!docs/ok.txt\n"
+                (self.root / ".gitignore").write_text(malformed, encoding="utf-8")
+                (self.root / "docs" / "private.txt").write_text(
+                    "fictional review-only text\n", encoding="utf-8"
+                )
+                git_decision = subprocess.run(
+                    ["git", "check-ignore", "-q", "--no-index", "--",
+                     "docs/private.txt"], cwd=self.root, check=False,
+                )
+                self.assertEqual(git_decision.returncode, 1)
+                git(self.root, "add", "--", ".gitignore", "docs/private.txt")
+                git(self.root, "commit", "-qm", "synthetic Unicode separator")
+                self.assertIn(
+                    "whitespace",
+                    " ".join(verify_pr_diff(self.root, self.base)),
+                )
+
+    def test_only_physical_newlines_define_ignore_rules(self):
+        self.assertEqual(
+            _exact_allowlist(b"*\n!.gitignore\n!docs/\n!docs/ok.txt\n"), []
+        )
+        self.assertEqual(
+            _exact_allowlist(b"*\r\n!.gitignore\r\n!docs/\r\n!docs/ok.txt\r\n"), []
+        )
+        for separator in ("\u2028", "\u0085", "\v", "\f", "\r"):
+            with self.subTest(separator=repr(separator)):
+                malformed = ("*" + separator + "!.gitignore\n"
+                             "!docs/\n!docs/ok.txt\n").encode("utf-8")
+                self.assertIn("whitespace", " ".join(_exact_allowlist(malformed)))
+
     def test_leading_whitespace_cannot_defeat_deny_all(self):
         (self.root / ".gitignore").write_text(
             " *\n!.gitignore\n!docs/\n!docs/ok.txt\n", encoding="utf-8")

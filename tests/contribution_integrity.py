@@ -33,12 +33,17 @@ def _git(root: Path, *args: str, allowed=(0,)) -> subprocess.CompletedProcess[by
 def _exact_allowlist(raw: bytes) -> list[str]:
     """Reject changed allowlists that disable the deny-all staging default."""
     try:
-        lines = raw.decode("utf-8").splitlines()
+        # Git separates ignore rules at LF (optionally CRLF), not at
+        # Unicode line/paragraph separators or Python's vertical controls.
+        # str.splitlines() can fabricate a valid '*' rule Git never saw.
+        lines = raw.decode("utf-8").split("\n")
     except UnicodeError:
         return [".gitignore is not UTF-8"]
     errors: list[str] = []
     rules: list[str] = []
-    for v in lines:
+    for i, v in enumerate(lines):
+        if i < len(lines) - 1 and v.endswith("\r"):
+            v = v[:-1]  # normalize CRLF only, never lone CR or Unicode NL
         if not v:
             continue
         if v.startswith("#"):
