@@ -1,0 +1,4 @@
+HYPERFABRIC PUBLIC QA NEGATIVE CONTROL ONLY
+This file is intentionally absent from the repository's literal .gitignore public allowlist.
+It contains synthetic, non-sensitive text and must NEVER be merged into main.
+Purpose: demonstrate whether a pull-request-controlled workflow can bypass the required unit-tests guard.
