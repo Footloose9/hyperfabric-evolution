@@ -62,6 +62,14 @@
   function isObject(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
+  /* Reject undeclared own fields, including nonenumerable and symbol keys.
+     This is a fictional record-shape check, not protocol authentication. */
+  function hasExactOwnFields(record, required) {
+    var actual = Reflect.ownKeys(record);
+    return actual.length === required.length && required.every(function (field) {
+      return own(record, field);
+    });
+  }
   function validate(record) {
     if (!isObject(record)) {
       return { ok: false, reason: "An input must be a declared synthetic record." };
@@ -70,6 +78,9 @@
       if (record.kind === "native") {
         if (record.currency !== "XRP" || own(record, "issuer")) {
           return { ok: false, reason: "Native XRP is XRP without an issuer. An issuer field is invalid." };
+        }
+        if (!hasExactOwnFields(record, ["network", "kind", "currency"])) {
+          return { ok: false, reason: "Native XRP fixtures must contain exactly network, kind and currency." };
         }
         return { ok: true, key: "xrpl:synthetic/native:XRP" };
       }
@@ -81,6 +92,9 @@
           reason: "An XRPL issued asset needs a valid synthetic currency and an explicit fictional issuer."
         };
       }
+      if (!hasExactOwnFields(record, ["network", "kind", "currency", "issuer"])) {
+        return { ok: false, reason: "XRPL issued-asset fixtures cannot carry undeclared identity or authority fields." };
+      }
       return { ok: true, key: "xrpl:synthetic/issued:" + record.currency + "/" + record.issuer };
     }
     if (record.network === "eip155:synthetic") {
@@ -91,6 +105,9 @@
           ok: false,
           reason: "An EVM synthetic contract requires its network, fictional contract and symbol."
         };
+      }
+      if (!hasExactOwnFields(record, ["network", "kind", "symbol", "contract"])) {
+        return { ok: false, reason: "EVM synthetic contract fixtures cannot carry foreign or undeclared fields." };
       }
       return { ok: true, key: "eip155:synthetic/contract:" + record.contract };
     }

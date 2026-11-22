@@ -84,6 +84,39 @@ test("invalid records fail closed rather than fabricating an identity", () => {
   }
 });
 
+test("foreign, inherited and hidden fields refuse synthetic identity admission", () => {
+  const issued = gallery.getCase("different").left;
+  const native = gallery.getCase("native").left;
+  const evm = gallery.getCase("crosschain").right;
+  const foreign = [
+    { ...issued, contract: "sim:contract_extra" },
+    { ...issued, authenticated: true },
+    { ...native, contract: "sim:contract_extra" },
+    { ...evm, issuer: "sim:issuer_extra" },
+    { ...evm, network_verified: true }
+  ];
+  for (const record of foreign) {
+    assert.equal(gallery.validate(record).ok, false, JSON.stringify(record));
+    assert.equal(gallery.evaluatePair(issued, record).status, "REFUSED");
+  }
+  const inherited = Object.create({
+    network: "xrpl:synthetic", kind: "issued",
+    currency: "WAVE", issuer: "sim:issuer_alpha"
+  });
+  assert.equal(gallery.validate(inherited).ok, false,
+    "an inherited identity must not be accepted as a declared record");
+  const hidden = { ...issued };
+  Object.defineProperty(hidden, "forged_attestation", { value: true });
+  assert.equal(gallery.validate(hidden).ok, false,
+    "nonenumerable extra claims must not be silently ignored");
+  const symbolField = { ...issued, [Symbol("undisclosed")]: true };
+  assert.equal(gallery.validate(symbolField).ok, false,
+    "symbol-keyed claims must not disappear from admission");
+  assert.equal(gallery.validate(issued).ok, true);
+  assert.equal(gallery.validate(native).ok, true);
+  assert.equal(gallery.validate(evm).ok, true);
+});
+
 test("a caller cannot mutate the repository's fixed test fixture through getCase", () => {
   const first = gallery.getCase("different");
   first.left.issuer = "sim:forged";
