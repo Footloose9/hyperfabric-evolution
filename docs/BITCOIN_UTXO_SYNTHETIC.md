@@ -31,6 +31,12 @@ CONFIRMED requires a declared block hash/height and reported confirmation count 
 
 The projection contains only transaction/outpoint nodes, no address, wallet, person or controller nodes. The return flags explicitly state **common_owner_inferred = false**, **change_output_inferred = false**, **transaction_to_account_transfer_inferred = false**, and **independent_consensus_or_finality_proven = false**.
 
+## Explicit v1 scope: disjoint transactions, not linked chain traversal
+
+This first increment accepts one or several **disjoint** fictional non-coinbase candidate transactions. It does **not** implement a parent-child transaction chain within the same fixture. If an input names the transaction ID of any other candidate in that fixture, the parser refuses the packet with an explicit `intra-fixture` error, irrespective of candidate row order. A general multihop outpoint graph would require a further version with a single coherent identity for an output that is both created and subsequently spent, plus dependency/chain-source tests. Such functionality is **not claimed here**.
+
+The JSON reader now rejects exponent-overflow representations such as `1e999` and `-1e999`, not only literal `NaN` or `Infinity`. A finite JSON decimal may be decoded at the reader boundary, but monetary fields still require actual integer satoshis. The examples remain synthetic assertions, not validated Bitcoin consensus or spendability.
+
 ## Positive synthetic fixture
 
 Two entirely fictional prior outputs provide **6,000 + 4,000 satoshis**. A fictional transaction declares outputs of **7,000 + 2,500 satoshis**. Its declared fee is the arithmetical difference: **10,000 - 9,500 = 500 satoshis**.

@@ -21,6 +21,7 @@
 !docs/MEV_RESEARCH_METHODS.md
 !docs/CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md
 !docs/CHAIN_ADAPTER_GUIDE.md
+!docs/BITCOIN_UTXO_SYNTHETIC.md
 !docs/XRPL_TYPED_EVENT_CONFORMANCE.md
 !docs/UPSTREAM_LEVERAGE.md
 !docs/UPSTREAM_REUSE_POLICY.md
@@ -51,8 +52,12 @@
 !hyperfabric_public/graphsense_bridge.py
 !hyperfabric_public/evidence_observation.py
 !hyperfabric_public/xrpl_conformance.py
+!hyperfabric_public/bitcoin_utxo.py
 !tests/
+!tests/fixtures/
+!tests/fixtures/bitcoin_utxo_synthetic.json
 !tests/test_identity.py
+!tests/test_bitcoin_utxo.py
 !tests/test_evidence_graph.py
 !tests/test_graphsense_bridge.py
 !tests/test_evidence_observation.py
