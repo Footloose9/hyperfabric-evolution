@@ -10,6 +10,7 @@ import unittest
 
 from hyperfabric_public.bitcoin_utxo import (
     CompetingSpendError,
+    MAX_FIXTURE_BYTES,
     MissingPrevoutError,
     SyntheticUTXOError,
     parse_fixture_json,
@@ -265,6 +266,16 @@ class NegativeSyntheticBitcoinUTXOTests(unittest.TestCase):
             with self.subTest(raw=raw), self.assertRaises(SyntheticUTXOError):
                 parse_fixture_json(raw)
 
+
+    def test_deep_json_nesting_has_typed_bounded_refusal(self):
+        # A byte limit alone cannot prevent json.loads from exhausting depth.
+        depth = 12_000
+        raw = b'{"nested":' + b"[" * depth + b"0" + b"]" * depth + b"}"
+        self.assertLess(len(raw), MAX_FIXTURE_BYTES)
+        with self.assertRaisesRegex(SyntheticUTXOError, "nesting depth"):
+            parse_fixture_json(raw)
+        self.assertEqual(parse_fixture_json(b'{"nested":[[0]]}'),
+                         {"nested": [[0]]})
 
     def test_json_exponent_overflow_refused_before_schema_inspection(self):
         # JSON's parse_constant hook misses numeric exponent overflow:
