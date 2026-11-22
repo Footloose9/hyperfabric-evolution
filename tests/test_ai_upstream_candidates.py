@@ -1,4 +1,6 @@
 """Public-only invariants for the issue #33 upstream research seed."""
+from copy import deepcopy
+from datetime import date
 import json
 import re
 import unittest
@@ -9,6 +11,76 @@ CATALOG = ROOT / "docs" / "ai_upstream_candidates.json"
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 STATUSES = {"ADOPTED", "REJECTED", "PENDING"}
 MECHANISMS = {"LINK_SPEC", "DEPENDENCY", "ADAPTER", "UPSTREAM_PR", "FORK", "HOLD"}
+
+
+
+# PUBLIC_ORIGINAL test-only admission oracle: catalog data cannot convey authority.
+# This is NOT an SDK test, issuer review, cryptographic check, or runtime permission gate.
+_PENDING_KEYS = frozenset({
+    "id", "name", "source", "public_behavior", "alternative",
+    "proposed_mechanism", "import_or_runtime_action",
+    "security_and_resource_gaps", "synthetic_negative_case",
+    "decision_status", "decision_reason", "decision_date_utc",
+    "decision_evidence", "review_trigger", "bounded_next_check",
+})
+
+
+def _synthetic_pending_record_gate(item):
+    """Refuse malformed or authority-promoting edits to a PENDING research entry."""
+    if type(item) is not dict or set(item) != _PENDING_KEYS:
+        return False
+    src = item.get("source")
+    trigger = item.get("review_trigger")
+    if type(src) is not dict or type(trigger) is not dict:
+        return False
+    sha, repo = src.get("exact_commit"), src.get("repository_url")
+    if type(sha) is not str or not HEX40.fullmatch(sha):
+        return False
+    if type(repo) is not str or not re.fullmatch(
+            r"https://github[.]com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+        return False
+    pinned = repo + "/blob/" + sha + "/"
+    evidence = item.get("decision_evidence")
+    if type(evidence) is not list or len(evidence) < 2:
+        return False
+    if any(type(link) is not str or not link.startswith(pinned)
+           for link in evidence):
+        return False
+    if evidence[:2] != [pinned + "README.md", pinned + "LICENSE"]:
+        return False
+    if (src.get("readme_url") != evidence[0]
+            or src.get("top_level_license_url") != evidence[1]
+            or not src.get("top_level_license_file")
+            or src.get("component_license_terms") != "NOT_REVIEWED"
+            or src.get("transitive_license_terms") != "NOT_REVIEWED"):
+        return False
+    if src.get("root_notice_observation") == "NOTICE_PRESENT":
+        if src.get("root_notice_path") != "THIRD_PARTY_NOTICES.md":
+            return False
+    elif src.get("root_notice_observation") != "NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT":
+        return False
+    if (item.get("decision_status") != "PENDING"
+            or item.get("decision_date_utc") is not None
+            or item.get("proposed_mechanism") != "LINK_SPEC"
+            or item.get("import_or_runtime_action") != "NONE"):
+        return False
+    if not isinstance(item.get("decision_reason"), str) or not item["decision_reason"].strip():
+        return False
+    if not isinstance(item.get("synthetic_negative_case"), str) or not item["synthetic_negative_case"].endswith("NOT EXECUTED."):
+        return False
+    if set(trigger) != {"kind", "on_events", "review_no_later_than_utc", "recheck"}:
+        return False
+    if (trigger.get("kind") != "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE"
+            or type(trigger.get("on_events")) is not list
+            or not trigger["on_events"]
+            or type(trigger.get("recheck")) is not list
+            or not trigger["recheck"]):
+        return False
+    try:
+        due = date.fromisoformat(trigger["review_no_later_than_utc"])
+    except (TypeError, ValueError):
+        return False
+    return due.isoformat() == trigger["review_no_later_than_utc"]
 
 
 class TestPublicAiUpstreamCatalog(unittest.TestCase):
@@ -101,6 +173,60 @@ class TestPublicAiUpstreamCatalog(unittest.TestCase):
                 self.assertEqual(item["proposed_mechanism"], "LINK_SPEC")
                 self.assertEqual(item["import_or_runtime_action"], "NONE")
         self.assertFalse({"A2A", "OpenClaw"} & set(self.record["not_yet_reviewed"]))
+
+    def test_executable_pending_gate_accepts_only_review_records(self):
+        # All five actual records are research-only, including A2A/OpenClaw.
+        for item in self.record["candidates"]:
+            with self.subTest(candidate=item["id"]):
+                self.assertTrue(_synthetic_pending_record_gate(item))
+        control = self.record["synthetic_negative_control"]
+        self.assertFalse(_synthetic_pending_record_gate(control))
+
+    def test_synthetic_mutations_refuse_false_adoption_and_evidence(self):
+        # Synthetic malicious/accidental changes never alter actual catalog data.
+        for candidate_id in ("a2a-protocol", "openclaw"):
+            candidate = next(x for x in self.record["candidates"]
+                             if x["id"] == candidate_id)
+            probes = [
+                ("claimed adoption", ("decision_status",), "ADOPTED"),
+                ("injected approval date", ("decision_date_utc",), "2026-11-22"),
+                ("dependency promotion", ("proposed_mechanism",), "DEPENDENCY"),
+                ("runtime install", ("import_or_runtime_action",), "INSTALL"),
+                ("revision without requalified links", ("source", "exact_commit"), "0" * 40),
+                ("untrusted repo origin", ("source", "repository_url"), "https://attacker.invalid/repo"),
+                ("missing source license", ("source", "top_level_license_url"), ""),
+                ("missing rights", ("source", "top_level_license_file"), ""),
+                ("manufactured component rights", ("source", "component_license_terms"), "REVIEWED"),
+                ("manufactured transitive rights", ("source", "transitive_license_terms"), "REVIEWED"),
+                ("missing provenance", ("decision_evidence",), []),
+                ("changed source evidence", ("decision_evidence", 0), "https://attacker.invalid/readme"),
+                ("missing review events", ("review_trigger", "on_events"), []),
+                ("invalid calendar date", ("review_trigger", "review_no_later_than_utc"), "2027-02-30"),
+                ("claim test executed", ("synthetic_negative_case",), "PASSED"),
+                ("untrusted agent card", ("agent_card",), {"authorized": True}),
+                ("untrusted tool output", ("tool_output",), {"effect_granted": True}),
+            ]
+            if candidate_id == "openclaw":
+                probes.append(("removed attribution notice",
+                               ("source", "root_notice_path"), None))
+            for title, path, value in probes:
+                with self.subTest(candidate=candidate_id, mutation=title):
+                    changed = deepcopy(candidate)
+                    obj = changed
+                    for segment in path[:-1]:
+                        obj = obj[segment]
+                    obj[path[-1]] = value
+                    self.assertFalse(_synthetic_pending_record_gate(changed))
+
+    def test_review_trigger_remains_pending_not_an_adoption_event(self):
+        for item in self.record["candidates"]:
+            with self.subTest(candidate=item["id"]):
+                probe = deepcopy(item)
+                # A new release is a review trigger, not authorization.
+                probe["review_trigger"]["on_events"].append("synthetic release detected")
+                self.assertTrue(_synthetic_pending_record_gate(probe))
+                self.assertEqual(probe["decision_status"], "PENDING")
+                self.assertIsNone(probe["decision_date_utc"])
 
     def test_existing_upstream_register_is_not_changed_by_seed(self):
         self.assertTrue((ROOT / "docs" / "upstream_candidates.json").is_file())
