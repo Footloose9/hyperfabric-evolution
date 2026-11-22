@@ -85,6 +85,76 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         git(self.root, "commit", "-qm", "deletion")
         self.assertIn("deletion requires", " ".join(verify_pr_diff(self.root, self.base)))
 
+    def test_existing_tracked_deletion_cannot_hide_behind_restoration(self):
+        self.assertEqual(self.commit(), [])
+        self.base = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "rm", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "transient tracked deletion")
+        (self.root / "docs").mkdir(exist_ok=True)
+        (self.root / "docs" / "ok.txt").write_text(
+            "fictional changed public text\n", encoding="utf-8"
+        )
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "restore path with benign update")
+        self.assertIn(
+            "historical deletion requires",
+            " ".join(verify_pr_diff(self.root, self.base)),
+        )
+
+    def test_new_public_file_deletion_in_history_is_not_amnestied(self):
+        self.assertEqual(self.commit(), [])
+        git(self.root, "rm", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "transient deletion of new public file")
+        (self.root / "docs").mkdir(exist_ok=True)
+        (self.root / "docs" / "ok.txt").write_text(
+            "hello public evidence\n", encoding="utf-8"
+        )
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "restore original new file")
+        self.assertIn(
+            "historical deletion requires",
+            " ".join(verify_pr_diff(self.root, self.base)),
+        )
+
+    def test_normal_multicommit_update_still_passes(self):
+        self.assertEqual(self.commit(), [])
+        (self.root / "docs" / "ok.txt").write_text(
+            "allowed public update\n", encoding="utf-8"
+        )
+        git(self.root, "add", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "ordinary update")
+        self.assertEqual(verify_pr_diff(self.root, self.base), [])
+
+
+    def test_first_parent_merge_does_not_invent_old_base_deletions(self):
+        # A feature commit may predate a harmless file added on the newer
+        # base branch. Absence from the old feature tree is not a deletion.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/peer.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", ".gitignore")
+        git(self.root, "commit", "-qm", "shared policy base")
+        common = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "checkout", "-qb", "feature")
+        (self.root / "docs" / "ok.txt").write_text(
+            "old feature fictional text\n", encoding="utf-8"
+        )
+        git(self.root, "add", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "feature predates peer")
+        git(self.root, "checkout", "-qb", "upstream", common)
+        (self.root / "docs").mkdir(exist_ok=True)
+        (self.root / "docs" / "peer.txt").write_text(
+            "new upstream fictional text\n", encoding="utf-8"
+        )
+        git(self.root, "add", "docs/peer.txt")
+        git(self.root, "commit", "-qm", "upstream public addition")
+        recent_base = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "checkout", "-q", "feature")
+        git(self.root, "merge", "--no-ff", "-qm", "sync upstream", "upstream")
+        self.assertEqual(verify_pr_diff(self.root, recent_base), [])
+
+
     def test_hidden_history_secret_is_not_hidden_by_later_deletion(self):
         # New public objects stay in Git even if the final PR tree no longer has them.
         historical = self.root / "docs" / "historical.txt"
@@ -137,6 +207,48 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         issues = self._transient_then_clean("docs/hidden.txt", "fictional")
         self.assertIn("historical unallowlisted path", " ".join(issues))
 
+
+
+    def test_historical_forced_path_is_not_amnestied_by_later_exception(self):
+        # A later .gitignore exception cannot retroactively authorize a file
+        # that entered Git while the exact path was still denied.
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional research text\n", encoding="utf-8")
+        git(self.root, "add", "-f", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "unsafe historical admission")
+        prior = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(prior.returncode, 0)
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "late retroactive exception")
+        current = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(current.returncode, 1)
+        self.assertIn(
+            "historical unallowlisted path",
+            " ".join(verify_pr_diff(self.root, self.base, "HEAD")),
+        )
+
+    def test_historical_path_is_valid_when_exception_precedes_first_add(self):
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "valid prior exception")
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional public evidence\n", encoding="utf-8")
+        git(self.root, "add", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "allowlisted addition")
+        self.assertEqual(verify_pr_diff(self.root, self.base, "HEAD"), [])
 
     def test_unicode_line_separator_cannot_forge_deny_all(self):
         # Python str.splitlines() recognizes U+2028 and U+0085, while Git

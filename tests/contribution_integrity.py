@@ -70,6 +70,27 @@ def _exact_allowlist(raw: bytes) -> list[str]:
     return errors
 
 
+
+def _exact_path_admitted(raw_ignore: bytes, path: str) -> bool:
+    """Conservatively require each historical file and ancestor to be named.
+
+    The public staging policy is restricted to a top-level deny-all '*' and
+    literal '!' exceptions. Unlike git check-ignore in the current worktree,
+    this predicate evaluates the exact historical root .gitignore blob.
+    """
+    if _exact_allowlist(raw_ignore) or not _path_is_safe(path):
+        return False
+    active = set()
+    for raw_line in raw_ignore.decode("utf-8").split("\n"):
+        line = raw_line[:-1] if raw_line.endswith("\r") else raw_line
+        if line.startswith("!"):
+            active.add(line[1:])
+    parts = path.split("/")
+    if path not in active:
+        return False
+    return all("/".join(parts[:i]) + "/" in active
+               for i in range(1, len(parts)))
+
 def _path_is_safe(path: str) -> bool:
     segments = path.split("/")
     return bool(path and not path.startswith("/") and "\\" not in path
@@ -205,11 +226,39 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
         errors.append("PR exceeds bounded 64-commit historical tree audit")
         return errors
     base_tree = _tree_entries(root, base)
+    # Bind each historical new path to the *same commit's* root policy.
+    # Cache by blob identity to keep the bounded history audit efficient.
+    policy_by_blob: dict[bytes, bytes] = {}
     for raw_commit in commit_ids:
         commit_sha = raw_commit.decode("ascii")
         current_tree = _tree_entries(root, commit_sha)
-        if base_tree.get(".gitignore") != current_tree.get(".gitignore"):
-            raw_ignore = _git(root, "show", f"{commit_sha}:.gitignore").stdout
+        # First-parent comparisons detect a deletion in an intermediate
+        # commit even when a later commit restores the same tracked path.
+        # Comparing against the *latest base* would falsely reject older
+        # feature commits that predate newer files merged into main.
+        lineage = _git(
+            root, "rev-list", "--parents", "-n", "1", commit_sha
+        ).stdout.split()
+        if len(lineage) < 2 or lineage[0] != raw_commit:
+            errors.append(f"historical commit lacks auditable first parent: {commit_sha[:12]}")
+            continue
+        first_parent = _tree_entries(root, lineage[1].decode("ascii"))
+        for removed in sorted(first_parent.keys() - current_tree.keys()):
+            errors.append(
+                f"historical deletion requires explicit bounded exception: "
+                f"{removed} ({commit_sha[:12]})"
+            )
+        ignore_entry = current_tree.get(".gitignore")
+        if ignore_entry is None or ignore_entry[1] != b"blob":
+            errors.append(f"historical missing .gitignore: {commit_sha[:12]}")
+            continue
+        ignore_blob = ignore_entry[2]
+        if ignore_blob not in policy_by_blob:
+            policy_by_blob[ignore_blob] = _git(
+                root, "cat-file", "blob", ignore_blob.decode("ascii")
+            ).stdout
+        raw_ignore = policy_by_blob[ignore_blob]
+        if base_tree.get(".gitignore") != ignore_entry:
             for issue in _exact_allowlist(raw_ignore):
                 errors.append(f"historical ignore rule: {issue} ({commit_sha[:12]})")
         for path, entry in current_tree.items():
@@ -222,9 +271,7 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
                     size = int(_git(root, "cat-file", "-s", entry[2].decode("ascii")).stdout)
                     if size > MAX_NEW_FILE_BYTES:
                         errors.append(f"historical added text exceeds {MAX_NEW_FILE_BYTES} bytes: {path} ({commit_sha[:12]})")
-                check = _git(root, "check-ignore", "-q", "--no-index", "--", path,
-                             allowed=(0, 1))
-                if check.returncode == 0:
+                if not _exact_path_admitted(raw_ignore, path):
                     errors.append(f"historical unallowlisted path: {path} ({commit_sha[:12]})")
     return errors
 
