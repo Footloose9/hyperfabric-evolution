@@ -27,6 +27,9 @@
 !docs/GRAPHSENSE_INTEROP.md
 !docs/EVIDENCE_OBSERVATION_E1.md
 !docs/upstream_candidates.json
+!docs/AI_UPSTREAM_CANDIDATES.md
+!docs/ai_upstream_candidates.json
+!docs/RESEARCH_PORTFOLIO_COVERAGE.md
 !docs/index.html
 !docs/site.css
 !docs/site.js
@@ -58,5 +61,6 @@
 !tests/test_evidence_observation.py
 !tests/test_public_portal.py
 !tests/test_upstream_catalog.py
+!tests/test_ai_upstream_candidates.py
 !tests/test_xrpl_conformance.py
 !tests/capability-gallery.test.cjs

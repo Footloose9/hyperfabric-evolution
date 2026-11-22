@@ -1,0 +1,191 @@
+{
+  "schema": "HYPERFABRIC_PUBLIC_AI_UPSTREAM_SEED_V1",
+  "reviewed_date_utc": "2026-11-22",
+  "source_class": "PUBLIC_ORIGINAL",
+  "scope": "Partial seed: public-source, documentation-only inventory for issue #33; not a completeness claim or adoption approval.",
+  "method": "Read pinned public upstream README.md, repository-root LICENSE and root directory listing; note GitHub license metadata separately. No upstream code, dependency, data, tool or binary was imported or executed.",
+  "decision_policy": "Only a separately evidenced and dated owner/maintainer decision can change PENDING to ADOPTED or REJECTED. A review trigger initiates reevaluation only.",
+  "candidates": [
+    {
+      "id": "mcp-python-sdk",
+      "name": "Model Context Protocol Python SDK",
+      "source": {
+        "repository_url": "https://github.com/modelcontextprotocol/python-sdk",
+        "default_branch_ref": "main",
+        "exact_commit": "77001c96f9507be0f4d009b83210a384a5e08bda",
+        "readme_url": "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/README.md",
+        "top_level_license_url": "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/LICENSE",
+        "top_level_license_file": "MIT",
+        "github_license_metadata": "MIT",
+        "root_notice_observation": "NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT",
+        "component_license_terms": "NOT_REVIEWED",
+        "transitive_license_terms": "NOT_REVIEWED"
+      },
+      "public_behavior": "The pinned README documents Python MCP server and client implementations with tools, resources and documented transports.",
+      "alternative": "Reference the public MCP specification and write a small protocol contract before adopting an SDK.",
+      "proposed_mechanism": "LINK_SPEC",
+      "import_or_runtime_action": "NONE",
+      "security_and_resource_gaps": [
+        "SDK and extra dependency graph not reviewed",
+        "authn/authz, tool-scope and untrusted-input rejection not tested here",
+        "Python compatibility and CPU/RAM/network budget not measured",
+        "release, advisory and component-license review incomplete"
+      ],
+      "synthetic_negative_case": "A fabricated client attempts to call a tool with undeclared authority: reject the authorization claim instead of treating protocol parsing as permission. NOT EXECUTED.",
+      "decision_status": "PENDING",
+      "decision_reason": "Only the pinned README and repository-root MIT license were verified; no dependency, authority, security, component-rights, test or resource gate qualifies an adoption decision.",
+      "decision_date_utc": null,
+      "decision_evidence": [
+        "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/README.md",
+        "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/LICENSE"
+      ],
+      "review_trigger": {
+        "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
+        "on_events": [
+          "new upstream release",
+          "relevant published security advisory",
+          "material license or dependency change"
+        ],
+        "review_no_later_than_utc": "2027-02-01",
+        "recheck": [
+          "exact source revision",
+          "component-level license and NOTICE files",
+          "dependency and transitive rights",
+          "security advisories and pinned dependency tree",
+          "fit, resource budget and negative tests"
+        ]
+      },
+      "bounded_next_check": "Map one public-only MCP tool/resource/error contract against current public protocol documentation, without an install or remote tool call."
+    },
+    {
+      "id": "opentelemetry-python",
+      "name": "OpenTelemetry Python",
+      "source": {
+        "repository_url": "https://github.com/open-telemetry/opentelemetry-python",
+        "default_branch_ref": "main",
+        "exact_commit": "9ec2d312462e12ae5677a6a4dc1c03b0deb32af5",
+        "readme_url": "https://github.com/open-telemetry/opentelemetry-python/blob/9ec2d312462e12ae5677a6a4dc1c03b0deb32af5/README.md",
+        "top_level_license_url": "https://github.com/open-telemetry/opentelemetry-python/blob/9ec2d312462e12ae5677a6a4dc1c03b0deb32af5/LICENSE",
+        "top_level_license_file": "Apache-2.0",
+        "github_license_metadata": "Apache-2.0",
+        "root_notice_observation": "NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT",
+        "component_license_terms": "NOT_REVIEWED",
+        "transitive_license_terms": "NOT_REVIEWED"
+      },
+      "public_behavior": "The pinned README distinguishes the telemetry API from its reference SDK and documents traces, metrics and log maturity separately.",
+      "alternative": "Use an explicit synthetic trace-span schema and local deterministic assertions before adopting instrumentation packages.",
+      "proposed_mechanism": "LINK_SPEC",
+      "import_or_runtime_action": "NONE",
+      "security_and_resource_gaps": [
+        "multiple package-level component and dependency licenses not reviewed",
+        "telemetry exporter network and privacy implications not evaluated",
+        "exporter buffering, storage, memory, CPU and sampling budgets unmeasured",
+        "exact released package versions and advisories not reviewed"
+      ],
+      "synthetic_negative_case": "A fabricated distributed trace with a missing span must not be marked end-to-end complete. NOT EXECUTED.",
+      "decision_status": "PENDING",
+      "decision_reason": "The pinned project README and top-level Apache-2.0 LICENSE were read, but package-specific NOTICE, dependency rights, privacy, resource and validation gates remain open.",
+      "decision_date_utc": null,
+      "decision_evidence": [
+        "https://github.com/open-telemetry/opentelemetry-python/blob/9ec2d312462e12ae5677a6a4dc1c03b0deb32af5/README.md",
+        "https://github.com/open-telemetry/opentelemetry-python/blob/9ec2d312462e12ae5677a6a4dc1c03b0deb32af5/LICENSE"
+      ],
+      "review_trigger": {
+        "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
+        "on_events": [
+          "new upstream release",
+          "relevant published security advisory",
+          "material license or dependency change"
+        ],
+        "review_no_later_than_utc": "2027-02-01",
+        "recheck": [
+          "exact source revision",
+          "component-level license and NOTICE files",
+          "dependency and transitive rights",
+          "security advisories and pinned dependency tree",
+          "fit, resource budget and negative tests"
+        ]
+      },
+      "bounded_next_check": "Compare publicly documented trace propagation fields and missing-span semantics using entirely synthetic fixtures; do not install an exporter."
+    },
+    {
+      "id": "in-toto",
+      "name": "in-toto",
+      "source": {
+        "repository_url": "https://github.com/in-toto/in-toto",
+        "default_branch_ref": "develop",
+        "exact_commit": "e352b43ad7cb8915d84c36d791aa61346152a0a3",
+        "readme_url": "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/README.md",
+        "top_level_license_url": "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/LICENSE",
+        "top_level_license_file": "Apache-2.0 reference (root LICENSE)",
+        "github_license_metadata": "NOASSERTION",
+        "root_notice_observation": "NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT",
+        "component_license_terms": "NOT_REVIEWED",
+        "transitive_license_terms": "NOT_REVIEWED"
+      },
+      "public_behavior": "The pinned README documents supply-chain layouts, authorized steps and signed link metadata checked against a layout.",
+      "alternative": "Use only original public descriptions of signed provenance and a synthetic missing-signature falsifier without importing in-toto code.",
+      "proposed_mechanism": "LINK_SPEC",
+      "import_or_runtime_action": "NONE",
+      "security_and_resource_gaps": [
+        "GitHub license metadata NOASSERTION differs from the root file's explicit Apache-2.0 reference; check packaged/component rights before code use",
+        "signature, identity and revocation trust assumptions unverified",
+        "transitive packages, maintenance releases and advisories unreviewed",
+        "verification resource and file-system scope unmeasured"
+      ],
+      "synthetic_negative_case": "A fabricated supply-chain step with absent or invalid signature evidence must not receive VERIFIED status. NOT EXECUTED.",
+      "decision_status": "PENDING",
+      "decision_reason": "The pinned root LICENSE references Apache-2.0, but GitHub's metadata reads NOASSERTION and component/distribution rights and security tests are not independently resolved; documentation-only evaluation remains safe.",
+      "decision_date_utc": null,
+      "decision_evidence": [
+        "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/README.md",
+        "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/LICENSE"
+      ],
+      "review_trigger": {
+        "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
+        "on_events": [
+          "new upstream release",
+          "relevant published security advisory",
+          "material license or dependency change"
+        ],
+        "review_no_later_than_utc": "2027-02-01",
+        "recheck": [
+          "exact source revision",
+          "component-level license and NOTICE files",
+          "dependency and transitive rights",
+          "security advisories and pinned dependency tree",
+          "fit, resource budget and negative tests"
+        ]
+      },
+      "bounded_next_check": "Write a synthetic unsigned/mismatched-link negative case from the public specification; resolve component and distribution license evidence before proposing code reuse."
+    }
+  ],
+  "synthetic_negative_control": {
+    "id": "synthetic-missing-license-evidence",
+    "source_class": "PUBLIC_SYNTHETIC",
+    "fiction_notice": "Entirely fabricated candidate; no real repository or package is represented.",
+    "proposed_mechanism": "DEPENDENCY",
+    "primary_license_evidence": [],
+    "component_license_terms": "UNKNOWN",
+    "decision_status": "PENDING",
+    "decision_reason": "Missing primary rights/provenance requires HOLD; a proposed dependency is not adoption.",
+    "decision_date_utc": null,
+    "review_trigger": {
+      "kind": "PRIMARY_LICENSE_EVIDENCE_RECEIVED",
+      "on_events": [
+        "verifiable source license supplied"
+      ],
+      "review_no_later_than_utc": "2027-02-01"
+    }
+  },
+  "not_yet_reviewed": [
+    "A2A",
+    "OpenClaw",
+    "LangGraph",
+    "CrewAI",
+    "Temporal Python SDK",
+    "Sigstore Cosign",
+    "OSV-Scanner",
+    "CycloneDX"
+  ]
+}
