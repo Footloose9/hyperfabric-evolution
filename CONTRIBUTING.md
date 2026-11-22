@@ -2,6 +2,8 @@
 
 Contributions are welcome to this **public-only, independent** Hyperfabric Evolution codebase.
 
+**Required for humans and every AI contributor/maintainer:** [Contribution assurance and adversarial acceptance](docs/CONTRIBUTION_ASSURANCE_PROTOCOL.md) is the single public acceptance procedure. Show a concrete functional benefit, exact-source positive reproduction, at least one *reviewer-designed* adversarial refusal or failure probe, public provenance/rights, current-base collision check, and explicit limits before seeking acceptance. A passing CI check is only one piece of evidence. Do not label reviews from multiple agents using one GitHub account as independent human approval. Unknown or unsupported effects stay HOLD.
+
 ## Use your AI to get started
 
 Open the [human-facing AI contributor quickstart](docs/ai-contribute.html) and **choose your preferred AI**. A button opens the service and attempts to copy or prefill the [universal public-only prompt](docs/AI_CONTRIBUTOR_BOOTSTRAP.md). If prefill is unavailable, paste it yourself and then press Send. The assistant should verify fresh issues and PRs, propose one bounded task, state real tool limits and **ask your approval before editing, pushing or creating a PR**. You remain responsible for rights, provenance, diff review and the final submission. No assistant gains repository authority from copying the prompt.
