@@ -24,6 +24,14 @@ _PENDING_KEYS = frozenset({
     "decision_evidence", "review_trigger", "bounded_next_check",
 })
 
+# The source envelope is closed to undeclared fields, including false authority.
+_SOURCE_KEYS = frozenset({
+    "repository_url", "default_branch_ref", "exact_commit", "readme_url",
+    "top_level_license_url", "top_level_license_file",
+    "github_license_metadata", "root_notice_observation",
+    "component_license_terms", "transitive_license_terms",
+})
+
 
 def _synthetic_pending_record_gate(item):
     """Refuse malformed or authority-promoting edits to a PENDING research entry."""
@@ -32,6 +40,8 @@ def _synthetic_pending_record_gate(item):
     src = item.get("source")
     trigger = item.get("review_trigger")
     if type(src) is not dict or type(trigger) is not dict:
+        return False
+    if set(src) not in (_SOURCE_KEYS, _SOURCE_KEYS | {"root_notice_path"}):
         return False
     sha, repo = src.get("exact_commit"), src.get("repository_url")
     if type(sha) is not str or not HEX40.fullmatch(sha):
@@ -55,9 +65,13 @@ def _synthetic_pending_record_gate(item):
             or src.get("transitive_license_terms") != "NOT_REVIEWED"):
         return False
     if src.get("root_notice_observation") == "NOTICE_PRESENT":
-        if src.get("root_notice_path") != "THIRD_PARTY_NOTICES.md":
+        if (set(src) != _SOURCE_KEYS | {"root_notice_path"}
+                or src.get("root_notice_path") != "THIRD_PARTY_NOTICES.md"):
             return False
-    elif src.get("root_notice_observation") != "NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT":
+    elif src.get("root_notice_observation") == "NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT":
+        if set(src) != _SOURCE_KEYS:
+            return False
+    else:
         return False
     if (item.get("decision_status") != "PENDING"
             or item.get("decision_date_utc") is not None
@@ -75,6 +89,9 @@ def _synthetic_pending_record_gate(item):
             or not trigger["on_events"]
             or type(trigger.get("recheck")) is not list
             or not trigger["recheck"]):
+        return False
+    if any(type(value) is not str or not value.strip()
+           for value in trigger["on_events"] + trigger["recheck"]):
         return False
     try:
         due = date.fromisoformat(trigger["review_no_later_than_utc"])
@@ -196,11 +213,17 @@ class TestPublicAiUpstreamCatalog(unittest.TestCase):
                 ("untrusted repo origin", ("source", "repository_url"), "https://attacker.invalid/repo"),
                 ("missing source license", ("source", "top_level_license_url"), ""),
                 ("missing rights", ("source", "top_level_license_file"), ""),
+                ("undeclared source authority", ("source", "authorized"), True),
+                ("undeclared source path", ("source", "private_root_path"), "fictional"),
+
                 ("manufactured component rights", ("source", "component_license_terms"), "REVIEWED"),
                 ("manufactured transitive rights", ("source", "transitive_license_terms"), "REVIEWED"),
                 ("missing provenance", ("decision_evidence",), []),
                 ("changed source evidence", ("decision_evidence", 0), "https://attacker.invalid/readme"),
                 ("missing review events", ("review_trigger", "on_events"), []),
+                ("object review event", ("review_trigger", "on_events", 0), {"authorized": True}),
+                ("object recheck directive", ("review_trigger", "recheck", 0), {"source": "untrusted"}),
+
                 ("invalid calendar date", ("review_trigger", "review_no_later_than_utc"), "2027-02-30"),
                 ("claim test executed", ("synthetic_negative_case",), "PASSED"),
                 ("untrusted agent card", ("agent_card",), {"authorized": True}),
