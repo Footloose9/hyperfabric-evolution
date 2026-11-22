@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'none'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="description" content="Try and challenge Hyperfabric Evolution's real public research demos. Inspect deterministic synthetic evidence, source references, negative cases and the read-only XRPL pilot.">
+  <title>Capability Gallery — Hyperfabric Evolution</title>
+  <link rel="stylesheet" href="./capability-gallery.css">
+  <script src="./capability-gallery.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to capability gallery</a>
+<header class="site-top">
+  <div class="shell top-inner">
+    <a class="brand" href="./index.html" aria-label="Hyperfabric Evolution homepage">
+      <span class="brand-symbol" aria-hidden="true">H<span>F</span></span>
+      <span class="brand-word">HYPERFABRIC <strong>EVOLUTION</strong><small>OPEN RESEARCH / PUBLIC LAB</small></span>
+    </a>
+    <nav class="desktop-nav" aria-label="Main navigation">
+      <a href="./index.html">Home</a>
+      <a href="./research-hub.html">Research hub</a>
+      <a href="./source-explorer.html">Source Explorer</a>
+      <a class="nav-cta" href="./ai-contribute.html#launch">Contribute with AI <span aria-hidden="true">↗</span></a>
+    </nav>
+    <details class="mobile-nav">
+      <summary>Menu</summary>
+      <nav aria-label="Mobile navigation">
+        <a href="./index.html">Home</a>
+        <a href="./research-hub.html">Research hub</a>
+        <a href="./source-explorer.html">Source Explorer</a>
+        <a href="./ai-contribute.html#launch">Contribute with AI</a>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="shell hero-grid">
+      <div class="hero-content">
+        <p class="eyebrow"><span class="live-marker" aria-hidden="true"></span> PUBLIC CAPABILITY GALLERY <span class="slash">/</span> VERSIONED SOURCE</p>
+        <h1 id="hero-title">Don't just read the claim.<br><em>Challenge the evidence.</em></h1>
+        <p class="hero-lead">Explore working research interfaces, then put a claim through a reproducible test. Every scenario reveals what the evidence supports, what it cannot establish, and the public source behind the method.</p>
+        <div class="hero-buttons">
+          <a class="button button-primary" href="#workbench">Run an evidence challenge <span aria-hidden="true">↗</span></a>
+          <a class="button button-outline" href="#capabilities">Explore working demos</a>
+        </div>
+        <p class="hero-fine"><strong>Real code. Fictional test data.</strong> The gallery's experiments run entirely in your browser. No wallet, agent account, analytics, RPC or background collection.</p>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="visual-grid"></div>
+        <div class="visual-topline"><span class="visual-signal">LOCAL SANDBOX</span><span>SYMBOL ≠ IDENTITY</span></div>
+        <div class="visual-canvas">
+          <div class="visual-node visual-node-a"><span>NETWORK: XRPL / SYNTHETIC</span><strong>WAVE</strong><small>issuer_alpha</small></div>
+          <div class="visual-link visual-link-top"></div>
+          <div class="visual-core"><div class="core-orbit"></div><span>VERIFY</span><strong>≠</strong><small>Full asset identity</small></div>
+          <div class="visual-link visual-link-bottom"></div>
+          <div class="visual-node visual-node-b"><span>NETWORK: XRPL / SYNTHETIC</span><strong>WAVE</strong><small>issuer_beta</small></div>
+        </div>
+        <div class="visual-readout"><span>COMPARE COMPLETE KEYS</span><strong>SIMULATED INPUTS</strong></div>
+      </div>
+    </div>
+    <div class="shell hero-counters" aria-label="Research maturity">
+      <div class="hero-counter"><span class="counter-icon" aria-hidden="true">01</span><p><strong>Working synthetic demos</strong><small>Reproducible, offline test fixtures</small></p></div>
+      <div class="hero-counter"><span class="counter-icon" aria-hidden="true">02</span><p><strong>Limited read-only XRPL</strong><small>User-triggered public-provider queries</small></p></div>
+      <div class="hero-counter"><span class="counter-icon" aria-hidden="true">03</span><p><strong>Open contribution paths</strong><small>Issues, source code and test cases</small></p></div>
+    </div>
+  </section>
+
+  <section class="workbench section" id="workbench" aria-labelledby="workbench-title">
+    <div class="shell">
+      <div class="section-head">
+        <div><p class="eyebrow">THE EVIDENCE WORKBENCH <span class="slash">/</span> DEMO 001</p><h2 id="workbench-title">One label. Two identities. <em>What can we prove?</em></h2></div>
+        <p>Choose a fabricated scenario. Compare its complete declared identifiers. Try a missing field or an unsupported bridge and inspect why the check refuses or returns unknown.</p>
+      </div>
+      <div class="workbench-layout">
+        <div class="workbench-left">
+          <div class="workbench-bar"><span><i class="offline-dot" aria-hidden="true"></i> CLIENT-SIDE ONLY</span><span>FIXTURE / NOT MAINNET</span></div>
+          <div class="field-wrap">
+            <label for="case-picker">Choose a falsifiable scenario</label>
+            <div class="select-wrap">
+              <select id="case-picker" name="synthetic-case">
+                <option value="different">01 — Same ticker, different issuers</option>
+                <option value="identical">02 — Exact identity matches</option>
+                <option value="missing">03 — Missing required issuer</option>
+                <option value="crosschain">04 — Unsupported cross-chain link</option>
+                <option value="native">05 — Native XRP given an issuer</option>
+              </select>
+            </div>
+          </div>
+          <h3 id="case-title" class="case-title">Same ticker. Two issuers.</h3>
+          <p id="case-claim" class="case-claim">Can a shared currency label establish a single issued asset?</p>
+          <div class="input-panels">
+            <div class="input-panel">
+              <div class="input-top"><span>RECORD A</span><span class="mini-sim">FABRICATED</span></div>
+              <pre id="input-left" aria-label="Fictional record A">Select a scenario to load a fictional input.</pre>
+            </div>
+            <div class="input-panel">
+              <div class="input-top"><span>RECORD B</span><span class="mini-sim">FABRICATED</span></div>
+              <pre id="input-right" aria-label="Fictional record B">Select a scenario to load a fictional input.</pre>
+            </div>
+          </div>
+          <div class="workbench-actions">
+            <button class="button button-primary" id="run-check" type="button">Evaluate the claim <span aria-hidden="true">→</span></button>
+            <button class="button button-quiet" id="reset-check" type="button">Reset result</button>
+          </div>
+          <p class="under-actions">Inputs contain invented <code>sim:</code> identifiers. Format validation is not cryptographic authenticity, live balance verification or proof of consensus.</p>
+          <noscript><p class="noscript-note">JavaScript is disabled: the interactive synthetic check is unavailable. The working-demo links, documentation and source references below remain accessible.</p></noscript>
+        </div>
+
+        <div class="workbench-right" aria-labelledby="result-heading-label">
+          <div class="result-top"><span id="result-heading-label">DETERMINISTIC VERDICT</span><span id="result-state" data-status="UNRUN" class="result-state">NOT RUN</span></div>
+          <div class="result-hero"><span class="verdict-mark" aria-hidden="true">?</span><div><h3 id="result-title">No conclusion yet.</h3><p id="result-description">Run the local check to expose its rule and limitations.</p></div></div>
+          <div class="rule-box"><span>RULE APPLIED</span><p id="result-rule">No rule evaluated.</p></div>
+          <div class="evidence-keys">
+            <div><span>IDENTITY KEY A</span><code id="result-left-key">Not evaluated</code></div>
+            <div><span>IDENTITY KEY B</span><code id="result-right-key">Not evaluated</code></div>
+          </div>
+          <div class="trace-box">
+            <div class="trace-title"><span>EVIDENCE TRACE</span><span>01 / 02 / 03</span></div>
+            <ol id="trace-steps" aria-label="Evaluation reasoning steps"></ol>
+            <div class="trace-floor"><span>NOT ESTABLISHED</span><p id="result-missing">No independent ledger/source evidence in this demo.</p></div>
+          </div>
+          <p id="announce-status" class="result-announcement" role="status" aria-live="polite" aria-atomic="true">Ready. No case has been evaluated.</p>
+        </div>
+      </div>
+      <div class="workbench-links"><span>REPRODUCE IT YOURSELF</span><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/hyperfabric_public/identity.py">Public XRPL identity model</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/tests/test_identity.py">Identity negative tests</a><a href="./source-explorer.html">Broader synthetic provenance cases</a></div>
+    </div>
+  </section>
+
+  <section class="section capabilities-section" id="capabilities" aria-labelledby="capabilities-title">
+    <div class="shell">
+      <div class="section-head">
+        <div><p class="eyebrow">MORE THAN A ROADMAP <span class="slash">/</span> THINGS YOU CAN OPEN</p><h2 id="capabilities-title">Explore the <em>working public lab.</em></h2></div>
+        <p>Each destination is real and publicly inspectable. The labels explain the boundary between fabricated demonstrations, a limited live data pilot and proposed research.</p>
+      </div>
+      <div class="capability-grid">
+        <article class="capability-card card-graph">
+          <div class="card-top"><span class="card-index">01 / GRAPH</span><span class="maturity synthetic">WORKING SYNTHETIC</span></div>
+          <div class="card-art art-graph" aria-hidden="true"><span class="art-node n1"></span><span class="art-node n2"></span><span class="art-node n3"></span><span class="art-edge e1"></span><span class="art-edge e2"></span><span class="art-notation">A → B → C</span></div>
+          <h3>Evidence relationship graph</h3><p>Filter fabricated account, venue and event connections. Inspect why an edge exists instead of inferring real-world ownership.</p>
+          <a class="card-link" href="./index.html#lab">Open interactive graph <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="capability-card card-explorer">
+          <div class="card-top"><span class="card-index">02 / PROVENANCE</span><span class="maturity synthetic">WORKING SYNTHETIC</span></div>
+          <div class="card-art art-explorer" aria-hidden="true"><div class="art-doc"><span></span><span></span><span></span></div><div class="art-check">?</div><span class="art-notation">SOURCE / COVERAGE / UNKNOWN</span></div>
+          <h3>Source Evidence Explorer</h3><p>Challenge missing pages, stale observations and unsupported cross-chain claims across explicitly fictional networks.</p>
+          <a class="card-link" href="./source-explorer.html">Inspect source evidence <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="capability-card card-live">
+          <div class="card-top"><span class="card-index">03 / XRPL</span><span class="maturity live">LIMITED LIVE READ-ONLY</span></div>
+          <div class="card-art art-live" aria-hidden="true"><div class="art-ledger"><span>LEDGER</span><strong>— — — —</strong><small>MANUAL REQUEST ONLY</small></div><span class="art-notation">THIRD-PARTY RPC / OPT-IN</span></div>
+          <h3>XRPL public ledger viewer</h3><p>Request a validated-ledger report or native-XRP account info on demand. Provider assertions are not independent consensus proofs.</p>
+          <a class="card-link" href="./xrpl-live.html">Open manual XRPL viewer <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="capability-card card-hub">
+          <div class="card-top"><span class="card-index">04 / RESEARCH</span><span class="maturity research">PUBLIC RESEARCH</span></div>
+          <div class="card-art art-hub" aria-hidden="true"><span class="art-ring r1"></span><span class="art-ring r2"></span><span class="art-center">6</span><span class="art-notation">SIX PUBLIC DISCIPLINES</span></div>
+          <h3>Research Hub</h3><p>Find public blockchain, AI, privacy, cryptography, communication and security research without mistaking plans for shipped software.</p>
+          <a class="card-link" href="./research-hub.html">Explore the research hub <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contribution-section" aria-labelledby="contribution-title">
+    <div class="shell contribution-panel">
+      <div><p class="eyebrow">OPEN DEVELOPMENT <span class="slash">/</span> CONTRIBUTIONS WELCOME</p><h2 id="contribution-title">The next useful finding <em>could be yours.</em></h2><p>Bring a reproducible failure, an independently checkable public observation, a better negative test or an accessibility improvement. Use your preferred AI to help prepare a reviewable contribution; a person still controls the submission.</p>
+        <div class="contribution-buttons"><a class="button button-primary" href="./ai-contribute.html#launch">Contribute with your AI <span aria-hidden="true">↗</span></a><a class="button button-outline" href="https://github.com/Footloose9/hyperfabric-evolution/issues">Find a public issue</a></div>
+      </div>
+      <div class="contribution-checklist">
+        <div><span>01</span><p><strong>Identify a falsifiable claim</strong><small>Public sources and an ordinary alternative</small></p></div>
+        <div><span>02</span><p><strong>Build one reproducible case</strong><small>Positive and negative tests</small></p></div>
+        <div><span>03</span><p><strong>Submit exact evidence</strong><small>Public PR, rights review, CI and maintainer review</small></p></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div><strong>HYPERFABRIC EVOLUTION</strong><p>Open research. Reproducible claims. Explicit uncertainty.</p></div>
+    <nav aria-label="Footer navigation"><a href="./index.html">Home</a><a href="./research-hub.html">Research</a><a href="https://github.com/Footloose9/hyperfabric-evolution">GitHub source</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/PUBLICATION_POLICY.md">Publication policy</a></nav>
+    <small>Demonstration data is fabricated. No financial, wallet, identity-attribution, consensus or production-security claim.</small>
+  </div>
+</footer>
+</body>
+</html>
