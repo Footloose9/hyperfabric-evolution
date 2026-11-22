@@ -70,9 +70,24 @@
       return own(record, field);
     });
   }
+  /* Identity fields must be inert data, not changing or throwing getters.
+     This checks synthetic input shape, not adversarial Proxy authentication. */
+  function hasOnlyOwnDataProperties(record) {
+    try {
+      return Reflect.ownKeys(record).every(function (field) {
+        var descriptor = Object.getOwnPropertyDescriptor(record, field);
+        return descriptor && own(descriptor, "value");
+      });
+    } catch (_error) {
+      return false;
+    }
+  }
   function validate(record) {
     if (!isObject(record)) {
       return { ok: false, reason: "An input must be a declared synthetic record." };
+    }
+    if (!hasOnlyOwnDataProperties(record)) {
+      return { ok: false, reason: "Synthetic identities must use inert own data properties, not accessors." };
     }
     if (record.network === "xrpl:synthetic") {
       if (record.kind === "native") {
