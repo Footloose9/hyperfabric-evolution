@@ -11,6 +11,7 @@ import unittest
 from hyperfabric_public.bitcoin_utxo import (
     CompetingSpendError,
     MAX_FIXTURE_BYTES,
+    MAX_JSON_NESTING_DEPTH,
     MissingPrevoutError,
     SyntheticUTXOError,
     parse_fixture_json,
@@ -276,6 +277,29 @@ class NegativeSyntheticBitcoinUTXOTests(unittest.TestCase):
             parse_fixture_json(raw)
         self.assertEqual(parse_fixture_json(b'{"nested":[[0]]}'),
                          {"nested": [[0]]})
+
+    def test_json_nesting_explicit_boundary_and_quoted_delimiters(self):
+        # The decoder's native recursion limit varies by Python/platform.
+        permitted = MAX_JSON_NESTING_DEPTH - 1  # outer object uses one level
+        valid = (b'{"nested":' + b"[" * permitted + b"0"
+                 + b"]" * permitted + b"}")
+        value = parse_fixture_json(valid)["nested"]
+        for _ in range(permitted):
+            self.assertIsInstance(value, list)
+            value = value[0]
+        self.assertEqual(value, 0)
+
+        exceeded = MAX_JSON_NESTING_DEPTH
+        invalid = (b'{"nested":' + b"[" * exceeded + b"0"
+                   + b"]" * exceeded + b"}")
+        self.assertLess(len(invalid), MAX_FIXTURE_BYTES)
+        with self.assertRaisesRegex(SyntheticUTXOError, "nesting depth"):
+            parse_fixture_json(invalid)
+
+        # Brackets and braces inside a quoted/escaped string are not nesting.
+        quoted = b'{"nested":"' + b"[" * 4000 + b'\\"' + b"}" * 4000 + b'"}'
+        self.assertEqual(parse_fixture_json(quoted)["nested"],
+                         "[" * 4000 + '"' + "}" * 4000)
 
     def test_json_exponent_overflow_refused_before_schema_inspection(self):
         # JSON's parse_constant hook misses numeric exponent overflow:
