@@ -209,6 +209,59 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
 
 
 
+
+    def test_historical_nested_gitignore_cannot_amnesty_forced_file(self):
+        # The public guard's policy is root-only, but Git also applies
+        # a tracked nested .gitignore. A later nested exception cannot
+        # retroactively authorize a file introduced while ignored.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/.gitignore\n"
+            "!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        nested = self.root / "docs" / ".gitignore"
+        nested.write_text("candidate.txt\n", encoding="utf-8")
+        git(self.root, "add", "--", ".gitignore", "docs/.gitignore")
+        git(self.root, "commit", "-qm", "synthetic nested baseline")
+        base = git(self.root, "rev-parse", "HEAD")
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional text only\n", encoding="utf-8")
+        denied = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(denied.returncode, 0)
+        git(self.root, "add", "-f", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "historically ignored addition")
+        nested.write_text("# candidate permitted later\n", encoding="utf-8")
+        git(self.root, "add", "--", "docs/.gitignore")
+        git(self.root, "commit", "-qm", "later nested exception")
+        admitted = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(admitted.returncode, 1)
+        self.assertIn(
+            "nested .gitignore",
+            " ".join(verify_pr_diff(self.root, base, "HEAD")),
+        )
+
+    def test_root_only_literal_allowlist_still_passes(self):
+        # Ordinary atomic root allowlisting without nested ignore files
+        # must remain a valid public contribution.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n"
+            "!docs/candidate.txt\n", encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "first permit fictional path")
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("independently invented public fixture\n",
+                             encoding="utf-8")
+        git(self.root, "add", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "valid subsequent public addition")
+        self.assertEqual(verify_pr_diff(self.root, self.base, "HEAD"), [])
+
     def test_historical_forced_path_is_not_amnestied_by_later_exception(self):
         # A later .gitignore exception cannot retroactively authorize a file
         # that entered Git while the exact path was still denied.
