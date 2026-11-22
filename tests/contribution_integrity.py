@@ -232,6 +232,22 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
     for raw_commit in commit_ids:
         commit_sha = raw_commit.decode("ascii")
         current_tree = _tree_entries(root, commit_sha)
+        # First-parent comparisons detect a deletion in an intermediate
+        # commit even when a later commit restores the same tracked path.
+        # Comparing against the *latest base* would falsely reject older
+        # feature commits that predate newer files merged into main.
+        lineage = _git(
+            root, "rev-list", "--parents", "-n", "1", commit_sha
+        ).stdout.split()
+        if len(lineage) < 2 or lineage[0] != raw_commit:
+            errors.append(f"historical commit lacks auditable first parent: {commit_sha[:12]}")
+            continue
+        first_parent = _tree_entries(root, lineage[1].decode("ascii"))
+        for removed in sorted(first_parent.keys() - current_tree.keys()):
+            errors.append(
+                f"historical deletion requires explicit bounded exception: "
+                f"{removed} ({commit_sha[:12]})"
+            )
         ignore_entry = current_tree.get(".gitignore")
         if ignore_entry is None or ignore_entry[1] != b"blob":
             errors.append(f"historical missing .gitignore: {commit_sha[:12]}")
