@@ -120,6 +120,42 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
     if changed_ignore:
         raw_ignore = _git(root, "show", f"{head}:.gitignore").stdout
         errors.extend(_exact_allowlist(raw_ignore))
+    # A final-tree diff cannot see a secret briefly committed and later removed.
+    # Scan every newly reachable Git blob, including discarded historical blobs.
+    history = _git(root, "rev-list", "--objects", f"{base}..{head}").stdout.splitlines()
+    if len(history) > 1024:
+        errors.append("PR history exceeds bounded 1024-object audit budget")
+        return errors
+    seen: set[str] = set()
+    for row in history:
+        object_id, _, raw_path = row.partition(b" ")
+        sha = object_id.decode("ascii")
+        if sha in seen:
+            continue
+        seen.add(sha)
+        kind = _git(root, "cat-file", "-t", sha).stdout.strip()
+        if kind == b"commit":
+            # Commit-message content is public too; inspect high-confidence markers.
+            commit = _git(root, "cat-file", "commit", sha).stdout
+            if any(pattern.search(commit) for pattern in SECRET_MARKERS):
+                errors.append(f"historical commit contains secret marker: {sha[:12]}")
+            continue
+        if kind != b"blob":
+            continue
+        name = raw_path.decode("utf-8", "replace")[:110] or "unnamed blob"
+        size = int(_git(root, "cat-file", "-s", sha).stdout)
+        if size > MAX_TEXT_BYTES:
+            errors.append(f"historical object exceeds text limit: {name} ({sha[:12]})")
+            continue
+        content = _git(root, "cat-file", "blob", sha).stdout
+        if b"\0" in content:
+            errors.append(f"historical binary object: {name} ({sha[:12]})")
+        try:
+            content.decode("utf-8")
+        except UnicodeError:
+            errors.append(f"historical invalid UTF-8 object: {name} ({sha[:12]})")
+        if any(pattern.search(content) for pattern in SECRET_MARKERS):
+            errors.append(f"historical object contains secret marker: {name} ({sha[:12]})")
     return errors
 
 
