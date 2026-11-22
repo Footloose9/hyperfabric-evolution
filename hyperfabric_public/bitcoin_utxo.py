@@ -19,6 +19,7 @@ NETWORK = "bitcoin:synthetic"
 PROVENANCE = "PUBLIC_SYNTHETIC"
 MAX_MONEY_SATS = 21_000_000 * 100_000_000
 MAX_FIXTURE_BYTES = 40_000
+MAX_JSON_NESTING_DEPTH = 256
 _HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 _HEX = re.compile(r"[0-9a-f]*\Z")
 _STATES = frozenset({"UNCONFIRMED", "CONFIRMED", "REORGED", "CONFLICTED"})
@@ -115,10 +116,35 @@ def _unique_json_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _check_json_nesting(raw: bytes) -> None:
+    """Limit container depth regardless of the host JSON decoder stack."""
+    depth = 0
+    quoted = False
+    escaped = False
+    for byte in raw:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:  # backslash inside JSON string
+                escaped = True
+            elif byte == 0x22:  # terminating quote
+                quoted = False
+        elif byte == 0x22:
+            quoted = True
+        elif byte in (0x7B, 0x5B):  # { [
+            depth += 1
+            _need(depth <= MAX_JSON_NESTING_DEPTH,
+                  "JSON nesting depth exceeded")
+        elif byte in (0x7D, 0x5D):  # } ]
+            depth -= 1
+            _need(depth >= 0, "unexpected JSON container closure")
+
+
 def parse_fixture_json(raw: bytes) -> dict[str, Any]:
     """Decode only bounded JSON and reject duplicate/nonfinite members."""
     _need(type(raw) is bytes and 0 < len(raw) <= MAX_FIXTURE_BYTES,
           "fixture JSON byte limit or source type invalid")
+    _check_json_nesting(raw)
     try:
         data = json.loads(
             raw.decode("utf-8"), object_pairs_hook=_unique_json_members,
