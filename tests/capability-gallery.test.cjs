@@ -117,6 +117,35 @@ test("foreign, inherited and hidden fields refuse synthetic identity admission",
   assert.equal(gallery.validate(evm).ok, true);
 });
 
+test("accessor-backed identity fields are refused before any getter runs", () => {
+  const examples = [
+    [gallery.getCase("different").left, "issuer"],
+    [gallery.getCase("different").left, "currency"],
+    [gallery.getCase("native").left, "network"],
+    [gallery.getCase("crosschain").right, "contract"]
+  ];
+  for (const [original, field] of examples) {
+    const record = { ...original };
+    let reads = 0;
+    Object.defineProperty(record, field, {
+      enumerable: true, configurable: true,
+      get() { return ++reads <= 2 ? original[field] : undefined; }
+    });
+    assert.equal(gallery.validate(record).ok, false, field + " accessor refused");
+    assert.equal(reads, 0, field + " getter must never execute");
+    assert.equal(gallery.evaluatePair(original, record).status, "REFUSED");
+    assert.equal(reads, 0, "comparison must not invoke the getter");
+  }
+  const record = gallery.getCase("different").left;
+  Object.defineProperty(record, "issuer", {
+    enumerable: true,
+    get() { throw Error("unexpected accessor execution"); }
+  });
+  assert.doesNotThrow(() => gallery.validate(record));
+  assert.equal(gallery.validate(record).ok, false);
+  assert.equal(gallery.validate(gallery.getCase("different").left).ok, true);
+});
+
 test("a caller cannot mutate the repository's fixed test fixture through getCase", () => {
   const first = gallery.getCase("different");
   first.left.issuer = "sim:forged";
