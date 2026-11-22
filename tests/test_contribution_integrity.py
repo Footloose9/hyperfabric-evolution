@@ -146,6 +146,26 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         git(self.root, "commit", "-qm", "unsafe ignore whitespace")
         self.assertIn("noncanonical whitespace", " ".join(verify_pr_diff(self.root, self.base)))
 
+    def test_historical_oversized_added_text_cannot_be_hidden_by_deletion(self):
+        path = self.root / "docs" / "ok.txt"
+        path.write_bytes(b"x" * 210_001)
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "historical oversized new object")
+        git(self.root, "rm", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "remove oversized object")
+        self.assertIn("historical added text exceeds", " ".join(self.commit()))
+
+    def test_historical_weak_allowlist_is_rejected_even_if_restored(self):
+        original = (self.root / ".gitignore").read_text(encoding="utf-8")
+        (self.root / ".gitignore").write_text(
+            " *\n!.gitignore\n!docs/\n!docs/ok.txt\n", encoding="utf-8")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "commit", "-qm", "historical weakened denyall")
+        (self.root / ".gitignore").write_text(original, encoding="utf-8")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "commit", "-qm", "restore ignore rules")
+        self.assertIn("historical ignore rule", " ".join(self.commit()))
+
     def test_deny_all_cannot_be_removed(self):
         self.assertIn("deny-all", " ".join(_exact_allowlist(b"!docs/\n")))
 
