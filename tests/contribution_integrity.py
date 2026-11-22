@@ -1,0 +1,146 @@
+"""Public PR changed-file guard; not a rights, identity, or security approval.
+
+Standard-library only. This checks Git objects, not self-reported PR claims.
+On GitHub Actions it should run using the version from the protected base
+commit, not a changeable copy supplied by the pull request.
+"""
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import re
+import subprocess
+
+MAX_TEXT_BYTES = 512_000
+MAX_NEW_FILE_BYTES = 200_000
+SECRET_MARKERS = (
+    re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"),
+    re.compile(rb"\bghp_[A-Za-z0-9]{30,}\b"),
+    re.compile(rb"\bgithub_pat_[A-Za-z0-9_]{25,}\b"),
+)
+
+
+def _git(root: Path, *args: str, allowed=(0,)) -> subprocess.CompletedProcess[bytes]:
+    proc = subprocess.run(
+        ["git", *args], cwd=root, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, check=False,
+    )
+    if proc.returncode not in allowed:
+        raise RuntimeError(f"git {' '.join(args[:2])} failed: {proc.stderr[:180]!r}")
+    return proc
+
+
+def _exact_allowlist(raw: bytes) -> list[str]:
+    """Reject changed allowlists that disable the deny-all staging default."""
+    try:
+        lines = raw.decode("utf-8").splitlines()
+    except UnicodeError:
+        return [".gitignore is not UTF-8"]
+    rules = [v.strip() for v in lines if v.strip() and not v.lstrip().startswith("#")]
+    errors = []
+    if not rules or rules[0] != "*":
+        errors.append(".gitignore must start with a deny-all '*' rule")
+    for v in rules[1:]:
+        if not v.startswith("!"):
+            errors.append(f"unexpected ignore rule: {v[:70]}")
+            continue
+        path = v[1:]
+        bits = path.rstrip("/").split("/")
+        if (not path or path.startswith("/") or "\\" in path
+                or any(c in path for c in "*?[]")
+                or any(p in ("", ".", "..") for p in bits)):
+            errors.append(f"non-exact staging exception: {v[:70]}")
+    return errors
+
+
+def _path_is_safe(path: str) -> bool:
+    segments = path.split("/")
+    return bool(path and not path.startswith("/") and "\\" not in path
+                and all(part not in ("", ".", "..", ".git") for part in segments))
+
+
+def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
+    """Inspect actual Git diff and tree objects; fail closed on uncertain types."""
+    root = Path(root).resolve()
+    _git(root, "rev-parse", "--verify", "--end-of-options", base)
+    _git(root, "rev-parse", "--verify", "--end-of-options", head)
+    raw = _git(root, "diff", "--no-renames", "--name-status", "-z", base, head).stdout
+    fields = raw.rstrip(b"\0").split(b"\0") if raw else []
+    if not fields:
+        return ["empty PR diff: no demonstrable changed paths"]
+    if len(fields) % 2:
+        return ["malformed Git name-status output"]
+    errors: list[str] = []
+    changed_ignore = False
+    for i in range(0, len(fields), 2):
+        status = fields[i].decode("ascii", "replace")
+        try:
+            path = fields[i + 1].decode("utf-8")
+        except UnicodeError:
+            errors.append("non-UTF8 changed path")
+            continue
+        if not _path_is_safe(path):
+            errors.append(f"unsafe changed path: {path!r}")
+            continue
+        if path == ".gitignore":
+            changed_ignore = True
+        if status.startswith("D"):
+            errors.append(f"deletion requires explicit bounded exception: {path}")
+            continue
+        if status[0] not in ("A", "M", "T"):
+            errors.append(f"unsupported change kind {status}: {path}")
+            continue
+        row = _git(root, "ls-tree", "-z", head, "--", path).stdout
+        if not row or row.count(b"\0") != 1:
+            errors.append(f"missing/ambiguous tree entry: {path}")
+            continue
+        meta = row.split(b"\t", 1)[0].split()
+        if len(meta) != 3 or meta[0] != b"100644" or meta[1] != b"blob":
+            errors.append(f"unsupported file mode/type (symlink, executable, submodule): {path}")
+            continue
+        size = int(_git(root, "cat-file", "-s", meta[2].decode("ascii")).stdout)
+        limit = MAX_NEW_FILE_BYTES if status.startswith("A") else MAX_TEXT_BYTES
+        if size > limit:
+            errors.append(f"changed text exceeds {limit} bytes: {path}")
+            continue
+        content = _git(root, "cat-file", "blob", meta[2].decode("ascii")).stdout
+        if b"\0" in content:
+            errors.append(f"NUL/binary content: {path}")
+        try:
+            content.decode("utf-8")
+        except UnicodeError:
+            errors.append(f"invalid UTF-8 content: {path}")
+        if any(pattern.search(content) for pattern in SECRET_MARKERS):
+            errors.append(f"high-confidence secret marker: {path}")
+        if status.startswith("A"):
+            ignore = _git(root, "check-ignore", "-q", "--no-index", "--", path,
+                          allowed=(0, 1))
+            if ignore.returncode == 0:
+                errors.append(f"new path excluded by public .gitignore: {path}")
+    if changed_ignore:
+        raw_ignore = _git(root, "show", f"{head}:.gitignore").stdout
+        errors.extend(_exact_allowlist(raw_ignore))
+    return errors
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Limited public-only PR diff check")
+    parser.add_argument("--base", required=True)
+    parser.add_argument("--head", default="HEAD")
+    parser.add_argument("--repo", default=".")
+    args = parser.parse_args()
+    try:
+        issues = verify_pr_diff(Path(args.repo), args.base, args.head)
+    except (RuntimeError, ValueError) as exc:
+        print(f"HOLD: unable to inspect exact Git objects: {exc}")
+        return 1
+    if issues:
+        for issue in issues:
+            print("HOLD:", issue)
+        return 1
+    print("PASS: Git object/path hygiene only. NOT provenance, rights, human review, or release clearance.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
