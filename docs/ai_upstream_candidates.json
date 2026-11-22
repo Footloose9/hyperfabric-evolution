@@ -3,7 +3,7 @@
   "reviewed_date_utc": "2026-11-22",
   "source_class": "PUBLIC_ORIGINAL",
   "scope": "Partial seed: five public-source, documentation-only research candidates for issue #33, not a completeness, adoption or deployment claim.",
-  "method": "Read pinned public upstream README, root LICENSE and directory listings, supplemented by the pinned A2A specification file and OpenClaw THIRD_PARTY_NOTICES and SECURITY policy. GitHub license metadata is supplementary. No upstream code, packages, services, binaries, private data or dependencies were imported or executed.",
+  "method": "Read pinned public upstream README, root LICENSE and directory listings, supplemented by the pinned A2A specification file and OpenClaw THIRD_PARTY_NOTICES and SECURITY policy. GitHub license metadata is supplementary. No upstream code, packages, services, binaries, private data or dependencies were imported or executed. An additional source-only check records pinned package-license declarations where directly observed; component, distribution, dependency, security and resource clearance remain unresolved.",
   "decision_policy": "Only a separately evidenced and dated owner/maintainer decision can change PENDING to ADOPTED or REJECTED. A review trigger initiates reevaluation only.",
   "candidates": [
     {
@@ -37,7 +37,8 @@
       "decision_date_utc": null,
       "decision_evidence": [
         "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/README.md",
-        "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/LICENSE"
+        "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/LICENSE",
+        "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/pyproject.toml"
       ],
       "review_trigger": {
         "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
@@ -55,7 +56,26 @@
           "fit, resource budget and negative tests"
         ]
       },
-      "bounded_next_check": "Map one public-only MCP tool/resource/error contract against current public protocol documentation, without an install or remote tool call."
+      "bounded_next_check": "Map one public-only MCP tool/resource/error contract against current public protocol documentation, without an install or remote tool call.",
+      "rights_resolution": {
+        "status": "INCOMPLETE_NOT_CLEARED",
+        "package_declaration": {
+          "status": "OBSERVED_AT_PIN",
+          "metadata_path": "pyproject.toml",
+          "metadata_url": "https://github.com/modelcontextprotocol/python-sdk/blob/77001c96f9507be0f4d009b83210a384a5e08bda/pyproject.toml",
+          "license_value": "MIT",
+          "declaration_kind": "PEP621_LICENSE_TEXT"
+        },
+        "distribution_notice": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "Identify an exact release artifact and digest, inspect packaged LICENSE and NOTICE/THIRD_PARTY_NOTICES paths or a bounded documented absence; root-directory listing does not prove distribution rights."
+        },
+        "transitive_rights": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "For a selected exact package or specification version, identify bundled and optional components, pin dependency manifests, and cite their SPDX expressions or complete license texts and required attribution notices."
+        },
+        "tag_comparison": null
+      }
     },
     {
       "id": "opentelemetry-python",
@@ -106,7 +126,26 @@
           "fit, resource budget and negative tests"
         ]
       },
-      "bounded_next_check": "Compare publicly documented trace propagation fields and missing-span semantics using entirely synthetic fixtures; do not install an exporter."
+      "bounded_next_check": "Compare publicly documented trace propagation fields and missing-span semantics using entirely synthetic fixtures; do not install an exporter.",
+      "rights_resolution": {
+        "status": "INCOMPLETE_NOT_CLEARED",
+        "package_declaration": {
+          "status": "NOT_REVIEWED",
+          "metadata_path": null,
+          "metadata_url": null,
+          "license_value": null,
+          "declaration_kind": null
+        },
+        "distribution_notice": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "Identify an exact release artifact and digest, inspect packaged LICENSE and NOTICE/THIRD_PARTY_NOTICES paths or a bounded documented absence; root-directory listing does not prove distribution rights."
+        },
+        "transitive_rights": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "For a selected exact package or specification version, identify bundled and optional components, pin dependency manifests, and cite their SPDX expressions or complete license texts and required attribution notices."
+        },
+        "tag_comparison": null
+      }
     },
     {
       "id": "in-toto",
@@ -139,7 +178,8 @@
       "decision_date_utc": null,
       "decision_evidence": [
         "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/README.md",
-        "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/LICENSE"
+        "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/LICENSE",
+        "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/pyproject.toml"
       ],
       "review_trigger": {
         "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
@@ -157,7 +197,33 @@
           "fit, resource budget and negative tests"
         ]
       },
-      "bounded_next_check": "Write a synthetic unsigned/mismatched-link negative case from the public specification; resolve component and distribution license evidence before proposing code reuse."
+      "bounded_next_check": "Write a synthetic unsigned/mismatched-link negative case from the public specification; resolve component and distribution license evidence before proposing code reuse.",
+      "rights_resolution": {
+        "status": "INCOMPLETE_NOT_CLEARED",
+        "package_declaration": {
+          "status": "OBSERVED_AT_PIN",
+          "metadata_path": "pyproject.toml",
+          "metadata_url": "https://github.com/in-toto/in-toto/blob/e352b43ad7cb8915d84c36d791aa61346152a0a3/pyproject.toml",
+          "license_value": "Apache-2.0",
+          "declaration_kind": "PEP621_LICENSE_EXPRESSION"
+        },
+        "distribution_notice": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "Identify an exact release artifact and digest, inspect packaged LICENSE and NOTICE/THIRD_PARTY_NOTICES paths or a bounded documented absence; root-directory listing does not prove distribution rights."
+        },
+        "transitive_rights": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "For a selected exact package or specification version, identify bundled and optional components, pin dependency manifests, and cite their SPDX expressions or complete license texts and required attribution notices."
+        },
+        "tag_comparison": {
+          "tag": "v3.0.0",
+          "annotated_tag_object_sha": "a769c0148b404afa34690383675a4cec9f7e26d8",
+          "resolved_commit": "659942bde1cd732b0b9449445f9769b2def6aeb1",
+          "metadata_url": "https://github.com/in-toto/in-toto/blob/659942bde1cd732b0b9449445f9769b2def6aeb1/pyproject.toml",
+          "license_value": "Apache-2.0",
+          "relation_to_pinned_source": "SEPARATE_HISTORICAL_RELEASE"
+        }
+      }
     },
     {
       "id": "a2a-protocol",
@@ -209,7 +275,26 @@
           "fit, resource budget and negative tests"
         ]
       },
-      "bounded_next_check": "Read precise protocol-discovery authorization rules and author a standalone, original synthetic refusal fixture without installing an SDK."
+      "bounded_next_check": "Read precise protocol-discovery authorization rules and author a standalone, original synthetic refusal fixture without installing an SDK.",
+      "rights_resolution": {
+        "status": "INCOMPLETE_NOT_CLEARED",
+        "package_declaration": {
+          "status": "NOT_APPLICABLE_TO_SPEC_REFERENCE",
+          "metadata_path": null,
+          "metadata_url": null,
+          "license_value": null,
+          "declaration_kind": null
+        },
+        "distribution_notice": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "Identify an exact release artifact and digest, inspect packaged LICENSE and NOTICE/THIRD_PARTY_NOTICES paths or a bounded documented absence; root-directory listing does not prove distribution rights."
+        },
+        "transitive_rights": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "For a selected exact package or specification version, identify bundled and optional components, pin dependency manifests, and cite their SPDX expressions or complete license texts and required attribution notices."
+        },
+        "tag_comparison": null
+      }
     },
     {
       "id": "openclaw",
@@ -245,7 +330,8 @@
         "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/README.md",
         "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/LICENSE",
         "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/THIRD_PARTY_NOTICES.md",
-        "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/SECURITY.md"
+        "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/SECURITY.md",
+        "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/package.json"
       ],
       "review_trigger": {
         "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
@@ -263,7 +349,26 @@
           "fit, resource budget and negative tests"
         ]
       },
-      "bounded_next_check": "Prepare original public-only synthetic untrusted-output negative cases; do not launch gateway processes or read any private instance state."
+      "bounded_next_check": "Prepare original public-only synthetic untrusted-output negative cases; do not launch gateway processes or read any private instance state.",
+      "rights_resolution": {
+        "status": "INCOMPLETE_NOT_CLEARED",
+        "package_declaration": {
+          "status": "OBSERVED_AT_PIN",
+          "metadata_path": "package.json",
+          "metadata_url": "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/package.json",
+          "license_value": "MIT",
+          "declaration_kind": "NPM_LICENSE_SPDX"
+        },
+        "distribution_notice": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "Identify an exact release artifact and digest, inspect packaged LICENSE and NOTICE/THIRD_PARTY_NOTICES paths or a bounded documented absence; root-directory listing does not prove distribution rights."
+        },
+        "transitive_rights": {
+          "status": "NOT_REVIEWED",
+          "required_evidence": "For a selected exact package or specification version, identify bundled and optional components, pin dependency manifests, and cite their SPDX expressions or complete license texts and required attribution notices."
+        },
+        "tag_comparison": null
+      }
     }
   ],
   "synthetic_negative_control": {

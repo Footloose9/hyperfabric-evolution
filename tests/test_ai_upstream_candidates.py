@@ -22,6 +22,7 @@ _PENDING_KEYS = frozenset({
     "security_and_resource_gaps", "synthetic_negative_case",
     "decision_status", "decision_reason", "decision_date_utc",
     "decision_evidence", "review_trigger", "bounded_next_check",
+    "rights_resolution",
 })
 
 # The source envelope is closed to undeclared fields, including false authority.
@@ -72,6 +73,63 @@ def _synthetic_pending_record_gate(item):
         if set(src) != _SOURCE_KEYS:
             return False
     else:
+        return False
+    # Test-local evidence closure: package declarations are sources, not clearance.
+    rights = item.get("rights_resolution")
+    if type(rights) is not dict or set(rights) != {
+            "status", "package_declaration", "distribution_notice",
+            "transitive_rights", "tag_comparison"}:
+        return False
+    if rights["status"] != "INCOMPLETE_NOT_CLEARED":
+        return False
+    pkg = rights["package_declaration"]
+    if type(pkg) is not dict or set(pkg) != {
+            "status", "metadata_path", "metadata_url",
+            "license_value", "declaration_kind"}:
+        return False
+    if pkg["status"] == "OBSERVED_AT_PIN":
+        if (pkg["metadata_path"] not in ("pyproject.toml", "package.json")
+                or pkg["metadata_url"] != pinned + pkg["metadata_path"]
+                or pkg["metadata_url"] not in evidence
+                or pkg["license_value"] not in ("MIT", "Apache-2.0")
+                or pkg["license_value"] not in src["top_level_license_file"]):
+            return False
+        expected_kind = ("NPM_LICENSE_SPDX" if pkg["metadata_path"] == "package.json"
+                         else "PEP621_LICENSE_EXPRESSION"
+                         if pkg["license_value"] == "Apache-2.0"
+                         else "PEP621_LICENSE_TEXT")
+        if pkg["declaration_kind"] != expected_kind:
+            return False
+    elif pkg["status"] in ("NOT_REVIEWED", "NOT_APPLICABLE_TO_SPEC_REFERENCE"):
+        if any(pkg[field] is not None for field in (
+                "metadata_path", "metadata_url", "license_value",
+                "declaration_kind")):
+            return False
+    else:
+        return False
+    for field in ("distribution_notice", "transitive_rights"):
+        gate = rights[field]
+        if (type(gate) is not dict
+                or set(gate) != {"status", "required_evidence"}
+                or gate["status"] != "NOT_REVIEWED"
+                or type(gate["required_evidence"]) is not str
+                or len(gate["required_evidence"].strip()) < 40):
+            return False
+    tag = rights["tag_comparison"]
+    if tag is not None:
+        if (item["id"] != "in-toto" or type(tag) is not dict
+                or set(tag) != {
+                    "tag", "annotated_tag_object_sha", "resolved_commit",
+                    "metadata_url", "license_value", "relation_to_pinned_source"}
+                or tag["tag"] != "v3.0.0"
+                or not all(type(tag[k]) is str and HEX40.fullmatch(tag[k])
+                            for k in ("annotated_tag_object_sha", "resolved_commit"))
+                or tag["resolved_commit"] == sha
+                or tag["metadata_url"] != repo + "/blob/" + tag["resolved_commit"] + "/pyproject.toml"
+                or tag["license_value"] != "Apache-2.0"
+                or tag["relation_to_pinned_source"] != "SEPARATE_HISTORICAL_RELEASE"):
+            return False
+    elif item["id"] == "in-toto":
         return False
     if (item.get("decision_status") != "PENDING"
             or item.get("decision_date_utc") is not None
@@ -199,6 +257,44 @@ class TestPublicAiUpstreamCatalog(unittest.TestCase):
         control = self.record["synthetic_negative_control"]
         self.assertFalse(_synthetic_pending_record_gate(control))
 
+    def test_package_rights_evidence_is_source_only_and_requires_artifact_check(self):
+        observed = {"mcp-python-sdk", "in-toto", "openclaw"}
+        for item in self.record["candidates"]:
+            with self.subTest(candidate=item["id"]):
+                self.assertEqual(item["rights_resolution"]["status"],
+                                 "INCOMPLETE_NOT_CLEARED")
+                self.assertEqual(item["rights_resolution"]["distribution_notice"]["status"],
+                                 "NOT_REVIEWED")
+                self.assertEqual(item["rights_resolution"]["transitive_rights"]["status"],
+                                 "NOT_REVIEWED")
+                pkg = item["rights_resolution"]["package_declaration"]
+                if item["id"] in observed:
+                    self.assertEqual(pkg["status"], "OBSERVED_AT_PIN")
+                    self.assertIn(pkg["metadata_url"], item["decision_evidence"])
+                else:
+                    self.assertIn(pkg["status"], {
+                        "NOT_APPLICABLE_TO_SPEC_REFERENCE", "NOT_REVIEWED"})
+                    self.assertIsNone(pkg["metadata_url"])
+                self.assertTrue(_synthetic_pending_record_gate(item))
+                self.assertEqual(item["decision_status"], "PENDING")
+
+    def test_in_toto_release_tag_is_not_the_research_source_commit(self):
+        candidate = next(x for x in self.record["candidates"]
+                         if x["id"] == "in-toto")
+        source = candidate["source"]
+        tag = candidate["rights_resolution"]["tag_comparison"]
+        self.assertEqual(source["exact_commit"],
+                         "e352b43ad7cb8915d84c36d791aa61346152a0a3")
+        self.assertEqual(tag["tag"], "v3.0.0")
+        self.assertEqual(tag["annotated_tag_object_sha"],
+                         "a769c0148b404afa34690383675a4cec9f7e26d8")
+        self.assertEqual(tag["resolved_commit"],
+                         "659942bde1cd732b0b9449445f9769b2def6aeb1")
+        self.assertNotEqual(tag["resolved_commit"], source["exact_commit"])
+        self.assertEqual(tag["relation_to_pinned_source"],
+                         "SEPARATE_HISTORICAL_RELEASE")
+        self.assertEqual(candidate["decision_status"], "PENDING")
+
     def test_synthetic_mutations_refuse_false_adoption_and_evidence(self):
         # Synthetic malicious/accidental changes never alter actual catalog data.
         for candidate_id in ("a2a-protocol", "openclaw"):
@@ -216,6 +312,11 @@ class TestPublicAiUpstreamCatalog(unittest.TestCase):
                 ("undeclared source authority", ("source", "authorized"), True),
                 ("undeclared source path", ("source", "private_root_path"), "fictional"),
 
+                ("false rights clearance", ("rights_resolution", "status"), "CLEARED"),
+                ("invented distribution review", ("rights_resolution", "distribution_notice", "status"), "CLEARED"),
+                ("invented component rights", ("rights_resolution", "transitive_rights", "status"), "CLEARED"),
+                ("fabricated metadata evidence", ("rights_resolution", "package_declaration", "metadata_url"), "https://github.com/example/fake"),
+                ("fabricated license expression", ("rights_resolution", "package_declaration", "license_value"), "Unlicense"),
                 ("manufactured component rights", ("source", "component_license_terms"), "REVIEWED"),
                 ("manufactured transitive rights", ("source", "transitive_license_terms"), "REVIEWED"),
                 ("missing provenance", ("decision_evidence",), []),
