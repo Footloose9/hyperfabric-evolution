@@ -226,12 +226,26 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
         errors.append("PR exceeds bounded 64-commit historical tree audit")
         return errors
     base_tree = _tree_entries(root, base)
+    # The narrow exact-path predicate below models only the repository's
+    # root .gitignore. Git also applies nested .gitignore files, so allowing
+    # them here would make per-commit admission claims unsound. Fail closed.
+    nested_base = next((p for p in base_tree if p.endswith("/.gitignore")), None)
+    if nested_base is not None:
+        errors.append(f"nested .gitignore outside root-only policy: {nested_base} (base)")
+        return errors
     # Bind each historical new path to the *same commit's* root policy.
     # Cache by blob identity to keep the bounded history audit efficient.
     policy_by_blob: dict[bytes, bytes] = {}
     for raw_commit in commit_ids:
         commit_sha = raw_commit.decode("ascii")
         current_tree = _tree_entries(root, commit_sha)
+        nested = next((p for p in current_tree if p.endswith("/.gitignore")), None)
+        if nested is not None:
+            errors.append(
+                f"nested .gitignore outside root-only policy: "
+                f"{nested} ({commit_sha[:12]})"
+            )
+            return errors
         # First-parent comparisons detect a deletion in an intermediate
         # commit even when a later commit restores the same tracked path.
         # Comparing against the *latest base* would falsely reject older
