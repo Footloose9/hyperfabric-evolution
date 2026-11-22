@@ -68,6 +68,23 @@ class EvmIdentityTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     materialize(case)
 
+    def test_log_hex_case_preserves_evidence_identity(self):
+        lower = copy.deepcopy(self.positives["ethereum-included"])
+        lower["observation"]["transaction_hash"] = "0x" + "ab" * 32
+        lower["observation"]["block_hash"] = "0x" + "cd" * 32
+        upper = copy.deepcopy(lower)
+        for field in ("emitter", "transaction_hash", "block_hash"):
+            upper["observation"][field] = (
+                upper["observation"][field].upper().replace("0X", "0x")
+            )
+        first = materialize(lower)
+        second = materialize(upper)
+        self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
+        self.assertEqual(first.emitter, lower["observation"]["emitter"])
+        self.assertEqual(first.transaction_hash, lower["observation"]["transaction_hash"])
+        self.assertEqual(first.block_hash, lower["observation"]["block_hash"])
+
     def test_boolean_block_and_log_index_refuse(self):
         case = copy.deepcopy(self.positives["ethereum-included"])
         for field in ("block_number", "log_index"):

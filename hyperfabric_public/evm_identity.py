@@ -79,16 +79,18 @@ class EvmLogEvidence:
         if not isinstance(self.state, str) or self.state not in _STATES:
             raise ValueError("unsupported confirmation/finality claim")
         if self.transaction_hash is not None:
-            _hash(self.transaction_hash)
+            object.__setattr__(self, "transaction_hash", _hash(self.transaction_hash))
 
         if self.state in {"INCLUDED", "REORGED"}:
             if self.transaction_hash is None:
                 raise ValueError("included/reorganized log needs a transaction hash")
-            _hash(self.block_hash)
+            object.__setattr__(self, "block_hash", _hash(self.block_hash))
             _index(self.block_number, "block number")
             _index(self.log_index, "log index")
-            if _address(self.emitter) != self.asset.contract:
+            emitter = _address(self.emitter)
+            if emitter != self.asset.contract:
                 raise ValueError("log emitter differs from asset contract")
+            object.__setattr__(self, "emitter", emitter)
             if self.state == "INCLUDED" and self.removed is not False:
                 raise ValueError("included log must not be marked removed")
             if self.state == "REORGED" and self.removed is not True:
