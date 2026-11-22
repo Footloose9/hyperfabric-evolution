@@ -105,6 +105,47 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         git(self.root, "commit", "-qm", "hide previous binary")
         self.assertIn("historical binary object", " ".join(self.commit()))
 
+    def _transient_then_clean(self, path: str, content: bytes | str,
+                              executable: bool = False, symlink: bool = False):
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if symlink:
+            try:
+                os.symlink("../.gitignore", target)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation unsupported on this runner")
+        else:
+            target.write_bytes(content if isinstance(content, bytes)
+                               else content.encode("utf-8"))
+        git(self.root, "add", "-f", path)
+        if executable:
+            git(self.root, "update-index", "--chmod=+x", path)
+        git(self.root, "commit", "-qm", "transient object")
+        git(self.root, "rm", "-f", path)
+        git(self.root, "commit", "-qm", "delete transient object")
+        return self.commit()
+
+    def test_historical_symlink_cannot_be_hidden_in_clean_final_diff(self):
+        issues = self._transient_then_clean("docs/transient.txt", "", symlink=True)
+        self.assertIn("historical unsupported mode/type", " ".join(issues))
+
+    def test_historical_executable_cannot_be_hidden_in_clean_final_diff(self):
+        issues = self._transient_then_clean("docs/transient.txt", "synthetic", executable=True)
+        self.assertIn("historical unsupported mode/type", " ".join(issues))
+
+    def test_historical_unallowlisted_path_stays_disallowed(self):
+        issues = self._transient_then_clean("docs/hidden.txt", "fictional")
+        self.assertIn("historical unallowlisted path", " ".join(issues))
+
+    def test_leading_whitespace_cannot_defeat_deny_all(self):
+        (self.root / ".gitignore").write_text(
+            " *\n!.gitignore\n!docs/\n!docs/ok.txt\n", encoding="utf-8")
+        (self.root / "docs" / "private.txt").write_text("fictional\n")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "add", "--", "docs/private.txt")
+        git(self.root, "commit", "-qm", "unsafe ignore whitespace")
+        self.assertIn("noncanonical whitespace", " ".join(verify_pr_diff(self.root, self.base)))
+
     def test_deny_all_cannot_be_removed(self):
         self.assertIn("deny-all", " ".join(_exact_allowlist(b"!docs/\n")))
 
