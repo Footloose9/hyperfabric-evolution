@@ -51,6 +51,7 @@ class OfflineTransaction:
     asset_identity: str | None = None
     delivered_value: str | None = None
     provenance: str = "SYNTHETIC_PROVIDER_CLAIM_NOT_VERIFIED"
+    synthetic_entry_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -145,6 +146,8 @@ def _reject_constant(value: str):
 
 def _tx(entry: object, *, min_index: int, max_index: int,
         page_validated: bool) -> OfflineTransaction:
+    claim_digest = None
+
     def incomplete(reason: str, *, outcome: str = "NOT_ESTABLISHED",
                    effect: str = "INCONCLUSIVE") -> OfflineTransaction:
         return OfflineTransaction(
@@ -154,6 +157,7 @@ def _tx(entry: object, *, min_index: int, max_index: int,
             typ if isinstance(typ, str) else None,
             result if isinstance(result, str) else None,
             outcome, effect, reason,
+            synthetic_entry_sha256=claim_digest,
         )
 
     h, lh, idx, typ, result = None, None, None, None, None
@@ -183,6 +187,15 @@ def _tx(entry: object, *, min_index: int, max_index: int,
         not isinstance(result, str) or not _TEC.fullmatch(result)
     ):
         return incomplete("INVALID_VALIDATED_RESULT", effect="REFUSE")
+    # Canonicalize the full *invented* entry for cross-source claim comparison.
+    # This is not the XRPL signed transaction hash and proves no ledger fact.
+    try:
+        claim_digest = sha256(json.dumps(
+            entry, sort_keys=True, separators=(",", ":"),
+            ensure_ascii=True, allow_nan=False,
+        ).encode("ascii")).hexdigest().upper()
+    except (TypeError, ValueError, OverflowError):
+        return incomplete("INVALID_TRANSACTION_CLAIM", effect="REFUSE")
     if not (page_validated and entry["validated"]):
         return incomplete("SOURCE_NOT_VALIDATED")
     if result.startswith("tec"):
@@ -201,6 +214,7 @@ def _tx(entry: object, *, min_index: int, max_index: int,
             "SIMULATED_DELIVERY_METADATA_ONLY",
             "NO_ACCOUNT_OWNERSHIP_OR_PATH_PROOF",
             asset_key, amount,
+            synthetic_entry_sha256=claim_digest,
         )
     if typ == "OfferCreate":
         effect, reason = "INCONCLUSIVE", "OFFER_CREATED_OR_REMOVED_NOT_FILL_PROOF"
@@ -218,7 +232,10 @@ def _tx(entry: object, *, min_index: int, max_index: int,
         effect, reason = "INCONCLUSIVE", "ISSUER_OR_ACCOUNT_FLAGS_NOT_DERIVED"
     else:
         effect, reason = "INCONCLUSIVE", "UNSUPPORTED_EFFECT_MAPPING"
-    return OfflineTransaction(h, lh, idx, typ, result, outcome, effect, reason)
+    return OfflineTransaction(
+        h, lh, idx, typ, result, outcome, effect, reason,
+        synthetic_entry_sha256=claim_digest,
+    )
 
 
 def assess_synthetic_account_tx(raw_bytes: bytes, capture: SyntheticCapture) -> OfflinePage:
@@ -326,14 +343,22 @@ def compare_synthetic_page_sources(left: OfflinePage, right: OfflinePage) -> str
     shared = set(lmap) & set(rmap)
     if not shared:
         return "NO_SHARED_EVENT"
+    if any(
+        lmap[key].synthetic_entry_sha256 is None
+        or rmap[key].synthetic_entry_sha256 is None
+        for key in shared
+    ):
+        return "INCONCLUSIVE"
     if any((
         lmap[key].ledger_hash, lmap[key].ledger_index,
         lmap[key].transaction_type, lmap[key].transaction_result,
         lmap[key].asset_identity, lmap[key].delivered_value,
+        lmap[key].synthetic_entry_sha256,
     ) != (
         rmap[key].ledger_hash, rmap[key].ledger_index,
         rmap[key].transaction_type, rmap[key].transaction_result,
         rmap[key].asset_identity, rmap[key].delivered_value,
+        rmap[key].synthetic_entry_sha256,
     ) for key in shared):
         return "CONFLICT"
     if left.provider == right.provider:

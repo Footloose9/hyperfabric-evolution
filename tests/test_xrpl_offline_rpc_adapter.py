@@ -375,6 +375,37 @@ class OfflineXRPLSourceTests(unittest.TestCase):
         self.assertEqual(compare_synthetic_page_sources(first, disjoint),
                          "NO_SHARED_EVENT")
 
+    def test_identical_hash_cannot_mask_distinct_transaction_claims(self):
+        first = evaluate()
+        self.assertEqual(first.disposition, "SIMULATED_PAGE_OBSERVATION")
+        other_source = replace(SOURCE, provider="sim:provider_beta")
+        for section, field, replacement in (
+            ("tx_json", "Account", "sim:other_sender"),
+            ("tx_json", "Destination", "sim:other_receiver"),
+            ("meta", "AffectedNodes", [{"ModifiedNode": {"LedgerEntryType": "Offer"}}]),
+        ):
+            with self.subTest(section=section, field=field):
+                changed = tx()
+                changed[section][field] = replacement
+                other = evaluate(page(changed), source=other_source)
+                self.assertEqual(other.disposition, "SIMULATED_PAGE_OBSERVATION")
+                self.assertEqual(
+                    compare_synthetic_page_sources(first, other), "CONFLICT"
+                )
+
+    def test_semantically_identical_claims_can_have_different_json_whitespace(self):
+        left_raw = raw(page())
+        right_raw = json.dumps(page(), indent=2).encode("utf-8")
+        left = assess_synthetic_account_tx(left_raw, SOURCE)
+        right = assess_synthetic_account_tx(
+            right_raw, replace(SOURCE, provider="sim:provider_beta")
+        )
+        self.assertNotEqual(left.raw_content_sha256, right.raw_content_sha256)
+        self.assertEqual(
+            compare_synthetic_page_sources(left, right),
+            "MATCHING_SYNTHETIC_CLAIMS_NOT_ATTESTED",
+        )
+
     def test_duplicated_hash_in_one_page_is_not_silently_overwritten(self):
         duplicated = evaluate(page(tx(), tx(delivered="251")))
         self.assertEqual(duplicated.disposition, "INCONCLUSIVE")
