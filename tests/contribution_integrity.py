@@ -134,6 +134,10 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
         return ["malformed Git name-status output"]
     errors: list[str] = []
     changed_ignore = False
+    # A verifier may inspect any explicit head SHA without checking it out.
+    # The current filesystem's ignore policy must not decide another
+    # commit's eligibility; bind final admission to that head's Git blob.
+    raw_head_ignore = _git(root, "show", f"{head}:.gitignore").stdout
     for i in range(0, len(fields), 2):
         status = fields[i].decode("ascii", "replace")
         try:
@@ -175,13 +179,10 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
         if any(pattern.search(content) for pattern in SECRET_MARKERS):
             errors.append(f"high-confidence secret marker: {path}")
         if status.startswith("A"):
-            ignore = _git(root, "check-ignore", "-q", "--no-index", "--", path,
-                          allowed=(0, 1))
-            if ignore.returncode == 0:
-                errors.append(f"new path excluded by public .gitignore: {path}")
+            if not _exact_path_admitted(raw_head_ignore, path):
+                errors.append(f"new path excluded by exact head .gitignore: {path}")
     if changed_ignore:
-        raw_ignore = _git(root, "show", f"{head}:.gitignore").stdout
-        errors.extend(_exact_allowlist(raw_ignore))
+        errors.extend(_exact_allowlist(raw_head_ignore))
     # A final-tree diff cannot see a secret briefly committed and later removed.
     # Scan every newly reachable Git blob, including discarded historical blobs.
     history = _git(root, "rev-list", "--objects", f"{base}..{head}").stdout.splitlines()

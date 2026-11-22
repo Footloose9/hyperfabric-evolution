@@ -116,6 +116,49 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
             " ".join(verify_pr_diff(self.root, self.base)),
         )
 
+    def test_head_allowlist_not_dependent_on_runner_checkout(self):
+        # The verifier accepts an explicit arbitrary head SHA; a local
+        # checkout of the earlier base must not change that head's policy.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional source evidence\n", encoding="utf-8")
+        git(self.root, "add", "--", ".gitignore", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "atomic permitted public addition")
+        candidate_head = git(self.root, "rev-parse", "HEAD")
+        self.assertEqual(verify_pr_diff(self.root, self.base, candidate_head), [])
+        git(self.root, "checkout", "--detach", "-q", self.base)
+        actual = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(actual.returncode, 0)
+        self.assertEqual(verify_pr_diff(self.root, self.base, candidate_head), [])
+
+    def test_true_head_denied_path_stays_denied_with_permissive_worktree(self):
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional forbidden content\n", encoding="utf-8")
+        git(self.root, "add", "-f", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "unallowlisted introduction")
+        denied_head = git(self.root, "rev-parse", "HEAD")
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", ".gitignore")
+        git(self.root, "commit", "-qm", "late runner-only policy relaxation")
+        current = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(current.returncode, 1)
+        self.assertIn(
+            "historical unallowlisted path",
+            " ".join(verify_pr_diff(self.root, self.base, denied_head)),
+        )
+
     def test_normal_multicommit_update_still_passes(self):
         self.assertEqual(self.commit(), [])
         (self.root / "docs" / "ok.txt").write_text(
