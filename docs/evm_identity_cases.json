@@ -1,0 +1,195 @@
+{
+  "schema": "HF_EVM_IDENTITY_FIXTURES_V1",
+  "classification": "PUBLIC_SYNTHETIC",
+  "description": "All hashes, contracts, log positions and state claims are invented; numeric network labels describe public standards only.",
+  "positive_cases": [
+    {
+      "id": "ethereum-included",
+      "token": {
+        "chain_id": "eip155:1",
+        "contract": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "symbol": "ECHO"
+      },
+      "observation": {
+        "chain_id": "eip155:1",
+        "emitter": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transaction_hash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "block_hash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "block_number": 120,
+        "log_index": 0,
+        "state": "INCLUDED",
+        "removed": false
+      },
+      "expected_status": "SYNTHETIC_INCLUDED_NOT_FINALIZED"
+    },
+    {
+      "id": "base-included",
+      "token": {
+        "chain_id": "eip155:8453",
+        "contract": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "symbol": "ECHO"
+      },
+      "observation": {
+        "chain_id": "eip155:8453",
+        "emitter": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "transaction_hash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "block_hash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "block_number": 75,
+        "log_index": 1,
+        "state": "INCLUDED",
+        "removed": false
+      },
+      "expected_status": "SYNTHETIC_INCLUDED_NOT_FINALIZED"
+    },
+    {
+      "id": "ethereum-other-contract",
+      "token": {
+        "chain_id": "eip155:1",
+        "contract": "0xcccccccccccccccccccccccccccccccccccccccc",
+        "symbol": "ECHO"
+      },
+      "observation": {
+        "chain_id": "eip155:1",
+        "emitter": "0xcccccccccccccccccccccccccccccccccccccccc",
+        "transaction_hash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+        "block_hash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "block_number": 121,
+        "log_index": 2,
+        "state": "INCLUDED",
+        "removed": false
+      },
+      "expected_status": "SYNTHETIC_INCLUDED_NOT_FINALIZED"
+    },
+    {
+      "id": "ethereum-pending",
+      "token": {
+        "chain_id": "eip155:1",
+        "contract": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "symbol": "ECHO"
+      },
+      "observation": {
+        "chain_id": "eip155:1",
+        "emitter": null,
+        "transaction_hash": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "block_hash": null,
+        "block_number": null,
+        "log_index": null,
+        "state": "PENDING",
+        "removed": null
+      },
+      "expected_status": "SYNTHETIC_UNCONFIRMED"
+    },
+    {
+      "id": "ethereum-reorged",
+      "token": {
+        "chain_id": "eip155:1",
+        "contract": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "symbol": "ECHO"
+      },
+      "observation": {
+        "chain_id": "eip155:1",
+        "emitter": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transaction_hash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "block_hash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "block_number": 120,
+        "log_index": 0,
+        "state": "REORGED",
+        "removed": true
+      },
+      "expected_status": "SYNTHETIC_REORGANIZED"
+    },
+    {
+      "id": "ethereum-unknown",
+      "token": {
+        "chain_id": "eip155:1",
+        "contract": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "symbol": "ECHO"
+      },
+      "observation": {
+        "chain_id": "eip155:1",
+        "emitter": null,
+        "transaction_hash": null,
+        "block_hash": null,
+        "block_number": null,
+        "log_index": null,
+        "state": "UNKNOWN",
+        "removed": null
+      },
+      "expected_status": "UNKNOWN"
+    }
+  ],
+  "negative_cases": [
+    {
+      "id": "missing-chain",
+      "base": "ethereum-included",
+      "field": "token.chain_id",
+      "value": null
+    },
+    {
+      "id": "noncanonical-chain",
+      "base": "ethereum-included",
+      "field": "token.chain_id",
+      "value": "eip155:01"
+    },
+    {
+      "id": "source-chain-mismatch",
+      "base": "ethereum-included",
+      "field": "observation.chain_id",
+      "value": "eip155:8453"
+    },
+    {
+      "id": "wrong-log-emitter",
+      "base": "ethereum-included",
+      "field": "observation.emitter",
+      "value": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "id": "unsupported-finality-claim",
+      "base": "ethereum-included",
+      "field": "observation.state",
+      "value": "FINALIZED"
+    },
+    {
+      "id": "missing-block-hash",
+      "base": "ethereum-included",
+      "field": "observation.block_hash",
+      "value": null
+    },
+    {
+      "id": "missing-transaction-hash",
+      "base": "ethereum-included",
+      "field": "observation.transaction_hash",
+      "value": null
+    },
+    {
+      "id": "included-removed",
+      "base": "ethereum-included",
+      "field": "observation.removed",
+      "value": true
+    },
+    {
+      "id": "reorg-without-removal",
+      "base": "ethereum-reorged",
+      "field": "observation.removed",
+      "value": false
+    },
+    {
+      "id": "pending-with-block",
+      "base": "ethereum-pending",
+      "field": "observation.block_number",
+      "value": 120
+    },
+    {
+      "id": "unknown-with-log",
+      "base": "ethereum-unknown",
+      "field": "observation.log_index",
+      "value": 0
+    },
+    {
+      "id": "malformed-contract",
+      "base": "ethereum-included",
+      "field": "token.contract",
+      "value": "not-an-address"
+    }
+  ]
+}

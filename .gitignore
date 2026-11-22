@@ -13,6 +13,8 @@
 !docs/PROJECT_OVERVIEW.md
 !docs/COMMUNITY_TRACKS.md
 !docs/CHAIN_SCOPE.md
+!docs/EVM_IDENTITY_CONFORMANCE.md
+!docs/evm_identity_cases.json
 !docs/EXPLORER_PROPOSAL.md
 !docs/WALLET_INTEROP_PROPOSAL.md
 !docs/PUBLIC_COLLABORATION_PROTOCOL.md
@@ -47,12 +49,14 @@
 !hyperfabric_public/
 !hyperfabric_public/__init__.py
 !hyperfabric_public/identity.py
+!hyperfabric_public/evm_identity.py
 !hyperfabric_public/evidence_graph.py
 !hyperfabric_public/graphsense_bridge.py
 !hyperfabric_public/evidence_observation.py
 !hyperfabric_public/xrpl_conformance.py
 !tests/
 !tests/test_identity.py
+!tests/test_evm_identity.py
 !tests/test_evidence_graph.py
 !tests/test_graphsense_bridge.py
 !tests/test_evidence_observation.py
