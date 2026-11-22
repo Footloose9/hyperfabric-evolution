@@ -56,6 +56,15 @@ class AIContributorBootstrapContract(unittest.TestCase):
         self.assertIn("never invent test results", self.guide.lower())
         self.assertIn("human-led", self.page.lower())
 
+    def test_accepted_agent_and_research_guides_are_current_prompt_dependencies(self):
+        for name in ("AGENTS.md", "docs/RESEARCH_TEMPLATE.md"):
+            self.assertTrue((ROOT / name).is_file(), name)
+            self.assertIn(name, self.guide)
+            self.assertIn(name, self.page)
+        self.assertIn("node --test tests/*.test.cjs", self.guide)
+        self.assertIn("exact base/head", self.guide.lower())
+        self.assertIn("public research evidence template", self.page)
+
     def test_onboarding_link_is_discoverable_without_new_account(self):
         self.assertIn('href="./ai-contribute.html"', self.home)
         self.assertIn("docs/ai-contribute.html", self.contrib)
