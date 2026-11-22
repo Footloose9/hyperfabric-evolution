@@ -82,7 +82,7 @@
           <div class="field-wrap">
             <label for="case-picker">Choose a falsifiable scenario</label>
             <div class="select-wrap">
-              <select id="case-picker" name="synthetic-case">
+              <select id="case-picker" name="synthetic-case" disabled>
                 <option value="different">01 — Same ticker, different issuers</option>
                 <option value="identical">02 — Exact identity matches</option>
                 <option value="missing">03 — Missing required issuer</option>
@@ -104,8 +104,8 @@
             </div>
           </div>
           <div class="workbench-actions">
-            <button class="button button-primary" id="run-check" type="button">Evaluate the claim <span aria-hidden="true">→</span></button>
-            <button class="button button-quiet" id="reset-check" type="button">Reset result</button>
+            <button class="button button-primary" id="run-check" type="button" disabled>Evaluate the claim <span aria-hidden="true">→</span></button>
+            <button class="button button-quiet" id="reset-check" type="button" disabled>Reset result</button>
           </div>
           <p class="under-actions">Inputs contain invented <code>sim:</code> identifiers. Format validation is not cryptographic authenticity, live balance verification or proof of consensus.</p>
           <noscript><p class="noscript-note">JavaScript is disabled: the interactive synthetic check is unavailable. The working-demo links, documentation and source references below remain accessible.</p></noscript>
@@ -124,7 +124,7 @@
             <ol id="trace-steps" aria-label="Evaluation reasoning steps"></ol>
             <div class="trace-floor"><span>NOT ESTABLISHED</span><p id="result-missing">No independent ledger/source evidence in this demo.</p></div>
           </div>
-          <p id="announce-status" class="result-announcement" role="status" aria-live="polite" aria-atomic="true">Ready. No case has been evaluated.</p>
+          <p id="announce-status" class="result-announcement" role="status" aria-live="polite" aria-atomic="true">Interactive check not initialized. JavaScript is required to run a scenario.</p>
         </div>
       </div>
       <div class="workbench-links"><span>REPRODUCE IT YOURSELF</span><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/hyperfabric_public/identity.py">Public XRPL identity model</a><a href="https://github.com/Footloose9/hyperfabric-evolution/blob/main/tests/test_identity.py">Identity negative tests</a><a href="./source-explorer.html">Broader synthetic provenance cases</a></div>

@@ -104,6 +104,7 @@ test("the browser-facing page requires user action before producing a verdict", 
     nodes.set(id, {
       value: id === "case-picker" ? "different" : "",
       textContent: "",
+      disabled: ["case-picker", "run-check", "reset-check"].includes(id),
       children: [],
       attrs: {},
       addEventListener(name, handler) { listeners[name] = handler; },
@@ -118,6 +119,9 @@ test("the browser-facing page requires user action before producing a verdict", 
     createElement(tag) { assert.equal(tag, "li"); return { textContent: "" }; }
   };
   assert.equal(gallery.mount(doc), true);
+  for (const id of ["case-picker", "run-check", "reset-check"]) {
+    assert.equal(nodes.get(id).disabled, false, id + " must unlock only after successful mount");
+  }
   const state = nodes.get("result-state");
   assert.equal(state.textContent, "NOT RUN");
   assert.equal(nodes.get("trace-steps").children.length, 0);
@@ -166,6 +170,21 @@ test("the static gallery has semantic controls, text-only DOM result sinks and n
   assert.doesNotMatch(script, /\b(?:fetch|XMLHttpRequest|WebSocket|setInterval|localStorage|sessionStorage)\s*\(/);
   assert.doesNotMatch(script, /(?:innerHTML|outerHTML)\s*=/);
   assert.doesNotMatch(script, /\bnavigator\s*\./);
+});
+
+test("offline initialization fails closed and essential maturity labels remain legible", () => {
+  assert.match(html, /<select id="case-picker"[^>]*\sdisabled>/);
+  assert.match(html, /<button[^>]*id="run-check"[^>]*\sdisabled>/);
+  assert.match(html, /<button[^>]*id="reset-check"[^>]*\sdisabled>/);
+  assert.match(html, /Interactive check not initialized/);
+  assert.match(html, /<noscript><p[^>]*>JavaScript is disabled:/);
+  assert.match(script, /ui\["case-picker"\]\.disabled = false/);
+  assert.match(script, /ui\["run-check"\]\.disabled = false/);
+  assert.match(script, /ui\["reset-check"\]\.disabled = false/);
+  assert.match(css, /\.maturity \{[^}]*font:700 11px/);
+  assert.match(css, /\.mini-sim \{[^}]*font: 650 11px/);
+  assert.match(css, /@media\(max-width:280px\)/);
+  assert.equal(gallery.mount({ getElementById() { return null; } }), false);
 });
 
 test("all relative gallery source/demo links resolve within the existing public checkout", () => {
