@@ -203,12 +203,20 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
     for raw_commit in commit_ids:
         commit_sha = raw_commit.decode("ascii")
         current_tree = _tree_entries(root, commit_sha)
+        if base_tree.get(".gitignore") != current_tree.get(".gitignore"):
+            raw_ignore = _git(root, "show", f"{commit_sha}:.gitignore").stdout
+            for issue in _exact_allowlist(raw_ignore):
+                errors.append(f"historical ignore rule: {issue} ({commit_sha[:12]})")
         for path, entry in current_tree.items():
             if base_tree.get(path) == entry:
                 continue
             if entry[0] != b"100644" or entry[1] != b"blob":
                 errors.append(f"historical unsupported mode/type: {path} ({commit_sha[:12]})")
             if path not in base_tree:
+                if entry[1] == b"blob":
+                    size = int(_git(root, "cat-file", "-s", entry[2].decode("ascii")).stdout)
+                    if size > MAX_NEW_FILE_BYTES:
+                        errors.append(f"historical added text exceeds {MAX_NEW_FILE_BYTES} bytes: {path} ({commit_sha[:12]})")
                 check = _git(root, "check-ignore", "-q", "--no-index", "--", path,
                              allowed=(0, 1))
                 if check.returncode == 0:
