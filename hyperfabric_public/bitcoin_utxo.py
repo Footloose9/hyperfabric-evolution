@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from hashlib import sha256
+from math import isfinite
 import json
 import re
 from typing import Any
@@ -99,6 +100,13 @@ def _inclusion(raw: Any, own_txid: str) -> dict[str, Any]:
             "conflicting_txid": conflict}
 
 
+def _finite_json_float(raw: str) -> float:
+    """JSON numeric exponents must not overflow into nonfinite float values."""
+    value = float(raw)
+    _need(isfinite(value), "nonfinite JSON number")
+    return value
+
+
 def _unique_json_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -114,10 +122,13 @@ def parse_fixture_json(raw: bytes) -> dict[str, Any]:
     try:
         data = json.loads(
             raw.decode("utf-8"), object_pairs_hook=_unique_json_members,
+            parse_float=_finite_json_float,
             parse_constant=lambda _: (_ for _ in ()).throw(
                 SyntheticUTXOError("nonfinite JSON number")),
         )
-    except (UnicodeError, json.JSONDecodeError) as exc:
+    except SyntheticUTXOError:
+        raise
+    except (UnicodeError, json.JSONDecodeError, ValueError) as exc:
         raise SyntheticUTXOError("invalid JSON encoding or syntax") from exc
     _need(type(data) is dict, "fixture root must be an object")
     return data
@@ -141,6 +152,17 @@ def project_synthetic_utxos(raw: Mapping[str, Any]) -> dict[str, Any]:
           "bounded known_prevouts list required")
     _need(type(txs) is list and 1 <= len(txs) <= 16,
           "bounded transactions list required")
+    # V1 intentionally models independent candidate transactions only.
+    # Detect every declared txid before walking inputs, so an internally
+    # linked outpoint cannot be accepted or rejected merely due to row order.
+    candidate_ids: set[str] = set()
+    for entry in txs:
+        candidate = _object(entry, {"txid", "inputs", "outputs", "inclusion"},
+                            "transaction")
+        candidate_id = _txid(candidate["txid"], "transaction.txid")
+        _need(candidate_id not in candidate_ids, "duplicate candidate transaction")
+        candidate_ids.add(candidate_id)
+
     known: dict[tuple[str, int], dict[str, Any]] = {}
     for item in prevouts:
         p = _object(item, {"txid", "vout", "value_sats",
@@ -191,6 +213,8 @@ def project_synthetic_utxos(raw: Mapping[str, Any]) -> dict[str, Any]:
             _need(key != ("0" * 64, 0xFFFFFFFF),
                   "coinbase sentinel unsupported")
             _need(key[0] != txid, "self-spending synthetic transaction")
+            _need(key[0] not in candidate_ids,
+                  "intra-fixture linked transaction spends unsupported in v1")
             if key not in known:
                 raise MissingPrevoutError("absent prevout: " + key[0] + ":" + str(key[1]))
             if key in spent:

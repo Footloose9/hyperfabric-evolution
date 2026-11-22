@@ -265,6 +265,39 @@ class NegativeSyntheticBitcoinUTXOTests(unittest.TestCase):
             with self.subTest(raw=raw), self.assertRaises(SyntheticUTXOError):
                 parse_fixture_json(raw)
 
+
+    def test_json_exponent_overflow_refused_before_schema_inspection(self):
+        # JSON's parse_constant hook misses numeric exponent overflow:
+        # 1e999 is syntactically JSON but Python float() yields infinity.
+        for raw in (b'{"example":1e999}', b'{"example":-1e999}'):
+            with self.subTest(raw=raw), self.assertRaisesRegex(
+                    SyntheticUTXOError, "nonfinite"):
+                parse_fixture_json(raw)
+        self.assertEqual(parse_fixture_json(b'{"example":1.25}')["example"], 1.25)
+
+    def test_linked_candidate_outpoints_have_explicit_v1_refusal(self):
+        fixture = base()
+        parent = fixture["transactions"][0]
+        fixture["known_prevouts"].append({
+            "txid": parent["txid"], "vout": 0,
+            "value_sats": 7000, "script_pubkey_hex": "51",
+        })
+        fixture["transactions"].append({
+            "txid": "c" * 64,
+            "inputs": [{"txid": parent["txid"], "vout": 0, "sequence": 0xFFFFFFFF}],
+            "outputs": [{"vout": 0, "value_sats": 6500, "script_pubkey_hex": "51"}],
+            "inclusion": {
+                "status": "UNCONFIRMED", "block_hash": None,
+                "block_height": None, "confirmations": 0,
+                "conflicting_txid": None,
+            },
+        })
+        for permutation in (fixture["transactions"], list(reversed(fixture["transactions"]))):
+            with self.subTest(order=[x["txid"] for x in permutation]):
+                fixture["transactions"] = permutation
+                with self.assertRaisesRegex(SyntheticUTXOError, "intra-fixture"):
+                    project_synthetic_utxos(fixture)
+
     def test_coinbase_sentinel_not_treated_as_normal_prevout(self):
         fixture = base()
         fixture["known_prevouts"][0]["txid"] = "0" * 64
