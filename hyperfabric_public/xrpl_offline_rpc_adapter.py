@@ -178,7 +178,9 @@ def _tx(entry: object, *, min_index: int, max_index: int,
                 not isinstance(tx["Destination"], str)
                 or _SIM.fullmatch(tx["Destination"]) is None))
             or type(entry.get("validated")) is not bool
-            or ("hash" in tx and tx["hash"] != h)
+            or ("hash" in tx and (
+                not isinstance(tx["hash"], str)
+                or tx["hash"].upper() != h.upper()))
             or ("ledger_index" in tx and tx["ledger_index"] != idx)):
         return incomplete("INVALID_TRANSACTION_ANCHOR", effect="REFUSE")
     if "AffectedNodes" in meta and not isinstance(meta["AffectedNodes"], list):
@@ -187,11 +189,21 @@ def _tx(entry: object, *, min_index: int, max_index: int,
         not isinstance(result, str) or not _TEC.fullmatch(result)
     ):
         return incomplete("INVALID_VALIDATED_RESULT", effect="REFUSE")
+    # Hex-encoded transaction and ledger hashes are case-insensitive identities.
+    # Normalize only known hex anchors: account labels, currency codes and all
+    # other claimed fields preserve their original case-sensitive semantics.
+    normalized_entry = dict(entry)
+    normalized_entry["hash"] = h.upper()
+    normalized_entry["ledger_hash"] = lh.upper()
+    if "hash" in tx:
+        normalized_tx = dict(tx)
+        normalized_tx["hash"] = tx["hash"].upper()
+        normalized_entry["tx_json"] = normalized_tx
     # Canonicalize the full *invented* entry for cross-source claim comparison.
     # This is not the XRPL signed transaction hash and proves no ledger fact.
     try:
         claim_digest = sha256(json.dumps(
-            entry, sort_keys=True, separators=(",", ":"),
+            normalized_entry, sort_keys=True, separators=(",", ":"),
             ensure_ascii=True, allow_nan=False,
         ).encode("ascii")).hexdigest().upper()
     except (TypeError, ValueError, OverflowError):
@@ -300,7 +312,7 @@ def assess_synthetic_account_tx(raw_bytes: bytes, capture: SyntheticCapture) -> 
         _tx(item, min_index=lo, max_index=hi,
             page_validated=result["validated"]) for item in txs
     )
-    hashes = [item.transaction_hash for item in assessments
+    hashes = [item.transaction_hash.upper() for item in assessments
               if item.transaction_hash is not None]
     if len(hashes) != len(set(hashes)):
         return report("INCONCLUSIVE", "DUPLICATED_TRANSACTION_ANCHOR",
@@ -326,6 +338,11 @@ def assess_synthetic_account_tx(raw_bytes: bytes, capture: SyntheticCapture) -> 
                   validated=True, txs=assessments)
 
 
+def _hex_id(value: str | None) -> str | None:
+    """Normalize case of syntactically hexadecimal identities only."""
+    return value.upper() if isinstance(value, str) else value
+
+
 def compare_synthetic_page_sources(left: OfflinePage, right: OfflinePage) -> str:
     """Cross-check fabricated claims; matching sources are not consensus."""
     if not isinstance(left, OfflinePage) or not isinstance(right, OfflinePage):
@@ -336,9 +353,9 @@ def compare_synthetic_page_sources(left: OfflinePage, right: OfflinePage) -> str
         return "INCONCLUSIVE"
     if left.network != right.network or left.rpc_method != right.rpc_method:
         return "CONFLICT"
-    lmap = {t.transaction_hash: t for t in left.transactions
+    lmap = {_hex_id(t.transaction_hash): t for t in left.transactions
             if t.transaction_hash and t.effect_state != "REFUSE"}
-    rmap = {t.transaction_hash: t for t in right.transactions
+    rmap = {_hex_id(t.transaction_hash): t for t in right.transactions
             if t.transaction_hash and t.effect_state != "REFUSE"}
     shared = set(lmap) & set(rmap)
     if not shared:
@@ -350,12 +367,12 @@ def compare_synthetic_page_sources(left: OfflinePage, right: OfflinePage) -> str
     ):
         return "INCONCLUSIVE"
     if any((
-        lmap[key].ledger_hash, lmap[key].ledger_index,
+        _hex_id(lmap[key].ledger_hash), lmap[key].ledger_index,
         lmap[key].transaction_type, lmap[key].transaction_result,
         lmap[key].asset_identity, lmap[key].delivered_value,
         lmap[key].synthetic_entry_sha256,
     ) != (
-        rmap[key].ledger_hash, rmap[key].ledger_index,
+        _hex_id(rmap[key].ledger_hash), rmap[key].ledger_index,
         rmap[key].transaction_type, rmap[key].transaction_result,
         rmap[key].asset_identity, rmap[key].delivered_value,
         rmap[key].synthetic_entry_sha256,
