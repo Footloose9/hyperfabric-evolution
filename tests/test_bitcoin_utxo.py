@@ -84,6 +84,48 @@ class PositiveSyntheticBitcoinUTXOTests(unittest.TestCase):
         self.assertFalse(result["change_output_inferred"])
         self.assertFalse(any("owner" in str(e).lower() for e in result["edges"]))
 
+    def test_disjoint_multiple_transactions_are_order_invariant(self):
+        # Reviewer-designed positive: the declared v1 scope includes several
+        # independent candidate transactions without an ownership inference.
+        fixture = base()
+        fixture["known_prevouts"].append({
+            "txid": "3" * 64, "vout": 0,
+            "value_sats": 3500, "script_pubkey_hex": "51",
+        })
+        fixture["transactions"].append({
+            "txid": "d" * 64,
+            "inputs": [{"txid": "3" * 64, "vout": 0,
+                        "sequence": 0xFFFFFFFF}],
+            "outputs": [{"vout": 0, "value_sats": 3000,
+                         "script_pubkey_hex": "51"}],
+            "inclusion": {
+                "status": "UNCONFIRMED", "block_hash": None,
+                "block_height": None, "confirmations": 0,
+                "conflicting_txid": None,
+            },
+        })
+        first = project_synthetic_utxos(fixture)
+        self.assertEqual(first["candidate_transaction_count"], 2)
+        self.assertEqual(first["total_fee_sats"], 1000)
+        self.assertEqual(len(first["nodes"]), 8)
+        self.assertEqual(len(first["edges"]), 6)
+        self.assertFalse(first["common_owner_inferred"])
+        self.assertFalse(first["change_output_inferred"])
+        self.assertFalse(first["transaction_to_account_transfer_inferred"])
+
+        reordered = deepcopy(fixture)
+        reordered["known_prevouts"].reverse()
+        reordered["transactions"].reverse()
+        for candidate in reordered["transactions"]:
+            candidate["inputs"].reverse()
+            candidate["outputs"].reverse()
+        second = project_synthetic_utxos(reordered)
+        self.assertEqual(first["canonical_projection_sha256"],
+                         second["canonical_projection_sha256"])
+        self.assertEqual(first["nodes"], second["nodes"])
+        self.assertEqual(first["edges"], second["edges"])
+        self.assertEqual(first["transactions"], second["transactions"])
+
     def test_reordered_known_prevouts_and_inputs_are_semantically_stable(self):
         original = project_synthetic_utxos(base())
         different_order = base()
