@@ -14,6 +14,8 @@
 !docs/PROJECT_OVERVIEW.md
 !docs/COMMUNITY_TRACKS.md
 !docs/CHAIN_SCOPE.md
+!docs/EVM_IDENTITY_CONFORMANCE.md
+!docs/evm_identity_cases.json
 !docs/EXPLORER_PROPOSAL.md
 !docs/WALLET_INTEROP_PROPOSAL.md
 !docs/PUBLIC_COLLABORATION_PROTOCOL.md
@@ -22,6 +24,7 @@
 !docs/MEV_RESEARCH_METHODS.md
 !docs/CROSS_CHAIN_EVIDENCE_ENGINE_RFC.md
 !docs/CHAIN_ADAPTER_GUIDE.md
+!docs/BITCOIN_UTXO_SYNTHETIC.md
 !docs/XRPL_TYPED_EVENT_CONFORMANCE.md
 !docs/UPSTREAM_LEVERAGE.md
 !docs/UPSTREAM_REUSE_POLICY.md
@@ -54,12 +57,18 @@
 !hyperfabric_public/
 !hyperfabric_public/__init__.py
 !hyperfabric_public/identity.py
+!hyperfabric_public/evm_identity.py
 !hyperfabric_public/evidence_graph.py
 !hyperfabric_public/graphsense_bridge.py
 !hyperfabric_public/evidence_observation.py
 !hyperfabric_public/xrpl_conformance.py
+!hyperfabric_public/bitcoin_utxo.py
 !tests/
+!tests/fixtures/
+!tests/fixtures/bitcoin_utxo_synthetic.json
 !tests/test_identity.py
+!tests/test_evm_identity.py
+!tests/test_bitcoin_utxo.py
 !tests/test_evidence_graph.py
 !tests/test_graphsense_bridge.py
 !tests/test_evidence_observation.py

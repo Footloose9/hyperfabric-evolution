@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | XRP Ledger (XRPL) | Restricted native XRP/classic issued-token identity demonstration | Currency-code conformance, MPT identity, read-only events, DEX/AMM education |
 | Xahau | Nothing yet | XAH, URITokens, Hooks, network-specific event fixtures and differences from XRPL |
-| Ethereum | Nothing yet | EIP-155 chain identity, public account/contract references, block provenance |
-| Base / other EVM | Nothing yet | Explicit network separation and contract-asset identity tests |
+| Ethereum | Offline synthetic ERC-20 chain/contract identity and log-source teaching subset; no RPC | Public account/contract references, block provenance |
+| Base / other EVM | Offline fictional Base identity negative controls only; no live adapter | Independently sourced network adapters and contract evidence |
 | Solana, Cosmos, Bitcoin | Nothing yet | Independently sourced protocol standards and synthetic fixtures, if contributors propose them |
 
 ## Important correction to our example
