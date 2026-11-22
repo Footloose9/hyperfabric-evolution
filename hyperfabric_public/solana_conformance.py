@@ -7,7 +7,9 @@ ledger. No I/O or external dependency. All IDs MUST use sim: labels.
 Public spec references:
 - Solana RPC getTransaction: https://solana.com/docs/rpc/http/gettransaction
 - Solana RPC getSignatureStatuses: https://solana.com/docs/rpc/http/getsignaturestatuses
+- Solana RPC JSON structures: https://solana.com/docs/rpc/json-structures
 - SPL Token Program: https://spl.solana.com/token
+- Solana tokens and mint identity: https://solana.com/docs/tokens
 - Solana Transaction Structure: https://solana.com/docs/core/transactions
 """
 from __future__ import annotations
@@ -27,6 +29,8 @@ _CONFIRMATION_STATUS = frozenset({"processed", "confirmed", "finalized", "UNQUAL
 _INSTRUCTION_STACK_LIMIT = 64
 _SIM_MINT = re.compile(r"sim:mint_[a-z][a-z0-9_-]{0,40}\Z")
 _SIM_PROGRAM = re.compile(r"sim:prog_[a-z][a-z0-9_-]{0,40}\Z")
+_DISPLAY_SYMBOL = re.compile(r"[A-Z0-9]{1,10}\Z")
+_DISCRIMINATOR = re.compile(r"[A-Za-z0-9:_-]{1,64}\Z")
 _KINDS = frozenset({"native", "spl_token"})
 _TRANSACTION_RESULTS = frozenset({"success", "failed"})
 
@@ -39,6 +43,7 @@ class SyntheticSource:
     requested_commitment: str  # commitment passed to getTransaction
     signature_status: str | None = None  # from getSignatureStatuses; None means not queried
     confirmation_status: str | None = None  # from getSignatureStatuses value.confirmationStatus
+    confirmations: int | None = None  # getSignatureStatuses value.confirmations; None/null is NOT finality
     slot: int = 0
     blockhash: str = ""
     capture_utc: str = ""
@@ -52,6 +57,7 @@ class TypedAsset:
     kind: str  # "native" | "spl_token"
     mint: str | None = None  # sim:mint_... for SPL, None for native
     program_id: str | None = None  # sim:prog_... for SPL token program, None for native
+    display_symbol: str | None = None  # non-authoritative display text; never identity
 
 
 @dataclass(frozen=True)
@@ -61,7 +67,11 @@ class InstructionProvenance:
     inner_ordinal: int | None  # None for top-level instruction
     stack_height: int  # depth in CPI call stack; 0 = top-level
     program_id: str  # resolved program ID (sim:prog_...)
-    account_keys_context: tuple[str, ...]  # ordered account keys this instruction sees
+    # None = metadata was not supplied (distinct from ()); () = an observed
+    # empty account-key list. Both are refused, with different reasons.
+    account_keys_context: tuple[str, ...] | None
+    discriminator: str | None = None  # opaque instruction discriminator, if any
+    program_context: str | None = None  # program ID whose IDL/context resolved the discriminator
 
 
 @dataclass(frozen=True)
@@ -122,6 +132,8 @@ def _source_shape_valid(source: SyntheticSource) -> bool:
         return False
     if source.confirmation_status is not None and source.confirmation_status not in _CONFIRMATION_STATUS:
         return False
+    if source.confirmations is not None and (type(source.confirmations) is not int or source.confirmations < 0):
+        return False
     if type(source.slot) is not int or source.slot <= 0:
         return False
     if not isinstance(source.blockhash, str) or _BLOCKHASH_HEX.fullmatch(source.blockhash) is None:
@@ -139,6 +151,9 @@ def _source_shape_valid(source: SyntheticSource) -> bool:
 def _asset_valid(asset: TypedAsset) -> bool:
     if asset.kind not in _KINDS:
         return False
+    if asset.display_symbol is not None:
+        if not isinstance(asset.display_symbol, str) or _DISPLAY_SYMBOL.fullmatch(asset.display_symbol) is None:
+            return False
     if asset.kind == "native":
         return asset.mint is None and asset.program_id is None
     # spl_token
@@ -148,6 +163,10 @@ def _asset_valid(asset: TypedAsset) -> bool:
     # parseable but semantically conflated; let the semantic stage refuse it
     # with its explicit reason instead of a generic shape error.
     if isinstance(asset.mint, str) and asset.mint == asset.program_id:
+        return True
+    # A missing mint with display metadata is parseable too: the semantic stage
+    # refuses it as "display metadata is not identity" rather than as a shape error.
+    if asset.mint is None and asset.display_symbol is not None:
         return True
     if not isinstance(asset.mint, str) or _SIM_MINT.fullmatch(asset.mint) is None:
         return False
@@ -166,7 +185,17 @@ def _provenance_valid(prov: InstructionProvenance) -> bool:
         return False
     if not isinstance(prov.program_id, str) or _SIM_PROGRAM.fullmatch(prov.program_id) is None:
         return False
-    if not isinstance(prov.account_keys_context, (tuple, list)) or len(prov.account_keys_context) == 0:
+    if prov.discriminator is not None:
+        if not isinstance(prov.discriminator, str) or _DISCRIMINATOR.fullmatch(prov.discriminator) is None:
+            return False
+    if prov.program_context is not None:
+        if not isinstance(prov.program_context, str) or _SIM_PROGRAM.fullmatch(prov.program_context) is None:
+            return False
+    # None (metadata absent) and () (observed empty) are both structurally
+    # representable; the semantic stage refuses each with a distinct reason.
+    if prov.account_keys_context is None:
+        return True
+    if not isinstance(prov.account_keys_context, (tuple, list)):
         return False
     for k in prov.account_keys_context:
         if not isinstance(k, str) or len(k) == 0:
@@ -181,14 +210,9 @@ def _transfer_valid(transfer: ClaimedTransfer) -> bool:
         return False
     if not _asset_valid(transfer.asset):
         return False
-    # Structural check only parses the amount; positivity is a semantic claim
-    # handled by evaluate_synthetic_observation (a non-positive amount is
-    # INCONCLUSIVE, not a malformed fixture).
-    if not isinstance(transfer.amount, str):
-        return False
-    try:
-        Decimal(transfer.amount)
-    except InvalidOperation:
+    # Structural check only requires a bounded string; parseability, positivity
+    # and malformed numeric text are semantic claims handled in evaluate.
+    if not isinstance(transfer.amount, str) or not 1 <= len(transfer.amount) <= 40:
         return False
     if transfer.authority is not None and (not isinstance(transfer.authority, str) or not transfer.authority.startswith("sim:account_")):
         return False
@@ -240,6 +264,14 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
         return ConformanceDecision("INCONCLUSIVE", "confirmationStatus absent; finality UNQUALIFIED", "NOT_ESTABLISHED")
     if requested == "finalized" and confirmed == "UNQUALIFIED":
         return ConformanceDecision("INCONCLUSIVE", "confirmationStatus UNQUALIFIED; finality not established", "NOT_ESTABLISHED")
+    if confirmed in ("confirmed", "finalized") and source.signature_status is None:
+        # A confirmationStatus alone, without a separately observed
+        # getSignatureStatuses response, is not a qualified finality source.
+        return ConformanceDecision(
+            "INCONCLUSIVE",
+            "confirmationStatus without observed signature status; finality UNQUALIFIED",
+            "NOT_ESTABLISHED",
+        )
 
     recorded = (
         "VALIDATED_FAILED" if observation.transaction_result == "failed"
@@ -260,12 +292,26 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
     for transfer in observation.transfers:
         if transfer.provenance is None:
             return ConformanceDecision("REFUSE", "missing instruction provenance for transfer", recorded)
+        if transfer.provenance.account_keys_context is None:
+            return ConformanceDecision("REFUSE", "missing account-key lookup context", recorded)
+        if len(transfer.provenance.account_keys_context) == 0:
+            return ConformanceDecision("REFUSE", "observed empty account-key context", recorded)
         if transfer.provenance.stack_height > 4:  # arbitrary CPI depth limit for synthetic
             return ConformanceDecision("REFUSE", "excessive CPI stack height for synthetic observation", recorded)
 
-    # Mint identity MUST be separate from token program identity
+    # An opaque discriminator needs a resolved program context; otherwise the
+    # instruction meaning is ambiguous and must not be decoded.
+    for transfer in observation.transfers:
+        prov = transfer.provenance
+        if prov.discriminator is not None and prov.program_context != prov.program_id:
+            return ConformanceDecision("REFUSE", "ambiguous discriminator without qualified program context", recorded)
+
+    # Mint identity MUST be separate from token program identity and from
+    # non-authoritative display metadata.
     for transfer in observation.transfers:
         if transfer.asset.kind == "spl_token":
+            if transfer.asset.mint is None:
+                return ConformanceDecision("REFUSE", "display metadata cannot substitute for mint identity", recorded)
             if transfer.asset.mint == transfer.asset.program_id:
                 return ConformanceDecision("REFUSE", "mint identity conflated with token program identity", recorded)
 
@@ -277,7 +323,11 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
 
     # All positive checks passed for synthetic observation
     for transfer in observation.transfers:
-        if not _positive_amount(transfer.amount):
+        try:
+            amount = Decimal(transfer.amount)
+        except InvalidOperation:
+            return ConformanceDecision("REFUSE", "malformed transfer amount", recorded)
+        if not amount.is_finite() or amount <= 0:
             return ConformanceDecision("INCONCLUSIVE", "non-positive amount cannot prove transfer", recorded)
 
     return ConformanceDecision(

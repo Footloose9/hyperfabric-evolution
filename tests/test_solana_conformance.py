@@ -590,6 +590,170 @@ class SolanaConformanceNegativeFalsifiers(unittest.TestCase):
         result = self.decide(obs, "REFUSE")
 
 
+    def test_53_missing_context_and_empty_context_refused_distinctly(self):
+        """Missing metadata is not an observed empty list; each has its own reason."""
+        missing = native_transfer(
+            transfers=(
+                ClaimedTransfer(
+                    source="sim:account_sender_1",
+                    destination="sim:account_receiver_1",
+                    asset=TypedAsset("native"),
+                    amount="1000000000",
+                    provenance=InstructionProvenance(
+                        outer_index=0,
+                        inner_ordinal=None,
+                        stack_height=0,
+                        program_id="sim:prog_system",
+                        account_keys_context=None,
+                    ),
+                ),
+            ),
+        )
+        result = self.decide(missing, "REFUSE")
+        self.assertIn("missing account-key lookup context", result.reason)
+
+        empty = native_transfer(
+            transfers=(
+                ClaimedTransfer(
+                    source="sim:account_sender_1",
+                    destination="sim:account_receiver_1",
+                    asset=TypedAsset("native"),
+                    amount="1000000000",
+                    provenance=InstructionProvenance(
+                        outer_index=0,
+                        inner_ordinal=None,
+                        stack_height=0,
+                        program_id="sim:prog_system",
+                        account_keys_context=(),
+                    ),
+                ),
+            ),
+        )
+        result = self.decide(empty, "REFUSE")
+        self.assertIn("observed empty account-key context", result.reason)
+
+    def test_54_discriminator_without_program_context_refused(self):
+        """An opaque discriminator without a qualified program context is ambiguous."""
+        obs = token_transfer(
+            transfers=(
+                ClaimedTransfer(
+                    source="sim:account_token_sender_1",
+                    destination="sim:account_token_receiver_1",
+                    asset=TypedAsset("spl_token", mint="sim:mint_usdc_1", program_id="sim:prog_spl_token"),
+                    amount="5000000",
+                    authority="sim:account_token_authority_1",
+                    provenance=InstructionProvenance(
+                        outer_index=0,
+                        inner_ordinal=None,
+                        stack_height=0,
+                        program_id="sim:prog_spl_token",
+                        account_keys_context=("sim:account_token_sender_1",),
+                        discriminator="transfer_checked",
+                        program_context=None,
+                    ),
+                ),
+            ),
+        )
+        result = self.decide(obs, "REFUSE")
+        self.assertIn("ambiguous discriminator without qualified program context", result.reason)
+
+    def test_55_discriminator_with_matching_program_context_accepted(self):
+        """A discriminator resolved by its own program context is unambiguous."""
+        obs = token_transfer(
+            transfers=(
+                ClaimedTransfer(
+                    source="sim:account_token_sender_1",
+                    destination="sim:account_token_receiver_1",
+                    asset=TypedAsset("spl_token", mint="sim:mint_usdc_1", program_id="sim:prog_spl_token"),
+                    amount="5000000",
+                    authority="sim:account_token_authority_1",
+                    provenance=InstructionProvenance(
+                        outer_index=0,
+                        inner_ordinal=None,
+                        stack_height=0,
+                        program_id="sim:prog_spl_token",
+                        account_keys_context=("sim:account_token_sender_1",),
+                        discriminator="transfer_checked",
+                        program_context="sim:prog_spl_token",
+                    ),
+                ),
+            ),
+        )
+        result = self.decide(obs, "ACCEPT")
+        self.assertEqual(result.recorded_outcome, "VALIDATED_SUCCESS")
+
+    def test_56_finality_without_signature_status_inconclusive(self):
+        """A confirmationStatus without an observed getSignatureStatuses response is unqualified."""
+        obs = native_transfer(source=standard_source(
+            requested_commitment="finalized",
+            signature_status=None,
+            confirmation_status="finalized",
+            confirmations=None,
+        ))
+        result = self.decide(obs, "INCONCLUSIVE")
+        self.assertIn("UNQUALIFIED", result.reason)
+        self.assertEqual(result.recorded_outcome, "NOT_ESTABLISHED")
+
+    def test_57_display_symbol_cannot_substitute_for_mint(self):
+        """Display metadata is not identity: SPL asset without mint is refused."""
+        obs = token_transfer(
+            transfers=(
+                ClaimedTransfer(
+                    source="sim:account_token_sender_1",
+                    destination="sim:account_token_receiver_1",
+                    asset=TypedAsset(
+                        "spl_token",
+                        mint=None,
+                        program_id="sim:prog_spl_token",
+                        display_symbol="SIMUSD",
+                    ),
+                    amount="5000000",
+                    authority="sim:account_token_authority_1",
+                    provenance=InstructionProvenance(
+                        outer_index=0,
+                        inner_ordinal=None,
+                        stack_height=0,
+                        program_id="sim:prog_spl_token",
+                        account_keys_context=("sim:account_token_sender_1",),
+                    ),
+                ),
+            ),
+        )
+        result = self.decide(obs, "REFUSE")
+        self.assertIn("display metadata cannot substitute for mint identity", result.reason)
+
+    def test_58_shared_display_symbol_is_not_shared_identity(self):
+        """Two distinct mints may share a display symbol without being conflated."""
+        provenance = InstructionProvenance(
+            outer_index=0,
+            inner_ordinal=None,
+            stack_height=0,
+            program_id="sim:prog_spl_token",
+            account_keys_context=("sim:account_token_sender_1",),
+        )
+        obs = token_transfer(
+            transfers=(
+                ClaimedTransfer(
+                    source="sim:account_token_sender_1",
+                    destination="sim:account_token_receiver_1",
+                    asset=TypedAsset("spl_token", mint="sim:mint_usd_a", program_id="sim:prog_spl_token", display_symbol="SIMUSD"),
+                    amount="5000000",
+                    authority="sim:account_token_authority_1",
+                    provenance=provenance,
+                ),
+                ClaimedTransfer(
+                    source="sim:account_token_sender_1",
+                    destination="sim:account_token_receiver_2",
+                    asset=TypedAsset("spl_token", mint="sim:mint_usd_b", program_id="sim:prog_spl_token", display_symbol="SIMUSD"),
+                    amount="7000000",
+                    authority="sim:account_token_authority_1",
+                    provenance=provenance,
+                ),
+            ),
+        )
+        result = self.decide(obs, "ACCEPT")
+
+
 class SolanaConformanceFixtureTests(unittest.TestCase):
     """Tests loading the JSON fixture and verifying positive/negative cases."""
 

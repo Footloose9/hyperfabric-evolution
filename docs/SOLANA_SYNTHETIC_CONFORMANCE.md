@@ -31,13 +31,16 @@ Solana distinguishes facts that are easy to conflate:
 | `source.rpc_method` | Which read-only RPC call the observation claims to come from | [getTransaction](https://solana.com/docs/rpc/http/gettransaction), [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses) |
 | `source.requested_commitment` | Commitment level passed *to* `getTransaction` (`processed` / `confirmed` / `finalized`) | [Configuring state commitment](https://solana.com/docs/rpc) |
 | `source.confirmation_status` | `confirmationStatus` reported by `getSignatureStatuses`; absent or `UNQUALIFIED` means finality is not established | [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses) |
+| `source.confirmations` | `confirmations` reported by `getSignatureStatuses`; `null` is **not** proof of finality and is never read as one | [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses) |
 | `source.slot`, `source.blockhash` | Slot and blockhash of the claimed transaction | [getTransaction](https://solana.com/docs/rpc/http/gettransaction) |
 | `transfers[].provenance.outer_index` | Index of the top-level instruction in the message | [Transaction structure](https://solana.com/docs/core/transactions) |
 | `transfers[].provenance.inner_ordinal` | Ordinal of the inner instruction within that outer instruction | [Cross-program invocation](https://solana.com/docs/core/cpi) |
 | `transfers[].provenance.stack_height` | Depth in the invocation stack (`0` = top level) | [Cross-program invocation](https://solana.com/docs/core/cpi) |
 | `transfers[].provenance.program_id` | Resolved program ID that owns the instruction | [Transaction structure](https://solana.com/docs/core/transactions) |
-| `transfers[].provenance.account_keys_context` | Ordered account keys visible to that instruction | [Transaction structure](https://solana.com/docs/core/transactions) |
-| `transfers[].asset.mint` | SPL token mint identity (which asset), separate from the program | [Token program](https://spl.solana.com/token) |
+| `transfers[].provenance.account_keys_context` | Ordered account keys visible to that instruction. `None` means **metadata was not supplied**; `()` means an **observed empty list**. The two are refused with different reasons. | [JSON structures](https://solana.com/docs/rpc/json-structures), [Transaction structure](https://solana.com/docs/core/transactions) |
+| `transfers[].provenance.discriminator`, `program_context` | Opaque instruction discriminator and the program ID whose context resolved it. A discriminator without a matching `program_context` is refused as ambiguous. | [JSON structures](https://solana.com/docs/rpc/json-structures) |
+| `transfers[].asset.mint` | SPL token mint identity (which asset), separate from the program | [Token program](https://spl.solana.com/token), [Tokens](https://solana.com/docs/tokens) |
+| `transfers[].asset.display_symbol` | Non-authoritative display text; it never substitutes for the mint and two mints may share it | [Tokens](https://solana.com/docs/tokens) |
 | `transfers[].asset.program_id` | Token program that executes the transfer | [Token program](https://spl.solana.com/token) |
 | `signatures[]` | Claimed transaction signatures (fixed-length placeholder in the fixture) | [getTransaction](https://solana.com/docs/rpc/http/gettransaction) |
 
@@ -49,7 +52,7 @@ Solana distinguishes facts that are easy to conflate:
 | --- | --- |
 | `ACCEPT` | The *synthetic* claim is internally consistent: provenance present and unambiguous, mint distinct from program, commitment observed at `confirmed` or `finalized`. Never authorization to move funds. |
 | `INCONCLUSIVE` | The observation cannot establish the claimed effect: provider error, failed transaction, unqualified/absent confirmation, or non-positive amount. |
-| `REFUSE` | The observation violates the teaching contract: missing provenance, ambiguous nesting (stack height > 0 without an inner ordinal), conflated mint/program identity, or malformed shape. |
+| `REFUSE` | The observation violates the teaching contract: missing provenance, ambiguous nesting (stack height > 0 without an inner ordinal), missing/empty account-key context, ambiguous discriminator without program context, conflated mint/program identity, display metadata used as identity, or malformed shape. |
 
 `recorded_outcome` is reported separately so that a validated *failed*
 transaction is not confused with an unknown one.
@@ -67,8 +70,11 @@ transaction is not confused with an unknown one.
   must stay `UNQUALIFIED`/inconclusive.
 
 `tests/test_solana_conformance.py` replays these and adds further negative
-falsifiers (excessive stack height, mint/program conflation, provider error,
-failed transaction, malformed envelopes, wrong network or RPC method).
+falsifiers (excessive stack height, mint/program conflation, display metadata
+used as identity, missing versus empty account-key context, a discriminator
+without qualified program context, finality claimed without an observed
+signature status, provider error, failed transaction, malformed envelopes,
+wrong network or RPC method).
 
 ## Non-goals
 
