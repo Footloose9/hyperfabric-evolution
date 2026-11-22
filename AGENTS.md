@@ -2,6 +2,8 @@
 
 This file is a **cross-agent contributor guide**, not a grant of GitHub permissions. It applies only to this independently publishable open-source research lab. Human contributors, ChatGPT, Codex, Copilot, OpenClaw, and other compatible assistants may use the same process. Tools and instruction-file discovery vary; verify your actual abilities.
 
+**Mandatory before any contribution or review:** read [Contribution assurance and adversarial acceptance](docs/CONTRIBUTION_ASSURANCE_PROTOCOL.md) together with this guide. This applies to **all** AI and human workers, including maintainer-account agents. Do not promote documentation or synthetic test results into claims of operational functionality; a passing PR test is not a review or release authorization. A reviewer must independently challenge at least one material failure path, record actual evidence and disclose same-account reviews. An unresolved gate means HOLD, not an invented PASS.
+
 ## First: discover current public state
 
 1. Read [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md), [PUBLICATION_POLICY.md](PUBLICATION_POLICY.md), [SECURITY.md](SECURITY.md), and [ROADMAP.md](ROADMAP.md).
