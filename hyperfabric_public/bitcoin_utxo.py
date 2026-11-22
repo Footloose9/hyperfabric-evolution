@@ -128,6 +128,10 @@ def parse_fixture_json(raw: bytes) -> dict[str, Any]:
         )
     except SyntheticUTXOError:
         raise
+    except RecursionError as exc:
+        # The byte ceiling alone does not bound JSON array/object nesting.
+        # Decoder depth failures must preserve the public typed refusal.
+        raise SyntheticUTXOError("JSON nesting depth exceeded") from exc
     except (UnicodeError, json.JSONDecodeError, ValueError) as exc:
         raise SyntheticUTXOError("invalid JSON encoding or syntax") from exc
     _need(type(data) is dict, "fixture root must be an object")
