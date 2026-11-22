@@ -39,6 +39,23 @@ Even the synthetic fixture value AGREES is a declaration by its author, not an i
 
 These are syntax checks on artificial examples, not full XRPL canonical currency encoding, issuer-address checksum checking, trust-line validation or MPT serialization. A real decoder has to obey actual transaction field restrictions. References: [currency formats](https://xrpl.org/docs/references/protocol/data-types/currency-formats), [Payment and MPT](https://xrpl.org/docs/references/protocol/transactions/types/payment), and [binary amount format](https://xrpl.org/docs/references/protocol/binary-format).
 
+## Issue #7: protocol identity versus the restricted teaching subset
+
+**PUBLIC_ORIGINAL explanatory matrix; PUBLIC_SYNTHETIC proposed controls.** This is a source-backed test *proposal*, not newly implemented parser behavior. The official [XRPL currency formats](https://xrpl.org/docs/references/protocol/data-types/currency-formats) permit three-character ASCII standard codes with uppercase/lowercase letters, digits and specified symbols; codes are **case-sensitive**. Only the exact uppercase `XRP` is excluded as a classic token code. Nonstandard codes are 160-bit / 40-hex-character values; their human-readable display must not substitute for their original identity. The existing `AssetIdentity` teaching class deliberately rejects lower-case and punctuated standard codes and does not implement MPT identity. Do not widen its acceptance silently.
+
+| Fabricated identity pair or negative input | Expected protocol-level decision | Public-model boundary |
+| --- | --- | --- |
+| Classic `(USD, sim:issuer:A)` vs `(USD, sim:issuer:B)` | Distinct issuances, despite identical displayed code | `sim:` issuer labels are intentionally not classic addresses; use only as conceptual fixtures |
+| Classic `(USD, sim:issuer:A)` vs `(usd, sim:issuer:A)` | Distinct case-sensitive currency codes, not aliases | Current `AssetIdentity.issued("usd", ...)` rejects by design; not evidence that `usd` is protocol-invalid |
+| Classic `(USD, sim:issuer:A)` vs `(US?, sim:issuer:A)` | Distinct standard codes; a permitted symbol must not be dropped during normalization | Current teaching subset rejects `US?` |
+| Classic 40-hex currency `A1` repeated 20 times vs `B1` repeated 20 times, same fictional issuer | Distinct 160-bit codes, irrespective of display text | Illustrative hexadecimal strings, not proof of valid issuer/checksum or on-ledger existence |
+| MPT issuance ID `A1` repeated 24 times vs `B1` repeated 24 times | Distinct 192-bit issuance identities; neither is a `(currency, issuer)` pair | Synthetic ID shapes only; no verified MPT issuance or token balance |
+| Issued token with classic code `XRP`, or native XRP with an issuer | **REFUSE** contradictory asset kind/identity | Existing native/classic teaching checks already reject these cases |
+| MPT identified by a classic `currency`/ `issuer` pair, or by only 40 hex characters | **REFUSE** missing or mistyped 192-bit issuance identity | Do not infer an MPT from ticker text or another token's issuer |
+
+A future protocol-complete parser should positively distinguish the valid `USD` / `usd` and `USD` / `US?` cases **without** regressing the intentionally restricted teaching API, and reject cross-kind coercion. For MPT amounts, the public [binary format](https://xrpl.org/docs/references/protocol/binary-format) specifies a 192-bit issuance ID comprising a 32-bit creation sequence and a 160-bit issuer AccountID. A correct-shaped synthetic ID does not authenticate those contents, a live issuance, source finality, or asset ownership.
+
+
 ## The decision contract
 
 - ACCEPT means only that an asserted fictional Payment or Offer fill passes the synthetic teaching contract. It never establishes a real-world transaction.
