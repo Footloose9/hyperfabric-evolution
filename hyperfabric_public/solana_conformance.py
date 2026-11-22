@@ -141,15 +141,28 @@ def _is_utc_timestamp(value: object) -> bool:
 
 
 def _status_field(value: object) -> bool:
-    return value is None or value in _CONFIRMATION_STATUS
+    # Type-check before set membership: an injected list/dict is malformed
+    # evidence and must fail closed, not raise TypeError.
+    return value is None or (isinstance(value, str) and value in _CONFIRMATION_STATUS)
+
+
+def _status_contradiction(signature_status: object, confirmation_status: object) -> bool:
+    """The synthetic signature label is derived from confirmationStatus; both must agree."""
+    return (
+        isinstance(signature_status, str)
+        and isinstance(confirmation_status, str)
+        and signature_status != confirmation_status
+    )
 
 
 def _source_shape_valid(source: SyntheticSource) -> bool:
     if source.network != "solana:synthetic":
         return False
-    if source.rpc_method not in ("getTransaction", "getSignatureStatuses"):
+    if not isinstance(source.rpc_method, str) or source.rpc_method not in ("getTransaction", "getSignatureStatuses"):
         return False
-    if source.rpc_method == "getTransaction" and source.requested_commitment not in _COMMITMENT:
+    if source.rpc_method == "getTransaction" and (
+        not isinstance(source.requested_commitment, str) or source.requested_commitment not in _COMMITMENT
+    ):
         return False
     if not _status_field(source.signature_status):
         return False
@@ -187,7 +200,7 @@ def _status_evidence_valid(evidence: SignatureStatusEvidence) -> bool:
 
 
 def _asset_valid(asset: TypedAsset) -> bool:
-    if asset.kind not in _KINDS:
+    if not isinstance(asset.kind, str) or asset.kind not in _KINDS:
         return False
     if asset.display_symbol is not None:
         if not isinstance(asset.display_symbol, str) or _DISPLAY_SYMBOL.fullmatch(asset.display_symbol) is None:
@@ -251,9 +264,11 @@ def _transfer_valid(transfer: ClaimedTransfer) -> bool:
 def _observation_valid(obs: SyntheticObservation) -> bool:
     if not isinstance(obs.source, SyntheticSource) or not _source_shape_valid(obs.source):
         return False
-    if obs.transaction_type not in ("transfer", "token_transfer", "program_invoke"):
+    if not isinstance(obs.transaction_type, str) or obs.transaction_type not in (
+        "transfer", "token_transfer", "program_invoke"
+    ):
         return False
-    if obs.transaction_result not in _TRANSACTION_RESULTS:
+    if not isinstance(obs.transaction_result, str) or obs.transaction_result not in _TRANSACTION_RESULTS:
         return False
     if not isinstance(obs.transfers, tuple) or len(obs.transfers) == 0:
         return False
@@ -327,6 +342,18 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
         confirmed = source.confirmation_status
         confirmations = source.confirmations
         status_error = source.provider_error
+
+    # The synthetic signature label is derived from the observed
+    # confirmationStatus. Two non-null but different labels are contradictory
+    # evidence and must never qualify a transfer claim.
+    if _status_contradiction(source.signature_status, source.confirmation_status):
+        return ConformanceDecision(
+            "REFUSE", "contradictory signature status and confirmationStatus labels", "NOT_ESTABLISHED"
+        )
+    if evidence is not None and _status_contradiction(evidence.signature_status, evidence.confirmation_status):
+        return ConformanceDecision(
+            "REFUSE", "contradictory signature status and confirmationStatus labels", "NOT_ESTABLISHED"
+        )
 
     if source.provider_error or status_error:
         return ConformanceDecision("INCONCLUSIVE", "provider error; effect source unavailable", "NOT_ESTABLISHED")

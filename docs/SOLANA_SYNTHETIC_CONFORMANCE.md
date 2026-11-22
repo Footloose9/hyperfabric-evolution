@@ -42,7 +42,7 @@ Solana distinguishes facts that are easy to conflate:
 | `transfers[].asset.mint` | SPL token mint identity (which asset), separate from the program | [Token program](https://spl.solana.com/token), [Tokens](https://solana.com/docs/tokens) |
 | `transfers[].asset.display_symbol` | Non-authoritative display text; it never substitutes for the mint and two mints may share it | [Tokens](https://solana.com/docs/tokens) |
 | `transfers[].asset.program_id` | Token program that executes the transfer | [Token program](https://spl.solana.com/token) |
-| `status_evidence` | Independent, separately observed `getSignatureStatuses` record (`confirmation_status`, synthetic `signature_status` label, `confirmations`, optional slot/provider error). It never substitutes for transaction evidence and must not conflict with the source summary. The real RPC returns a `status` object, not a bare string. | [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses) |
+| `status_evidence` | Independent, separately observed `getSignatureStatuses` record (`confirmation_status`, synthetic `signature_status` label, `confirmations`, optional slot/provider error). It never substitutes for transaction evidence and must not conflict with the source summary. The synthetic label is derived from `confirmationStatus`, so two non-null but different values are contradictory and refused. The real RPC returns a `status` object, not a bare string. | [getSignatureStatuses](https://solana.com/docs/rpc/http/getsignaturestatuses) |
 | `signatures[]` | Claimed transaction signatures (fixed-length placeholder in the fixture) | [getTransaction](https://solana.com/docs/rpc/http/gettransaction) |
 
 ## Decision contract
@@ -53,7 +53,7 @@ Solana distinguishes facts that are easy to conflate:
 | --- | --- |
 | `ACCEPT` | The *synthetic* claim is internally consistent: provenance present and unambiguous, mint distinct from program, commitment observed at `confirmed` or `finalized`. Never authorization to move funds. |
 | `INCONCLUSIVE` | The observation cannot establish the claimed effect: provider error, failed transaction, unqualified/absent confirmation, or non-positive amount. |
-| `REFUSE` | The observation violates the teaching contract: a status-only source used as transaction evidence, an impossible commitment argument on `getSignatureStatuses`, conflicting status evidence, missing provenance, ambiguous nesting (stack height > 0 without an inner ordinal), an inner ordinal without a nested context, an account-key context that does not contain the claimed source and destination, a mismatched System/Token executing program, a missing mint or authority in context, missing/empty account-key context, ambiguous discriminator without program context, conflated mint/program identity, display metadata used as identity, or malformed shape. |
+| `REFUSE` | The observation violates the teaching contract: a status-only source used as transaction evidence, an impossible commitment argument on `getSignatureStatuses`, conflicting or contradictory status evidence (including a synthetic `signature_status` that disagrees with `confirmationStatus`), missing provenance, ambiguous nesting (stack height > 0 without an inner ordinal), an inner ordinal without a nested context, an account-key context that does not contain the claimed source and destination, a mismatched System/Token executing program, a missing mint or authority in context, missing/empty account-key context, ambiguous discriminator without program context, conflated mint/program identity, display metadata used as identity, malformed shape, or a non-string/unhashable status or routing field. |
 
 `recorded_outcome` is reported separately so that a validated *failed*
 transaction is not confused with an unknown one. Instruction evidence and
@@ -89,7 +89,10 @@ falsifiers (excessive stack height, mint/program conflation, display metadata
 used as identity, missing versus empty account-key context, a discriminator
 without qualified program context, finality claimed without an observed
 signature status, provider error, failed transaction, malformed envelopes,
-wrong network or RPC method).
+wrong network or RPC method). Two source-level falsifiers reported by the
+maintainer are pinned as regression tests: a derived `signature_status` that
+contradicts `confirmation_status` is refused, and a list/dict injected into a
+status or routing field returns `REFUSE` instead of raising `TypeError`.
 
 ## Non-goals
 

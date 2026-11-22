@@ -879,13 +879,25 @@ class SolanaSourceAndProvenanceFalsifiers(unittest.TestCase):
         obs = native_transfer(
             source=standard_source(signature_status=None, confirmation_status=None),
             status_evidence=SignatureStatusEvidence(
-                confirmation_status="UNQUALIFIED", signature_status="finalized", confirmations=None
+                confirmation_status="UNQUALIFIED", signature_status="UNQUALIFIED", confirmations=None
             ),
         )
         result = evaluate_synthetic_observation(obs)
         self.assertEqual(result.disposition, "INCONCLUSIVE")
         self.assertIn("UNQUALIFIED", result.reason)
         self.assertEqual(result.recorded_outcome, "NOT_ESTABLISHED")
+
+    def test_64b_unqualified_with_finalized_label_is_contradictory(self):
+        """A finalized label cannot coexist with an UNQUALIFIED confirmationStatus."""
+        obs = native_transfer(
+            source=standard_source(signature_status=None, confirmation_status=None),
+            status_evidence=SignatureStatusEvidence(
+                confirmation_status="UNQUALIFIED", signature_status="finalized", confirmations=None
+            ),
+        )
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("contradictory signature status and confirmationStatus", result.reason)
 
     def test_65_unrelated_account_context_refused(self):
         """Exact maintainer falsifier: context unrelated to source/destination."""
@@ -974,6 +986,77 @@ class SolanaSourceAndProvenanceFalsifiers(unittest.TestCase):
         result = evaluate_synthetic_observation(obs)
         self.assertEqual(result.disposition, "INCONCLUSIVE")
         self.assertEqual(result.recorded_outcome, "VALIDATED_FAILED")
+
+
+class SolanaStatusEvidenceFalsifiers(unittest.TestCase):
+    """New source-level falsifiers reported by the maintainer on 2026-11-22."""
+
+    def test_73_contradictory_status_labels_refused(self):
+        """Derived signature label contradicts observed confirmationStatus."""
+        obs = native_transfer(
+            source=standard_source(signature_status=None, confirmation_status=None),
+            status_evidence=SignatureStatusEvidence(
+                confirmation_status="finalized",
+                signature_status="processed",
+                confirmations=0,
+            ),
+        )
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("contradictory signature status and confirmationStatus", result.reason)
+        self.assertFalse(result.effect_claim_supported)
+
+    def test_74_contradictory_source_labels_refused(self):
+        """The same contradiction in the source summary is also refused."""
+        obs = native_transfer(
+            source=standard_source(signature_status="processed", confirmation_status="finalized")
+        )
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("contradictory signature status and confirmationStatus", result.reason)
+
+    def test_75_unhashable_status_label_refused_without_raising(self):
+        """A list/dict is malformed evidence, not a TypeError."""
+        for bad in ([], {}, ["finalized"], {"status": "finalized"}):
+            with self.subTest(bad=bad):
+                obs = native_transfer(source=standard_source(signature_status=bad))
+                result = evaluate_synthetic_observation(obs)
+                self.assertEqual(result.disposition, "REFUSE")
+                self.assertFalse(result.effect_claim_supported)
+
+    def test_76_unhashable_status_evidence_refused_without_raising(self):
+        """Malformed status_evidence fields fail closed as well."""
+        for bad in ([], {}, ["confirmed"]):
+            with self.subTest(bad=bad):
+                obs = native_transfer(
+                    source=standard_source(signature_status=None, confirmation_status=None),
+                    status_evidence=SignatureStatusEvidence(
+                        confirmation_status="finalized",
+                        signature_status=bad,
+                        confirmations=0,
+                    ),
+                )
+                result = evaluate_synthetic_observation(obs)
+                self.assertEqual(result.disposition, "REFUSE")
+
+    def test_77_unhashable_routing_fields_refused_without_raising(self):
+        """Unhashable network/kind/result values cannot escape as exceptions."""
+        cases = [
+            replace(standard_source(), rpc_method=[]),
+            replace(standard_source(), requested_commitment={}),
+        ]
+        for source in cases:
+            with self.subTest(source=source):
+                result = evaluate_synthetic_observation(native_transfer(source=source))
+                self.assertEqual(result.disposition, "REFUSE")
+        obs = native_transfer()
+        bad_transfer = replace(obs.transfers[0], asset=TypedAsset(kind=[]))
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad_transfer,)))
+        self.assertEqual(result.disposition, "REFUSE")
+        for field, value in (("transaction_type", []), ("transaction_result", {})):
+            with self.subTest(field=field):
+                result = evaluate_synthetic_observation(replace(obs, **{field: value}))
+                self.assertEqual(result.disposition, "REFUSE")
 
 
 class SolanaAllowlistRegressionTests(unittest.TestCase):
