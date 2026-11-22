@@ -406,6 +406,74 @@ class OfflineXRPLSourceTests(unittest.TestCase):
             "MATCHING_SYNTHETIC_CLAIMS_NOT_ATTESTED",
         )
 
+    def test_hex_case_only_is_same_synthetic_transaction_claim(self):
+        """Hex digits encode one hash regardless of their letter case."""
+        first = evaluate(page(tx(transaction_hash="A" * 64)))
+        other_source = replace(SOURCE, provider="sim:provider_beta")
+        second = evaluate(page(tx(transaction_hash="a" * 64)), source=other_source)
+        self.assertEqual(first.disposition, "SIMULATED_PAGE_OBSERVATION")
+        self.assertEqual(second.disposition, "SIMULATED_PAGE_OBSERVATION")
+        self.assertEqual(
+            compare_synthetic_page_sources(first, second),
+            "MATCHING_SYNTHETIC_CLAIMS_NOT_ATTESTED",
+        )
+
+    def test_hash_hex_case_must_not_hide_conflicting_account(self):
+        first = evaluate(page(tx(transaction_hash="A" * 64)))
+        altered = tx(transaction_hash="a" * 64)
+        altered["tx_json"]["Account"] = "sim:other_sender"
+        second = evaluate(
+            page(altered),
+            source=replace(SOURCE, provider="sim:provider_beta"),
+        )
+        self.assertEqual(second.disposition, "SIMULATED_PAGE_OBSERVATION")
+        self.assertEqual(compare_synthetic_page_sources(first, second), "CONFLICT")
+
+    def test_ledger_hash_hex_case_only_does_not_create_conflict(self):
+        first = evaluate(page(tx(ledger_hash="B" * 64)))
+        second = evaluate(
+            page(tx(ledger_hash="b" * 64)),
+            source=replace(SOURCE, provider="sim:provider_beta"),
+        )
+        self.assertEqual(
+            compare_synthetic_page_sources(first, second),
+            "MATCHING_SYNTHETIC_CLAIMS_NOT_ATTESTED",
+        )
+
+    def test_embedded_transaction_hash_case_is_consistent(self):
+        first_entry = tx(transaction_hash="A" * 64)
+        first_entry["tx_json"]["hash"] = "a" * 64
+        second_entry = tx(transaction_hash="a" * 64)
+        second_entry["tx_json"]["hash"] = "A" * 64
+        first = evaluate(page(first_entry))
+        second = evaluate(
+            page(second_entry),
+            source=replace(SOURCE, provider="sim:provider_beta"),
+        )
+        self.assertEqual(first.disposition, "SIMULATED_PAGE_OBSERVATION")
+        self.assertEqual(second.disposition, "SIMULATED_PAGE_OBSERVATION")
+        self.assertEqual(
+            compare_synthetic_page_sources(first, second),
+            "MATCHING_SYNTHETIC_CLAIMS_NOT_ATTESTED",
+        )
+
+    def test_forged_page_with_missing_ledger_hash_does_not_raise(self):
+        first = evaluate()
+        malformed = replace(
+            first,
+            transactions=(replace(first.transactions[0], ledger_hash=None),),
+        )
+        second = evaluate(source=replace(SOURCE, provider="sim:provider_beta"))
+        self.assertEqual(compare_synthetic_page_sources(malformed, second), "CONFLICT")
+
+    def test_case_variant_same_page_hashes_cannot_evade_duplicate_check(self):
+        duplicate = evaluate(page(
+            tx(transaction_hash="A" * 64),
+            tx(transaction_hash="a" * 64),
+        ))
+        self.assertEqual(duplicate.disposition, "INCONCLUSIVE")
+        self.assertEqual(duplicate.reason, "DUPLICATED_TRANSACTION_ANCHOR")
+
     def test_duplicated_hash_in_one_page_is_not_silently_overwritten(self):
         duplicated = evaluate(page(tx(), tx(delivered="251")))
         self.assertEqual(duplicated.disposition, "INCONCLUSIVE")
