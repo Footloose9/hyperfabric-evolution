@@ -4,6 +4,12 @@ Public teaching/test contract. Never parses a live RPC response, validates
 account checksum, proves a transaction or wallet owner, signs, or queries a
 ledger. No I/O or external dependency. All IDs MUST use sim: labels.
 
+A transaction-bearing source (getTransaction) is required for any instruction
+effect claim. getSignatureStatuses evidence is modelled separately and never
+substitutes for instructions, transfers, program identity or account context.
+The synthetic `signature_status` is a label derived from the observed
+confirmationStatus, not the raw RPC `status` object.
+
 Public spec references:
 - Solana RPC getTransaction: https://solana.com/docs/rpc/http/gettransaction
 - Solana RPC getSignatureStatuses: https://solana.com/docs/rpc/http/getsignaturestatuses
@@ -14,40 +20,59 @@ Public spec references:
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 import re
 
-_SLOT_UINT64 = re.compile(r"[1-9][0-9]*\Z|^0$")  # u64, positive int as string
-_SIGNATURE_HEX = re.compile(r"[0-9A-Fa-f]{88}\Z")  # 64 bytes = 128 hex, but base58 encoded; synthetic uses hex
-_BLOCKHASH_HEX = re.compile(r"[0-9A-Fa-f]{64}\Z")  # 32 bytes hex
-_MINT_HEX = re.compile(r"[0-9A-Fa-f]{64}\Z")  # 32 bytes mint pubkey hex
-_PROGRAM_ID_HEX = re.compile(r"[0-9A-Fa-f]{64}\Z")  # 32 bytes program ID hex
+_BLOCHASH_HEX = re.compile(r"[0-9A-Fa-f]{64}\Z")
 _COMMITMENT = frozenset({"processed", "confirmed", "finalized"})
 _CONFIRMATION_STATUS = frozenset({"processed", "confirmed", "finalized", "UNQUALIFIED"})
-_INSTRUCTION_STACK_LIMIT = 64
 _SIM_MINT = re.compile(r"sim:mint_[a-z][a-z0-9_-]{0,40}\Z")
 _SIM_PROGRAM = re.compile(r"sim:prog_[a-z][a-z0-9_-]{0,40}\Z")
 _DISPLAY_SYMBOL = re.compile(r"[A-Z0-9]{1,10}\Z")
 _DISCRIMINATOR = re.compile(r"[A-Za-z0-9:_-]{1,64}\Z")
 _KINDS = frozenset({"native", "spl_token"})
 _TRANSACTION_RESULTS = frozenset({"success", "failed"})
+_SYSTEM_PROGRAM = "sim:prog_system"
 
 
 @dataclass(frozen=True)
 class SyntheticSource:
-    """Synthetic envelope for getTransaction/getSignatureStatuses response."""
+    """Synthetic envelope for a transaction-bearing RPC response.
+
+    Only `getTransaction` can carry the instructions/transfers claimed here.
+    The status fields below are a shorthand for an accompanying observed
+    getSignatureStatuses record; use `SignatureStatusEvidence` to model that
+    response explicitly. `requested_commitment` is the argument sent to
+    getTransaction and must not be attributed to getSignatureStatuses.
+    """
     network: str
     rpc_method: str
-    requested_commitment: str  # commitment passed to getTransaction
-    signature_status: str | None = None  # from getSignatureStatuses; None means not queried
-    confirmation_status: str | None = None  # from getSignatureStatuses value.confirmationStatus
-    confirmations: int | None = None  # getSignatureStatuses value.confirmations; None/null is NOT finality
+    requested_commitment: str | None = None
+    signature_status: str | None = None
+    confirmation_status: str | None = None
+    confirmations: int | None = None  # getSignatureStatuses value.confirmations; null is NOT finality
     slot: int = 0
     blockhash: str = ""
     capture_utc: str = ""
     raw_content_sha256: str = ""
+    provider_error: str | None = None
+
+
+@dataclass(frozen=True)
+class SignatureStatusEvidence:
+    """Separately modelled getSignatureStatuses value record.
+
+    `signature_status` is a *synthetic label* derived from the observed
+    confirmationStatus; the real RPC returns a `status` object, not a bare
+    processed/confirmed/finalized string. This record is never a substitute
+    for transaction instructions, transfers or executed program identity.
+    """
+    confirmation_status: str
+    signature_status: str
+    confirmations: int | None = None
+    slot: int | None = None
     provider_error: str | None = None
 
 
@@ -62,13 +87,14 @@ class TypedAsset:
 
 @dataclass(frozen=True)
 class InstructionProvenance:
-    """Instruction provenance: outer index, inner ordinal, stack height, resolved program ID, account-key lookup context."""
+    """Outer index, inner ordinal, stack height, resolved program ID, account-key lookup context."""
     outer_index: int
     inner_ordinal: int | None  # None for top-level instruction
-    stack_height: int  # depth in CPI call stack; 0 = top-level
+    stack_height: int  # 0 = top-level; CPI depth
     program_id: str  # resolved program ID (sim:prog_...)
-    # None = metadata was not supplied (distinct from ()); () = an observed
-    # empty account-key list. Both are refused, with different reasons.
+    # None = metadata was not supplied; () = observed empty list. Both are
+    # refused, with different reasons. Only a coherent non-empty context can
+    # support a claimed effect.
     account_keys_context: tuple[str, ...] | None
     discriminator: str | None = None  # opaque instruction discriminator, if any
     program_context: str | None = None  # program ID whose IDL/context resolved the discriminator
@@ -81,7 +107,7 @@ class ClaimedTransfer:
     destination: str  # sim:account_...
     asset: TypedAsset
     amount: str  # lamports for native, raw token amount for SPL
-    authority: str | None = None  # sim:account_... for token authority
+    authority: str | None = None
     provenance: InstructionProvenance | None = None
 
 
@@ -92,6 +118,7 @@ class SyntheticObservation:
     transaction_result: str  # "success" | "failed"
     transfers: tuple[ClaimedTransfer, ...]
     signatures: tuple[str, ...]
+    status_evidence: SignatureStatusEvidence | None = None  # separately observed status response
 
 
 @dataclass(frozen=True)
@@ -113,12 +140,8 @@ def _is_utc_timestamp(value: object) -> bool:
         return False
 
 
-def _positive_amount(value: str) -> bool:
-    try:
-        number = Decimal(value)
-    except InvalidOperation:
-        return False
-    return number.is_finite() and number > 0
+def _status_field(value: object) -> bool:
+    return value is None or value in _CONFIRMATION_STATUS
 
 
 def _source_shape_valid(source: SyntheticSource) -> bool:
@@ -126,24 +149,39 @@ def _source_shape_valid(source: SyntheticSource) -> bool:
         return False
     if source.rpc_method not in ("getTransaction", "getSignatureStatuses"):
         return False
-    if source.requested_commitment not in _COMMITMENT:
+    if source.rpc_method == "getTransaction" and source.requested_commitment not in _COMMITMENT:
         return False
-    if source.signature_status is not None and source.signature_status not in _CONFIRMATION_STATUS:
+    if not _status_field(source.signature_status):
         return False
-    if source.confirmation_status is not None and source.confirmation_status not in _CONFIRMATION_STATUS:
+    if not _status_field(source.confirmation_status):
         return False
     if source.confirmations is not None and (type(source.confirmations) is not int or source.confirmations < 0):
         return False
     if type(source.slot) is not int or source.slot <= 0:
         return False
-    if not isinstance(source.blockhash, str) or _BLOCKHASH_HEX.fullmatch(source.blockhash) is None:
+    if not isinstance(source.blockhash, str) or _BLOCHASH_HEX.fullmatch(source.blockhash) is None:
         return False
     if not _is_utc_timestamp(source.capture_utc):
         return False
-    if not isinstance(source.raw_content_sha256, str) or _BLOCKHASH_HEX.fullmatch(source.raw_content_sha256) is None:
+    if not isinstance(source.raw_content_sha256, str) or _BLOCHASH_HEX.fullmatch(source.raw_content_sha256) is None:
         return False
     if source.provider_error is not None:
         if not isinstance(source.provider_error, str) or len(source.provider_error) > 120:
+            return False
+    return True
+
+
+def _status_evidence_valid(evidence: SignatureStatusEvidence) -> bool:
+    if not isinstance(evidence, SignatureStatusEvidence):
+        return False
+    if not _status_field(evidence.confirmation_status) or not _status_field(evidence.signature_status):
+        return False
+    if evidence.confirmations is not None and (type(evidence.confirmations) is not int or evidence.confirmations < 0):
+        return False
+    if evidence.slot is not None and (type(evidence.slot) is not int or evidence.slot <= 0):
+        return False
+    if evidence.provider_error is not None:
+        if not isinstance(evidence.provider_error, str) or len(evidence.provider_error) > 120:
             return False
     return True
 
@@ -156,16 +194,12 @@ def _asset_valid(asset: TypedAsset) -> bool:
             return False
     if asset.kind == "native":
         return asset.mint is None and asset.program_id is None
-    # spl_token
     if not isinstance(asset.program_id, str) or _SIM_PROGRAM.fullmatch(asset.program_id) is None:
         return False
-    # A mint that is byte-identical to the token program ID is structurally
-    # parseable but semantically conflated; let the semantic stage refuse it
-    # with its explicit reason instead of a generic shape error.
+    # Structurally parseable but semantically conflated cases are refused by
+    # the semantic stage with an explicit reason.
     if isinstance(asset.mint, str) and asset.mint == asset.program_id:
         return True
-    # A missing mint with display metadata is parseable too: the semantic stage
-    # refuses it as "display metadata is not identity" rather than as a shape error.
     if asset.mint is None and asset.display_symbol is not None:
         return True
     if not isinstance(asset.mint, str) or _SIM_MINT.fullmatch(asset.mint) is None:
@@ -178,9 +212,6 @@ def _provenance_valid(prov: InstructionProvenance) -> bool:
         return False
     if prov.inner_ordinal is not None and (type(prov.inner_ordinal) is not int or prov.inner_ordinal < 0):
         return False
-    # Stack height is structurally just a non-negative depth; the teaching
-    # contract caps it semantically in evaluate_synthetic_observation so the
-    # refusal carries the specific "excessive CPI stack height" reason.
     if type(prov.stack_height) is not int or prov.stack_height < 0:
         return False
     if not isinstance(prov.program_id, str) or _SIM_PROGRAM.fullmatch(prov.program_id) is None:
@@ -191,8 +222,6 @@ def _provenance_valid(prov: InstructionProvenance) -> bool:
     if prov.program_context is not None:
         if not isinstance(prov.program_context, str) or _SIM_PROGRAM.fullmatch(prov.program_context) is None:
             return False
-    # None (metadata absent) and () (observed empty) are both structurally
-    # representable; the semantic stage refuses each with a distinct reason.
     if prov.account_keys_context is None:
         return True
     if not isinstance(prov.account_keys_context, (tuple, list)):
@@ -210,8 +239,6 @@ def _transfer_valid(transfer: ClaimedTransfer) -> bool:
         return False
     if not _asset_valid(transfer.asset):
         return False
-    # Structural check only requires a bounded string; parseability, positivity
-    # and malformed numeric text are semantic claims handled in evaluate.
     if not isinstance(transfer.amount, str) or not 1 <= len(transfer.amount) <= 40:
         return False
     if transfer.authority is not None and (not isinstance(transfer.authority, str) or not transfer.authority.startswith("sim:account_")):
@@ -237,14 +264,38 @@ def _observation_valid(obs: SyntheticObservation) -> bool:
     for sig in obs.signatures:
         if not isinstance(sig, str) or len(sig) != 88 or not sig.isalnum():
             return False
+    if obs.status_evidence is not None and not _status_evidence_valid(obs.status_evidence):
+        return False
     return True
+
+
+def _context_incompatibility(transfer: ClaimedTransfer) -> str | None:
+    """Return the reason why provenance and claimed effect disagree, if any."""
+    prov = transfer.provenance
+    ctx = frozenset(prov.account_keys_context or ())
+    if transfer.source not in ctx or transfer.destination not in ctx:
+        return "account-key context does not include claimed source and destination"
+    if prov.inner_ordinal is not None and prov.stack_height == 0:
+        return "inner ordinal declared without a nested execution context"
+    if transfer.asset.kind == "native":
+        if prov.program_id != _SYSTEM_PROGRAM:
+            return "native transfer program does not match executing System Program instruction"
+        return None
+    if prov.program_id != transfer.asset.program_id:
+        return "token program identity does not match executing instruction"
+    if transfer.asset.mint not in ctx:
+        return "mint identity absent from account-key context"
+    if transfer.authority is not None and transfer.authority not in ctx:
+        return "token authority absent from account-key context"
+    return None
 
 
 def evaluate_synthetic_observation(observation: SyntheticObservation) -> ConformanceDecision:
     """Classify a fabricated Solana observation without authenticating any ledger.
 
     ACCEPT means the claimed *synthetic* transfer meets the teaching contract;
-    it NEVER authorizes an actual transfer from arbitrary live data.
+    it NEVER authorizes an actual transfer from arbitrary live data. A lone
+    getSignatureStatuses response can never support an instruction-effect claim.
     INCONCLUSIVE concerns the effect claim; recorded_outcome separately states
     validated transaction finality (a failed result is not an unknown result).
     """
@@ -252,27 +303,45 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
         return ConformanceDecision("REFUSE", "unsupported or malformed observation", "NOT_ESTABLISHED")
 
     source = observation.source
-    if source.provider_error:
+    if source.rpc_method == "getSignatureStatuses" and source.requested_commitment is not None:
+        return ConformanceDecision(
+            "REFUSE", "getSignatureStatuses does not accept a commitment request argument", "NOT_ESTABLISHED"
+        )
+    if source.rpc_method != "getTransaction":
+        return ConformanceDecision(
+            "REFUSE", "signature-status source cannot prove instruction effects", "NOT_ESTABLISHED"
+        )
+
+    evidence = observation.status_evidence
+    if evidence is not None:
+        for field in ("signature_status", "confirmation_status", "confirmations"):
+            source_value = getattr(source, field)
+            if source_value is not None and source_value != getattr(evidence, field):
+                return ConformanceDecision("REFUSE", "status evidence conflicts with source summary", "NOT_ESTABLISHED")
+        signature_status = evidence.signature_status
+        confirmed = evidence.confirmation_status
+        confirmations = evidence.confirmations
+        status_error = evidence.provider_error
+    else:
+        signature_status = source.signature_status
+        confirmed = source.confirmation_status
+        confirmations = source.confirmations
+        status_error = source.provider_error
+
+    if source.provider_error or status_error:
         return ConformanceDecision("INCONCLUSIVE", "provider error; effect source unavailable", "NOT_ESTABLISHED")
 
-    # Commitment provenance check: requested_commitment MUST NOT be conflated with confirmation_status
-    # UNQUALIFIED must be preserved when signature status is missing or confirmationStatus is absent
+    # commit-contract: requested argument != observed confirmationStatus;
+    # slot, confirmations:null and missing status never license "finalized".
     requested = source.requested_commitment
-    confirmed = source.confirmation_status
     if requested == "finalized" and confirmed is None:
-        # Missing confirmationStatus is NOT finalized; it's UNQUALIFIED
         return ConformanceDecision("INCONCLUSIVE", "confirmationStatus absent; finality UNQUALIFIED", "NOT_ESTABLISHED")
     if requested == "finalized" and confirmed == "UNQUALIFIED":
         return ConformanceDecision("INCONCLUSIVE", "confirmationStatus UNQUALIFIED; finality not established", "NOT_ESTABLISHED")
-    if confirmed in ("confirmed", "finalized") and source.signature_status is None:
-        # A confirmationStatus alone, without a separately observed
-        # getSignatureStatuses response, is not a qualified finality source.
+    if confirmed in ("confirmed", "finalized") and signature_status is None:
         return ConformanceDecision(
-            "INCONCLUSIVE",
-            "confirmationStatus without observed signature status; finality UNQUALIFIED",
-            "NOT_ESTABLISHED",
+            "INCONCLUSIVE", "confirmationStatus without observed signature status; finality UNQUALIFIED", "NOT_ESTABLISHED"
         )
-
     recorded = (
         "VALIDATED_FAILED" if observation.transaction_result == "failed"
         else "VALIDATED_SUCCESS" if confirmed in ("confirmed", "finalized")
@@ -281,14 +350,12 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
 
     if observation.transaction_result == "failed":
         return ConformanceDecision(
-            "INCONCLUSIVE", "validated failed transaction: intended transfer not established",
-            recorded
+            "INCONCLUSIVE", "validated failed transaction: intended transfer not established", recorded
         )
 
     if confirmed not in ("confirmed", "finalized"):
         return ConformanceDecision("INCONCLUSIVE", "insufficient finality for transfer claim", recorded)
 
-    # All transfers must have instruction provenance
     for transfer in observation.transfers:
         if transfer.provenance is None:
             return ConformanceDecision("REFUSE", "missing instruction provenance for transfer", recorded)
@@ -296,18 +363,14 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
             return ConformanceDecision("REFUSE", "missing account-key lookup context", recorded)
         if len(transfer.provenance.account_keys_context) == 0:
             return ConformanceDecision("REFUSE", "observed empty account-key context", recorded)
-        if transfer.provenance.stack_height > 4:  # arbitrary CPI depth limit for synthetic
+        if transfer.provenance.stack_height > 4:
             return ConformanceDecision("REFUSE", "excessive CPI stack height for synthetic observation", recorded)
 
-    # An opaque discriminator needs a resolved program context; otherwise the
-    # instruction meaning is ambiguous and must not be decoded.
     for transfer in observation.transfers:
         prov = transfer.provenance
         if prov.discriminator is not None and prov.program_context != prov.program_id:
             return ConformanceDecision("REFUSE", "ambiguous discriminator without qualified program context", recorded)
 
-    # Mint identity MUST be separate from token program identity and from
-    # non-authoritative display metadata.
     for transfer in observation.transfers:
         if transfer.asset.kind == "spl_token":
             if transfer.asset.mint is None:
@@ -315,13 +378,16 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
             if transfer.asset.mint == transfer.asset.program_id:
                 return ConformanceDecision("REFUSE", "mint identity conflated with token program identity", recorded)
 
-    # Ambiguous nested instruction check: if inner_ordinal is None but stack_height > 0, it's ambiguous
+    for transfer in observation.transfers:
+        incompatibility = _context_incompatibility(transfer)
+        if incompatibility is not None:
+            return ConformanceDecision("REFUSE", incompatibility, recorded)
+
     for transfer in observation.transfers:
         prov = transfer.provenance
         if prov.stack_height > 0 and prov.inner_ordinal is None:
             return ConformanceDecision("REFUSE", "ambiguous nested instruction: inner_ordinal required at stack_height > 0", recorded)
 
-    # All positive checks passed for synthetic observation
     for transfer in observation.transfers:
         try:
             amount = Decimal(transfer.amount)
@@ -331,6 +397,5 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
             return ConformanceDecision("INCONCLUSIVE", "non-positive amount cannot prove transfer", recorded)
 
     return ConformanceDecision(
-        "ACCEPT", "synthetic transfer meets contract with provenance and commitment separation",
-        recorded, True
+        "ACCEPT", "synthetic transfer meets contract with provenance and commitment separation", recorded, True
     )

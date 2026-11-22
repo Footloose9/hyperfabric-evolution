@@ -14,6 +14,7 @@ from hyperfabric_public.solana_conformance import (
     ClaimedTransfer,
     ConformanceDecision,
     InstructionProvenance,
+    SignatureStatusEvidence,
     SyntheticObservation,
     SyntheticSource,
     TypedAsset,
@@ -672,7 +673,12 @@ class SolanaConformanceNegativeFalsifiers(unittest.TestCase):
                         inner_ordinal=None,
                         stack_height=0,
                         program_id="sim:prog_spl_token",
-                        account_keys_context=("sim:account_token_sender_1",),
+                        account_keys_context=(
+                            "sim:account_token_sender_1",
+                            "sim:account_token_receiver_1",
+                            "sim:mint_usdc_1",
+                            "sim:account_token_authority_1",
+                        ),
                         discriminator="transfer_checked",
                         program_context="sim:prog_spl_token",
                     ),
@@ -729,7 +735,14 @@ class SolanaConformanceNegativeFalsifiers(unittest.TestCase):
             inner_ordinal=None,
             stack_height=0,
             program_id="sim:prog_spl_token",
-            account_keys_context=("sim:account_token_sender_1",),
+            account_keys_context=(
+                "sim:account_token_sender_1",
+                "sim:account_token_receiver_1",
+                "sim:account_token_receiver_2",
+                "sim:mint_usd_a",
+                "sim:mint_usd_b",
+                "sim:account_token_authority_1",
+            ),
         )
         obs = token_transfer(
             transfers=(
@@ -813,6 +826,178 @@ class SolanaConformanceFixtureTests(unittest.TestCase):
                 self.assertIn(result.disposition, ("REFUSE", "INCONCLUSIVE"))
                 self.assertEqual(result.provenance_class, "SYNTHETIC_ONLY")
                 self.assertFalse(result.effect_claim_supported)
+
+
+class SolanaSourceAndProvenanceFalsifiers(unittest.TestCase):
+    """Fail-closed regression matrix for the two Footloose9 source-level falsifiers."""
+
+    def test_60_get_signature_statuses_alone_never_accepts(self):
+        """Exact maintainer falsifier: a status-only source cannot carry transfers."""
+        obs = native_transfer(source=standard_source(rpc_method="getSignatureStatuses"))
+        result = evaluate_synthetic_observation(obs)
+        self.assertNotEqual(result.disposition, "ACCEPT")
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("getSignatureStatuses", result.reason)
+        self.assertFalse(result.effect_claim_supported)
+        self.assertEqual(result.recorded_outcome, "NOT_ESTABLISHED")
+
+    def test_61_status_only_source_with_separate_evidence_never_accepts(self):
+        """Even with explicit status evidence, a status-only source refuses effect claims."""
+        obs = native_transfer(
+            source=standard_source(rpc_method="getSignatureStatuses", requested_commitment=None),
+            status_evidence=SignatureStatusEvidence(
+                confirmation_status="finalized", signature_status="finalized", confirmations=0, slot=200123456
+            ),
+        )
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("signature-status source cannot prove instruction effects", result.reason)
+
+    def test_62_transaction_source_with_separate_status_evidence_accepted(self):
+        """A getTransaction source plus separately modelled status evidence supports the claim."""
+        obs = native_transfer(
+            source=standard_source(signature_status=None, confirmation_status=None),
+            status_evidence=SignatureStatusEvidence(
+                confirmation_status="finalized", signature_status="finalized", confirmations=0, slot=200123456
+            ),
+        )
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "ACCEPT")
+        self.assertEqual(result.recorded_outcome, "VALIDATED_SUCCESS")
+
+    def test_63_status_evidence_must_not_conflict_with_source_summary(self):
+        obs = native_transfer(
+            status_evidence=SignatureStatusEvidence(
+                confirmation_status="processed", signature_status="processed", confirmations=None
+            )
+        )
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("status evidence conflicts with source summary", result.reason)
+
+    def test_64_unqualified_status_evidence_never_infers_finalized(self):
+        obs = native_transfer(
+            source=standard_source(signature_status=None, confirmation_status=None),
+            status_evidence=SignatureStatusEvidence(
+                confirmation_status="UNQUALIFIED", signature_status="finalized", confirmations=None
+            ),
+        )
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "INCONCLUSIVE")
+        self.assertIn("UNQUALIFIED", result.reason)
+        self.assertEqual(result.recorded_outcome, "NOT_ESTABLISHED")
+
+    def test_65_unrelated_account_context_refused(self):
+        """Exact maintainer falsifier: context unrelated to source/destination."""
+        obs = native_transfer()
+        t = obs.transfers[0]
+        bad = replace(
+            t,
+            provenance=replace(t.provenance, account_keys_context=("sim:account_unrelated",)),
+        )
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad,)))
+        self.assertNotEqual(result.disposition, "ACCEPT")
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("account-key context", result.reason)
+
+    def test_66_source_missing_from_context_refused(self):
+        obs = native_transfer()
+        t = obs.transfers[0]
+        bad = replace(
+            t,
+            provenance=replace(t.provenance, account_keys_context=("sim:account_receiver_1",)),
+        )
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad,)))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("does not include claimed source and destination", result.reason)
+
+    def test_67_destination_missing_from_context_refused(self):
+        obs = native_transfer()
+        t = obs.transfers[0]
+        bad = replace(
+            t,
+            provenance=replace(t.provenance, account_keys_context=("sim:account_sender_1",)),
+        )
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad,)))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_68_system_program_mismatch_refused(self):
+        obs = native_transfer()
+        t = obs.transfers[0]
+        bad = replace(
+            t,
+            provenance=replace(t.provenance, program_id="sim:prog_spl_token"),
+        )
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad,)))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("native transfer program does not match", result.reason)
+
+    def test_69_token_program_mismatch_refused(self):
+        obs = token_transfer()
+        t = obs.transfers[0]
+        bad = replace(
+            t,
+            provenance=replace(t.provenance, program_id="sim:prog_other"),
+        )
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad,)))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("token program identity does not match", result.reason)
+
+    def test_70_mint_missing_from_context_refused(self):
+        obs = token_transfer()
+        t = obs.transfers[0]
+        bad = replace(
+            t,
+            provenance=replace(
+                t.provenance,
+                account_keys_context=(
+                    "sim:account_token_sender_1",
+                    "sim:account_token_receiver_1",
+                    "sim:account_token_authority_1",
+                ),
+            ),
+        )
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad,)))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("mint identity absent from account-key context", result.reason)
+
+    def test_71_inner_ordinal_without_nested_context_refused(self):
+        obs = native_transfer()
+        t = obs.transfers[0]
+        bad = replace(t, provenance=replace(t.provenance, inner_ordinal=0))
+        result = evaluate_synthetic_observation(replace(obs, transfers=(bad,)))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("inner ordinal declared without a nested execution context", result.reason)
+
+    def test_72_execution_error_stays_separate_from_finality(self):
+        obs = native_transfer(transaction_result="failed")
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "INCONCLUSIVE")
+        self.assertEqual(result.recorded_outcome, "VALIDATED_FAILED")
+
+
+class SolanaAllowlistRegressionTests(unittest.TestCase):
+    """Keep the four Solana paths tracked under the public-release allowlist."""
+
+    def test_gitignore_keeps_solana_sources_tracked(self):
+        lines = [
+            line.strip()
+            for line in (Path(__file__).resolve().parents[1] / ".gitignore")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        ]
+        required = {
+            "!docs/SOLANA_SYNTHETIC_CONFORMANCE.md",
+            "!hyperfabric_public/solana_conformance.py",
+            "!tests/fixtures/solana_synthetic.json",
+            "!tests/test_solana_conformance.py",
+        }
+        for entry in required:
+            with self.subTest(entry=entry):
+                self.assertEqual(lines.count(entry), 1)
+        self.assertIn("*", lines)
+        self.assertIn("!hyperfabric_public/", lines)
+        self.assertIn("!tests/", lines)
 
 
 if __name__ == "__main__":
