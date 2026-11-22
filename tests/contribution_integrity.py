@@ -36,8 +36,20 @@ def _exact_allowlist(raw: bytes) -> list[str]:
         lines = raw.decode("utf-8").splitlines()
     except UnicodeError:
         return [".gitignore is not UTF-8"]
-    rules = [v.strip() for v in lines if v.strip() and not v.lstrip().startswith("#")]
-    errors = []
+    errors: list[str] = []
+    rules: list[str] = []
+    for v in lines:
+        if not v:
+            continue
+        if v.startswith("#"):
+            continue
+        # Git does not normalize leading blanks like Python str.strip().
+        # A rule " *" is not the global deny rule "*"; rejecting instead
+        # of trimming is essential for a fail-closed allowlist.
+        if v != v.strip() or any(ch.isspace() for ch in v):
+            errors.append("noncanonical whitespace in .gitignore rule")
+            continue
+        rules.append(v)
     if not rules or rules[0] != "*":
         errors.append(".gitignore must start with a deny-all '*' rule")
     for v in rules[1:]:
@@ -57,6 +69,30 @@ def _path_is_safe(path: str) -> bool:
     segments = path.split("/")
     return bool(path and not path.startswith("/") and "\\" not in path
                 and all(part not in ("", ".", "..", ".git") for part in segments))
+
+
+def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, bytes]]:
+    """Read a Git commit's complete tree; do not trust a clean final diff."""
+    tree: dict[str, tuple[bytes, bytes, bytes]] = {}
+    for row in _git(root, "ls-tree", "-r", "-z", revision).stdout.split(b"\0"):
+        if not row:
+            continue
+        metadata, sep, raw_path = row.partition(b"\t")
+        parts = metadata.split()
+        if not sep or len(parts) != 3:
+            raise RuntimeError("malformed historical Git tree entry")
+        try:
+            path = raw_path.decode("utf-8")
+        except UnicodeError as exc:
+            raise RuntimeError("non-UTF8 historical Git path") from exc
+        if not _path_is_safe(path):
+            raise RuntimeError("unsafe historical Git path")
+        if path in tree:
+            raise RuntimeError("duplicated historical Git tree entry")
+        tree[path] = (parts[0], parts[1], parts[2])
+        if len(tree) > 4096:
+            raise RuntimeError("historical Git tree exceeds 4096-entry audit budget")
+    return tree
 
 
 def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
@@ -156,6 +192,27 @@ def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
             errors.append(f"historical invalid UTF-8 object: {name} ({sha[:12]})")
         if any(pattern.search(content) for pattern in SECRET_MARKERS):
             errors.append(f"historical object contains secret marker: {name} ({sha[:12]})")
+    # A clean end-state cannot prove intermediate commits lacked links,
+    # executable objects or non-public filenames. Examine each new commit's
+    # *tree entry modes and paths*, not only blobs/commit messages.
+    commit_ids = _git(root, "rev-list", f"{base}..{head}").stdout.splitlines()
+    if len(commit_ids) > 64:
+        errors.append("PR exceeds bounded 64-commit historical tree audit")
+        return errors
+    base_tree = _tree_entries(root, base)
+    for raw_commit in commit_ids:
+        commit_sha = raw_commit.decode("ascii")
+        current_tree = _tree_entries(root, commit_sha)
+        for path, entry in current_tree.items():
+            if base_tree.get(path) == entry:
+                continue
+            if entry[0] != b"100644" or entry[1] != b"blob":
+                errors.append(f"historical unsupported mode/type: {path} ({commit_sha[:12]})")
+            if path not in base_tree:
+                check = _git(root, "check-ignore", "-q", "--no-index", "--", path,
+                             allowed=(0, 1))
+                if check.returncode == 0:
+                    errors.append(f"historical unallowlisted path: {path} ({commit_sha[:12]})")
     return errors
 
 
