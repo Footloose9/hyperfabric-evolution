@@ -138,6 +138,48 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         self.assertIn("historical unallowlisted path", " ".join(issues))
 
 
+
+    def test_historical_forced_path_is_not_amnestied_by_later_exception(self):
+        # A later .gitignore exception cannot retroactively authorize a file
+        # that entered Git while the exact path was still denied.
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional research text\n", encoding="utf-8")
+        git(self.root, "add", "-f", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "unsafe historical admission")
+        prior = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(prior.returncode, 0)
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "late retroactive exception")
+        current = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(current.returncode, 1)
+        self.assertIn(
+            "historical unallowlisted path",
+            " ".join(verify_pr_diff(self.root, self.base, "HEAD")),
+        )
+
+    def test_historical_path_is_valid_when_exception_precedes_first_add(self):
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "valid prior exception")
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional public evidence\n", encoding="utf-8")
+        git(self.root, "add", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "allowlisted addition")
+        self.assertEqual(verify_pr_diff(self.root, self.base, "HEAD"), [])
+
     def test_unicode_line_separator_cannot_forge_deny_all(self):
         # Python str.splitlines() recognizes U+2028 and U+0085, while Git
         # reads .gitignore records as physical lines. Never normalize them
