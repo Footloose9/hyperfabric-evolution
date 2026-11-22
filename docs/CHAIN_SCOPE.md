@@ -16,6 +16,24 @@ The current `AssetIdentity` code accepts only uppercase-alphanumeric three-chara
 
 Current XRPL documentation distinguishes native XRP, classic issued trust-line tokens (currency + issuer) and **Multi-Purpose Tokens (MPTs)** with different issuance identities. A full parser must handle these separately. [XRPL currency formats](https://xrpl.org/docs/references/protocol/data-types/currency-formats).
 
+## XRPL versus Xahau: fictional chain-identity exercise
+
+**They are separate ledgers, not two names for one account or asset.** XRP is the native asset of XRPL Mainnet; XAH is the native asset of Xahau Mainnet. Matching address text, currency labels, or token symbols across the two ledgers does not establish matching balances, issuer identity, ownership, or a bridge redemption. Xahau documents **Hooks** and **URITokens** as network-specific features; neither feature can be inferred for an XRPL transaction simply because the networks share protocol ancestry.
+
+**Network identity must be checked separately from asset identity.** The [XRPL transaction common-fields specification](https://xrpl.org/docs/references/protocol/transactions/common-fields) lists XRPL Mainnet as network ID `0` (**omit** the transaction's `NetworkID` field) and Xahau Mainnet as `21337` (**require** `NetworkID`). The [Xahau signing guidance](https://xahau.network/docs/features/transaction-signing/) independently describes its network-ID requirement. A chain label in a local example is not a standardized CAIP chain identifier, and a syntactically plausible field is not proof of network acceptance.
+
+These are **invented conceptual validation fixtures**, not encoded transactions, signed payloads, real account data, live RPC observations, or tests of the repository's existing code:
+
+| Fabricated claim | Expected conceptual check | Reason |
+| --- | --- | --- |
+| XRPL Mainnet; native `XRP`; transaction omits `NetworkID` | Consistent shape, **not verified** | Native ticker and Mainnet field convention agree. |
+| Xahau Mainnet; native `XAH`; transaction `NetworkID=21337` | Consistent shape, **not verified** | Native ticker and the documented Xahau ID agree. |
+| Xahau Mainnet; asset declared **native** `XRP` | **Reject** | XAH, not XRP, is native there; an *issued* asset would need separate issuer identity. |
+| XRPL Mainnet; transaction `NetworkID=21337` | **Reject** | This is Xahau's network ID, and XRPL Mainnet transactions must omit that field. |
+| Xahau Mainnet; object declared an XRPL `NFToken` by default | **Reject unsupported mapping** | Xahau documents URITokens; no cross-chain NFT equivalence has been established. |
+
+Sources reviewed 2026-11-22: [Xahau differences](https://xahau.network/docs/what-is-different/), [Xahau transaction signing](https://xahau.network/docs/features/transaction-signing/), and [XRPL transaction common fields](https://xrpl.org/docs/references/protocol/transactions/common-fields). This is an independently written protocol comparison with no source-code reuse, network calls, or wallet operation.
+
 ## Public interoperability standards
 
 - [CAIP-2](https://standards.chainagnostic.org/CAIPs/caip-2): chain namespace and reference. A name is not a registered namespace merely because it matches the grammar.
