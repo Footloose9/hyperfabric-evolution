@@ -1059,6 +1059,58 @@ class SolanaStatusEvidenceFalsifiers(unittest.TestCase):
                 self.assertEqual(result.disposition, "REFUSE")
 
 
+class SolanaNestedTypeFalsifiers(unittest.TestCase):
+    """Dataclass annotations are not runtime guards: nested bad types must REFUSE, not raise."""
+
+    def assert_refused_without_raising(self, observation):
+        result = evaluate_synthetic_observation(observation)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertFalse(result.effect_claim_supported)
+        self.assertEqual(result.provenance_class, "SYNTHETIC_ONLY")
+        return result
+
+    def test_80_transfer_entry_none_refused(self):
+        """transfers=(None,) must not raise AttributeError on transfer.source."""
+        self.assert_refused_without_raising(replace(native_transfer(), transfers=(None,)))
+
+    def test_81_asset_none_refused(self):
+        """A ClaimedTransfer whose asset is None must not raise on asset.kind."""
+        transfer = replace(native_transfer().transfers[0], asset=None)
+        self.assert_refused_without_raising(replace(native_transfer(), transfers=(transfer,)))
+
+    def test_82_provenance_list_refused(self):
+        """A ClaimedTransfer whose provenance is a list must not raise on provenance.outer_index."""
+        transfer = replace(native_transfer().transfers[0], provenance=[])
+        self.assert_refused_without_raising(replace(native_transfer(), transfers=(transfer,)))
+
+    def test_83_nested_objects_of_other_classes_refused(self):
+        """Foreign objects in place of nested dataclasses are malformed evidence, not crashes."""
+        base = native_transfer()
+        transfer = base.transfers[0]
+        cases = {
+            "asset dict": replace(transfer, asset={"kind": "native"}),
+            "provenance dict": replace(transfer, provenance={"outer_index": 0}),
+            "provenance string": replace(transfer, provenance="sim:prog_system"),
+            "source dict": replace(base, source={"network": "solana:synthetic"}),
+            "transfer string": "sim:account_sender_1",
+        }
+        for name, value in cases.items():
+            with self.subTest(case=name):
+                if name.startswith("source"):
+                    observation = replace(base, source=value)
+                elif name.startswith("transfer"):
+                    observation = replace(base, transfers=(value,))
+                else:
+                    observation = replace(base, transfers=(value,))
+                self.assert_refused_without_raising(observation)
+
+    def test_84_valid_transfer_still_accepted_after_type_guards(self):
+        """The hardened guards must not reject the valid positive fixture."""
+        result = evaluate_synthetic_observation(native_transfer())
+        self.assertEqual(result.disposition, "ACCEPT")
+        self.assertTrue(result.effect_claim_supported)
+
+
 class SolanaAllowlistRegressionTests(unittest.TestCase):
     """Keep the four Solana paths tracked under the public-release allowlist."""
 

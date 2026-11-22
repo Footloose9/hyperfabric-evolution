@@ -156,6 +156,10 @@ def _status_contradiction(signature_status: object, confirmation_status: object)
 
 
 def _source_shape_valid(source: SyntheticSource) -> bool:
+    # Dataclass annotations are not runtime guards: a caller can substitute an
+    # arbitrary object, so every nested access is preceded by a class check.
+    if not isinstance(source, SyntheticSource):
+        return False
     if source.network != "solana:synthetic":
         return False
     if not isinstance(source.rpc_method, str) or source.rpc_method not in ("getTransaction", "getSignatureStatuses"):
@@ -200,6 +204,8 @@ def _status_evidence_valid(evidence: SignatureStatusEvidence) -> bool:
 
 
 def _asset_valid(asset: TypedAsset) -> bool:
+    if not isinstance(asset, TypedAsset):
+        return False
     if not isinstance(asset.kind, str) or asset.kind not in _KINDS:
         return False
     if asset.display_symbol is not None:
@@ -221,6 +227,8 @@ def _asset_valid(asset: TypedAsset) -> bool:
 
 
 def _provenance_valid(prov: InstructionProvenance) -> bool:
+    if not isinstance(prov, InstructionProvenance):
+        return False
     if type(prov.outer_index) is not int or prov.outer_index < 0:
         return False
     if prov.inner_ordinal is not None and (type(prov.inner_ordinal) is not int or prov.inner_ordinal < 0):
@@ -246,6 +254,8 @@ def _provenance_valid(prov: InstructionProvenance) -> bool:
 
 
 def _transfer_valid(transfer: ClaimedTransfer) -> bool:
+    if not isinstance(transfer, ClaimedTransfer):
+        return False
     if not isinstance(transfer.source, str) or not transfer.source.startswith("sim:account_"):
         return False
     if not isinstance(transfer.destination, str) or not transfer.destination.startswith("sim:account_"):
@@ -262,6 +272,8 @@ def _transfer_valid(transfer: ClaimedTransfer) -> bool:
 
 
 def _observation_valid(obs: SyntheticObservation) -> bool:
+    if not isinstance(obs, SyntheticObservation):
+        return False
     if not isinstance(obs.source, SyntheticSource) or not _source_shape_valid(obs.source):
         return False
     if not isinstance(obs.transaction_type, str) or obs.transaction_type not in (

@@ -94,6 +94,15 @@ maintainer are pinned as regression tests: a derived `signature_status` that
 contradicts `confirmation_status` is refused, and a list/dict injected into a
 status or routing field returns `REFUSE` instead of raising `TypeError`.
 
+Dataclass annotations are not runtime guards, so every nested access is now
+preceded by a class check: `None`, a foreign object, a dict, a list or a bare
+string substituted for `transfers[i]`, `asset`, `provenance` or `source`
+returns `REFUSE` with `reason = "unsupported or malformed observation"` and
+never raises `AttributeError`/`TypeError`. These three containers are pinned
+as regression tests (`None` transfer, `None` asset, list provenance) plus a
+matrix of foreign-class substitutions; the valid positive fixture is asserted
+as still `ACCEPT`.
+
 ## Non-goals
 
 No RPC endpoint, credential, private key, funded account, address lookup,
