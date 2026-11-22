@@ -2,8 +2,8 @@
   "schema": "HYPERFABRIC_PUBLIC_AI_UPSTREAM_SEED_V1",
   "reviewed_date_utc": "2026-11-22",
   "source_class": "PUBLIC_ORIGINAL",
-  "scope": "Partial seed: public-source, documentation-only inventory for issue #33; not a completeness claim or adoption approval.",
-  "method": "Read pinned public upstream README.md, repository-root LICENSE and root directory listing; note GitHub license metadata separately. No upstream code, dependency, data, tool or binary was imported or executed.",
+  "scope": "Partial seed: five public-source, documentation-only research candidates for issue #33, not a completeness, adoption or deployment claim.",
+  "method": "Read pinned public upstream README, root LICENSE and directory listings, supplemented by the pinned A2A specification file and OpenClaw THIRD_PARTY_NOTICES and SECURITY policy. GitHub license metadata is supplementary. No upstream code, packages, services, binaries, private data or dependencies were imported or executed.",
   "decision_policy": "Only a separately evidenced and dated owner/maintainer decision can change PENDING to ADOPTED or REJECTED. A review trigger initiates reevaluation only.",
   "candidates": [
     {
@@ -158,6 +158,112 @@
         ]
       },
       "bounded_next_check": "Write a synthetic unsigned/mismatched-link negative case from the public specification; resolve component and distribution license evidence before proposing code reuse."
+    },
+    {
+      "id": "a2a-protocol",
+      "name": "Agent2Agent (A2A) Protocol",
+      "source": {
+        "repository_url": "https://github.com/a2aproject/A2A",
+        "default_branch_ref": "main",
+        "exact_commit": "5f931b8a25fe66789f987ec4a55fc16ee9fe41ee",
+        "readme_url": "https://github.com/a2aproject/A2A/blob/5f931b8a25fe66789f987ec4a55fc16ee9fe41ee/README.md",
+        "top_level_license_url": "https://github.com/a2aproject/A2A/blob/5f931b8a25fe66789f987ec4a55fc16ee9fe41ee/LICENSE",
+        "top_level_license_file": "Apache-2.0",
+        "github_license_metadata": "Apache-2.0",
+        "root_notice_observation": "NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT",
+        "component_license_terms": "NOT_REVIEWED",
+        "transitive_license_terms": "NOT_REVIEWED"
+      },
+      "public_behavior": "The pinned README describes an interoperable agent protocol and the pinned repository contains specification/a2a.proto. No SDK, agent identity or live interoperability was verified.",
+      "alternative": "Read the public protocol specification and create independent offline synthetic discovery/authorization rejection fixtures instead of adopting an SDK.",
+      "proposed_mechanism": "LINK_SPEC",
+      "import_or_runtime_action": "NONE",
+      "security_and_resource_gaps": [
+        "Protocol compatibility and SDK/package-level licenses or notices not reviewed",
+        "Agent discovery, identity and invocation authority semantics not independently validated",
+        "Release-package provenance, transitive rights and advisories not assessed",
+        "CPU, RAM, network and storage integration budgets not measured"
+      ],
+      "synthetic_negative_case": "Synthetic agent discovery alone cannot authenticate a remote actor or authorize invocation of an advertised capability. NOT EXECUTED.",
+      "decision_status": "PENDING",
+      "decision_reason": "Pinned README, root Apache-2.0 license and protocol file existence verified; SDK rights, authn/authz, dependency, security and resource gates remain unqualified.",
+      "decision_date_utc": null,
+      "decision_evidence": [
+        "https://github.com/a2aproject/A2A/blob/5f931b8a25fe66789f987ec4a55fc16ee9fe41ee/README.md",
+        "https://github.com/a2aproject/A2A/blob/5f931b8a25fe66789f987ec4a55fc16ee9fe41ee/LICENSE",
+        "https://github.com/a2aproject/A2A/blob/5f931b8a25fe66789f987ec4a55fc16ee9fe41ee/specification/a2a.proto"
+      ],
+      "review_trigger": {
+        "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
+        "on_events": [
+          "new upstream release",
+          "relevant published security advisory",
+          "material license or dependency change"
+        ],
+        "review_no_later_than_utc": "2027-02-01",
+        "recheck": [
+          "exact source revision",
+          "component-level license and NOTICE files",
+          "dependency and transitive rights",
+          "security advisories and pinned dependency tree",
+          "fit, resource budget and negative tests"
+        ]
+      },
+      "bounded_next_check": "Read precise protocol-discovery authorization rules and author a standalone, original synthetic refusal fixture without installing an SDK."
+    },
+    {
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "source": {
+        "repository_url": "https://github.com/openclaw/openclaw",
+        "default_branch_ref": "main",
+        "exact_commit": "2aab24fbb4a346ee201da31821d62e079e28e707",
+        "readme_url": "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/README.md",
+        "top_level_license_url": "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/LICENSE",
+        "top_level_license_file": "MIT",
+        "github_license_metadata": "MIT",
+        "root_notice_observation": "NOTICE_PRESENT",
+        "component_license_terms": "NOT_REVIEWED",
+        "transitive_license_terms": "NOT_REVIEWED",
+        "root_notice_path": "THIRD_PARTY_NOTICES.md"
+      },
+      "public_behavior": "The pinned README describes an AI assistant and gateway. The pinned SECURITY.md explicitly scopes trusted operators and says a shared gateway is not a hostile multi-tenant security boundary.",
+      "alternative": "Study public trust-boundary and source-attribution documentation; build original offline untrusted-output refusal fixtures without running an agent gateway.",
+      "proposed_mechanism": "LINK_SPEC",
+      "import_or_runtime_action": "NONE",
+      "security_and_resource_gaps": [
+        "Root THIRD_PARTY_NOTICES.md was read but component/package and transitive obligations are not fully reviewed",
+        "Gateway operator trust, tool-effect scope, prompt-injection handling and isolation not tested",
+        "Released package provenance, dependency rights and security advisories not reviewed",
+        "Telemetry/network, CPU, RAM, disk and process costs not measured"
+      ],
+      "synthetic_negative_case": "Synthetic untrusted tool output or a peer agent message cannot silently grant privileged effect authority. NOT EXECUTED.",
+      "decision_status": "PENDING",
+      "decision_reason": "Pinned MIT root license, README, third-party notices and security policy were inspected; full rights-chain, trust/permission validation, dependency and resource gates are not established.",
+      "decision_date_utc": null,
+      "decision_evidence": [
+        "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/README.md",
+        "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/LICENSE",
+        "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/THIRD_PARTY_NOTICES.md",
+        "https://github.com/openclaw/openclaw/blob/2aab24fbb4a346ee201da31821d62e079e28e707/SECURITY.md"
+      ],
+      "review_trigger": {
+        "kind": "PUBLIC_RELEASE_OR_ADVISORY_OR_REVIEW_DATE",
+        "on_events": [
+          "new upstream release",
+          "relevant published security advisory",
+          "material license or dependency change"
+        ],
+        "review_no_later_than_utc": "2027-02-01",
+        "recheck": [
+          "exact source revision",
+          "component-level license and NOTICE files",
+          "dependency and transitive rights",
+          "security advisories and pinned dependency tree",
+          "fit, resource budget and negative tests"
+        ]
+      },
+      "bounded_next_check": "Prepare original public-only synthetic untrusted-output negative cases; do not launch gateway processes or read any private instance state."
     }
   ],
   "synthetic_negative_control": {
@@ -179,8 +285,6 @@
     }
   },
   "not_yet_reviewed": [
-    "A2A",
-    "OpenClaw",
     "LangGraph",
     "CrewAI",
     "Temporal Python SDK",

@@ -20,8 +20,8 @@ class TestPublicAiUpstreamCatalog(unittest.TestCase):
         self.assertEqual(self.record["source_class"], "PUBLIC_ORIGINAL")
         self.assertIn("partial seed", self.record["scope"].lower())
         self.assertEqual(self.record["schema"], "HYPERFABRIC_PUBLIC_AI_UPSTREAM_SEED_V1")
-        self.assertEqual(len(self.record["candidates"]), 3)
-        self.assertEqual(len({x["id"] for x in self.record["candidates"]}), 3)
+        self.assertEqual(len(self.record["candidates"]), 5)
+        self.assertEqual(len({x["id"] for x in self.record["candidates"]}), 5)
 
     def test_each_upstream_has_exact_pinned_public_source_and_rights_evidence(self):
         for item in self.record["candidates"]:
@@ -33,9 +33,11 @@ class TestPublicAiUpstreamCatalog(unittest.TestCase):
                 pinned = src["repository_url"] + "/blob/" + sha + "/"
                 self.assertEqual(src["readme_url"], pinned + "README.md")
                 self.assertEqual(src["top_level_license_url"], pinned + "LICENSE")
-                self.assertEqual(item["decision_evidence"], [
+                self.assertEqual(item["decision_evidence"][:2], [
                     src["readme_url"], src["top_level_license_url"]
                 ])
+                self.assertTrue(all(link.startswith(pinned) for link in item["decision_evidence"]))
+                self.assertEqual(len(item["decision_evidence"]), len(set(item["decision_evidence"])))
                 self.assertIn(
                     src["root_notice_observation"],
                     {"NO_NOTICE_FILE_IN_PINNED_REPOSITORY_ROOT", "NOTICE_PRESENT"},
@@ -74,6 +76,31 @@ class TestPublicAiUpstreamCatalog(unittest.TestCase):
         self.assertIsNone(case["decision_date_utc"])
         self.assertIn("HOLD", case["decision_reason"])
         self.assertTrue(case["review_trigger"]["on_events"])
+
+    def test_followup_a2a_openclaw_evidence_and_no_adoption(self):
+        by_id = {item["id"]: item for item in self.record["candidates"]}
+        self.assertEqual(set(by_id), {
+            "mcp-python-sdk", "opentelemetry-python", "in-toto",
+            "a2a-protocol", "openclaw"
+        })
+        a2a = by_id["a2a-protocol"]
+        oc = by_id["openclaw"]
+        self.assertEqual(a2a["source"]["exact_commit"],
+                         "5f931b8a25fe66789f987ec4a55fc16ee9fe41ee")
+        self.assertEqual(oc["source"]["exact_commit"],
+                         "2aab24fbb4a346ee201da31821d62e079e28e707")
+        self.assertTrue(a2a["decision_evidence"][2].endswith("/specification/a2a.proto"))
+        self.assertEqual(oc["source"]["root_notice_observation"], "NOTICE_PRESENT")
+        self.assertEqual(oc["source"]["root_notice_path"], "THIRD_PARTY_NOTICES.md")
+        self.assertTrue(oc["decision_evidence"][2].endswith("/THIRD_PARTY_NOTICES.md"))
+        self.assertTrue(oc["decision_evidence"][3].endswith("/SECURITY.md"))
+        for item in (a2a, oc):
+            with self.subTest(item=item["id"]):
+                self.assertEqual(item["decision_status"], "PENDING")
+                self.assertIsNone(item["decision_date_utc"])
+                self.assertEqual(item["proposed_mechanism"], "LINK_SPEC")
+                self.assertEqual(item["import_or_runtime_action"], "NONE")
+        self.assertFalse({"A2A", "OpenClaw"} & set(self.record["not_yet_reviewed"]))
 
     def test_existing_upstream_register_is_not_changed_by_seed(self):
         self.assertTrue((ROOT / "docs" / "upstream_candidates.json").is_file())
