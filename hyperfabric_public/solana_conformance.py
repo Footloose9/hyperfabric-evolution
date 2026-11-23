@@ -22,7 +22,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from decimal import Decimal, InvalidOperation
 import re
 
 _BLOCHASH_HEX = re.compile(r"[0-9A-Fa-f]{64}\Z")
@@ -35,6 +34,8 @@ _DISCRIMINATOR = re.compile(r"[A-Za-z0-9:_-]{1,64}\Z")
 _KINDS = frozenset({"native", "spl_token"})
 _TRANSACTION_RESULTS = frozenset({"success", "failed"})
 _SYSTEM_PROGRAM = "sim:prog_system"
+_U64_MAX = 18446744073709551615
+_RAW_AMOUNT = re.compile(r"-?(?:0|[1-9][0-9]*)\Z", re.ASCII)
 
 
 @dataclass(frozen=True)
@@ -345,6 +346,12 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
             source_value = getattr(source, field)
             if source_value is not None and source_value != getattr(evidence, field):
                 return ConformanceDecision("REFUSE", "status evidence conflicts with source summary", "NOT_ESTABLISHED")
+        # source.slot and status_evidence.slot describe the same transaction slot.
+        # A contradiction means the two records do not describe one transaction.
+        if evidence.slot is not None and source.slot != evidence.slot:
+            return ConformanceDecision(
+                "REFUSE", "status evidence slot conflicts with source slot", "NOT_ESTABLISHED"
+            )
         signature_status = evidence.signature_status
         confirmed = evidence.confirmation_status
         confirmations = evidence.confirmations
@@ -428,12 +435,17 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
             return ConformanceDecision("REFUSE", "ambiguous nested instruction: inner_ordinal required at stack_height > 0", recorded)
 
     for transfer in observation.transfers:
-        try:
-            amount = Decimal(transfer.amount)
-        except InvalidOperation:
+        # Amounts are raw base units, not display-scaled quantities. Only a
+        # canonical ASCII decimal integer is admissible: no plus sign, no
+        # leading zero, no fraction, no exponent, no whitespace, no Unicode
+        # digits. Parsing must not depend on locale or float semantics.
+        if not isinstance(transfer.amount, str) or _RAW_AMOUNT.fullmatch(transfer.amount) is None:
             return ConformanceDecision("REFUSE", "malformed transfer amount", recorded)
-        if not amount.is_finite() or amount <= 0:
+        amount = int(transfer.amount)
+        if amount <= 0:
             return ConformanceDecision("INCONCLUSIVE", "non-positive amount cannot prove transfer", recorded)
+        if amount > _U64_MAX:
+            return ConformanceDecision("REFUSE", "transfer amount exceeds u64 range", recorded)
 
     return ConformanceDecision(
         "ACCEPT", "synthetic transfer meets contract with provenance and commitment separation", recorded, True

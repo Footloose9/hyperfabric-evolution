@@ -452,8 +452,8 @@ class SolanaConformanceNegativeFalsifiers(unittest.TestCase):
         self.assertIn("missing instruction provenance", result.reason)
 
     def test_43_non_positive_amount_inconclusive(self):
-        """Zero or negative amount cannot prove transfer."""
-        for amount in ("0", "-1", "NaN"):
+        """Zero or negative amount cannot prove transfer; NaN/Infinity are malformed."""
+        for amount in ("0", "-1"):
             with self.subTest(amount=amount):
                 obs = native_transfer(
                     transfers=(
@@ -474,6 +474,11 @@ class SolanaConformanceNegativeFalsifiers(unittest.TestCase):
                     ),
                 )
                 result = self.decide(obs, "INCONCLUSIVE")
+        for amount in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(amount=amount):
+                base = native_transfer()
+                obs = replace(base, transfers=(replace(base.transfers[0], amount=amount),))
+                self.assertEqual(evaluate_synthetic_observation(obs).disposition, "REFUSE")
 
     def test_44_malformed_observation_never_accepted(self):
         """Arbitrary bad input never yields ACCEPT."""
@@ -1133,6 +1138,148 @@ class SolanaAllowlistRegressionTests(unittest.TestCase):
         self.assertIn("*", lines)
         self.assertIn("!hyperfabric_public/", lines)
         self.assertIn("!tests/", lines)
+
+
+class SolanaSlotContradictionTests(unittest.TestCase):
+    """SignatureStatusEvidence.slot and SyntheticSource.slot describe the same transaction slot.
+
+    A contradiction between the two must never qualify a transfer claim. Account-key
+    context (a different concept) is not compared here.
+    """
+
+    def decide(self, observation):
+        return evaluate_synthetic_observation(observation)
+
+    def with_evidence(self, observation, slot):
+        return replace(
+            observation,
+            status_evidence=SignatureStatusEvidence(
+                confirmation_status="finalized",
+                signature_status="finalized",
+                confirmations=None,
+                slot=slot,
+            ),
+        )
+
+    def test_slot_01_matching_slot_native_accepts(self):
+        result = self.decide(self.with_evidence(native_transfer(), 200123456))
+        self.assertEqual(result.disposition, "ACCEPT")
+        self.assertTrue(result.effect_claim_supported)
+
+    def test_slot_02_matching_slot_spl_accepts(self):
+        result = self.decide(self.with_evidence(token_transfer(), 200123456))
+        self.assertEqual(result.disposition, "ACCEPT")
+        self.assertTrue(result.effect_claim_supported)
+
+    def test_slot_03_evidence_slot_plus_one_refused_native(self):
+        result = self.decide(self.with_evidence(native_transfer(), 200123457))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertEqual(result.recorded_outcome, "NOT_ESTABLISHED")
+        self.assertFalse(result.effect_claim_supported)
+
+    def test_slot_04_evidence_slot_plus_one_refused_spl(self):
+        result = self.decide(self.with_evidence(token_transfer(), 200123457))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertFalse(result.effect_claim_supported)
+
+    def test_slot_05_evidence_slot_plus_hundred_refused(self):
+        result = self.decide(self.with_evidence(native_transfer(), 200123556))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertFalse(result.effect_claim_supported)
+
+    def test_slot_06_evidence_slot_minus_one_refused(self):
+        result = self.decide(self.with_evidence(token_transfer(), 200123455))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_slot_07_absent_evidence_slot_still_accepts(self):
+        result = self.decide(self.with_evidence(native_transfer(), None))
+        self.assertEqual(result.disposition, "ACCEPT")
+
+    def test_slot_08_non_positive_evidence_slot_refused(self):
+        for bad in (0, -1):
+            with self.subTest(slot=bad):
+                self.assertEqual(self.decide(self.with_evidence(native_transfer(), bad)).disposition, "REFUSE")
+
+    def test_slot_09_boolean_slot_refused(self):
+        self.assertEqual(self.decide(self.with_evidence(native_transfer(), True)).disposition, "REFUSE")
+
+
+class SolanaRawAmountContractTests(unittest.TestCase):
+    """ClaimedTransfer.amount is a raw base-unit count: canonical ASCII decimal, 1..2**64-1.
+
+    Display-scaled values are never inferred; no mint-decimals scaling is applied.
+    """
+
+    ACCEPT = ("1", "2", "18446744073709551615")
+    INCONCLUSIVE = ("0", "-1", "-18446744073709551615")
+    REFUSE = (
+        "0.5",
+        "1.0",
+        ".5",
+        "1.",
+        "1e20",
+        "1E20",
+        "18446744073709551616",
+        "+1",
+        "+0",
+        "01",
+        "00",
+        "-01",
+        " 1",
+        "1 ",
+        "1\t",
+        "1_000",
+        "0x10",
+        "\u0661\u0662\u0663",
+        "\uff11",
+        "",
+        None,
+        1,
+        1.0,
+        True,
+    )
+
+    def decide(self, observation):
+        return evaluate_synthetic_observation(observation)
+
+    def observation_for(self, amount, kind):
+        base = native_transfer() if kind == "native" else token_transfer()
+        return replace(base, transfers=(replace(base.transfers[0], amount=amount),))
+
+    def test_amount_01_accepts_canonical_values(self):
+        for kind in ("native", "spl"):
+            for value in self.ACCEPT:
+                with self.subTest(kind=kind, amount=value):
+                    result = self.decide(self.observation_for(value, kind))
+                    self.assertEqual(result.disposition, "ACCEPT")
+                    self.assertTrue(result.effect_claim_supported)
+
+    def test_amount_02_non_positive_is_inconclusive(self):
+        for kind in ("native", "spl"):
+            for value in self.INCONCLUSIVE:
+                with self.subTest(kind=kind, amount=value):
+                    result = self.decide(self.observation_for(value, kind))
+                    self.assertEqual(result.disposition, "INCONCLUSIVE")
+                    self.assertFalse(result.effect_claim_supported)
+
+    def test_amount_03_malformed_values_are_refused(self):
+        for kind in ("native", "spl"):
+            for value in self.REFUSE:
+                with self.subTest(kind=kind, amount=value):
+                    result = self.decide(self.observation_for(value, kind))
+                    self.assertEqual(result.disposition, "REFUSE")
+                    self.assertFalse(result.effect_claim_supported)
+
+    def test_amount_04_overflow_boundary_is_exact(self):
+        max_ok = self.decide(self.observation_for("18446744073709551615", "native"))
+        too_big = self.decide(self.observation_for("18446744073709551616", "native"))
+        self.assertEqual(max_ok.disposition, "ACCEPT")
+        self.assertEqual(too_big.disposition, "REFUSE")
+
+    def test_amount_05_raw_units_are_not_display_scaled(self):
+        result = self.decide(self.observation_for("5000000", "spl"))
+        self.assertEqual(result.disposition, "ACCEPT")
+        self.assertNotIn("scaled", result.reason)
 
 
 if __name__ == "__main__":
