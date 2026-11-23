@@ -73,3 +73,4 @@
 !tests/test_ai_upstream_candidates.py
 !tests/test_xrpl_conformance.py
 !tests/capability-gallery.test.cjs
+!docs/CRYPTO_SECURITY_UPSTREAMS.md
