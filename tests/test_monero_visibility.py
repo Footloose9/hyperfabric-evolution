@@ -104,5 +104,26 @@ class MoneroVisibilityTests(unittest.TestCase):
                 self.assertEqual(assess_visibility(claim("sender", source=source)).disposition, "REFUSE")
 
 
+    def test_absent_disclosure_requires_both_fictional_references(self):
+        for field in ("sender", "recipient", "transfer_amount"):
+            for refs in ({}, {"source_ref": "sim:receipt_a"},
+                         {"consent_ref": "sim:permission_a"}):
+                with self.subTest(field=field, refs=refs):
+                    result = assess_visibility(claim(field, None,
+                        source="VOLUNTARY_DISCLOSURE", **refs))
+                    self.assertEqual(result.disposition, "REFUSE")
+                    self.assertFalse(result.ledger_authenticated)
+                    self.assertFalse(result.ownership_proven)
+
+    def test_absent_disclosure_with_both_references_stays_unknown(self):
+        for field in ("sender", "recipient", "transfer_amount"):
+            with self.subTest(field=field):
+                result = assess_visibility(claim(field, None,
+                    source="VOLUNTARY_DISCLOSURE",
+                    source_ref="sim:receipt_a", consent_ref="sim:permission_a"))
+                self.assertEqual(result.disposition, "UNKNOWN")
+                self.assertFalse(result.ledger_authenticated)
+
+
 if __name__ == "__main__":
     unittest.main()
