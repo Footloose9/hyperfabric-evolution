@@ -70,6 +70,8 @@ def assess_visibility(claim: VisibilityClaim) -> VisibilityDecision:
         return refuse("ownership, ring-member, network origin, cross-chain, keys and absolute privacy unproven")
     if claim.source == "CORRELATION":
         return refuse("temporal or label correlation cannot establish transaction identity")
+    if claim.field in _PUBLIC and claim.source != "PUBLIC_CHAIN":
+        return refuse("only fictional public-chain sources support public metadata")
     if claim.value is None:
         return VisibilityDecision("UNKNOWN", "no fictional value observed or declared")
     if claim.field in _PUBLIC and claim.source == "PUBLIC_CHAIN":

@@ -73,6 +73,21 @@ class MoneroVisibilityTests(unittest.TestCase):
         self.assertEqual(assess_visibility(claim("transaction_id", source="VOLUNTARY_DISCLOSURE",
             source_ref="sim:receipt_a", consent_ref="sim:permission_a")).disposition, "REFUSE")
 
+    def test_absent_public_metadata_from_disclosure_source_refused(self):
+        for field in ("transaction_id", "block_position", "inclusion"):
+            for refs in ({}, {"source_ref": "sim:receipt_a", "consent_ref": "sim:permission_a"}):
+                with self.subTest(field=field, refs=refs):
+                    result = assess_visibility(claim(field, None,
+                        source="VOLUNTARY_DISCLOSURE", **refs))
+                    self.assertEqual(result.disposition, "REFUSE")
+                    self.assertFalse(result.ledger_authenticated)
+
+    def test_absent_public_chain_metadata_remains_unknown(self):
+        for field in ("transaction_id", "block_position", "inclusion"):
+            with self.subTest(field=field):
+                result = assess_visibility(claim(field, None, source="PUBLIC_CHAIN"))
+                self.assertEqual(result.disposition, "UNKNOWN")
+
     def test_nonfictional_or_foreign_network_rejected(self):
         for changes in ({"network": "monero:mainnet"}, {"network": "xrpl:synthetic"},
                         {"source_ref": "https://site.example"}, {"consent_ref": "real_secret"}):
