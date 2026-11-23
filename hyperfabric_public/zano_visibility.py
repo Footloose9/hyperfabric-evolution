@@ -60,7 +60,7 @@ def assess_visibility(claim: VisibilityClaim) -> VisibilityDecision:
 
     if type(claim) is not VisibilityClaim:
         return refuse("unsupported claim object")
-    if claim.network != _NETWORK:
+    if type(claim.network) is not str or claim.network != _NETWORK:
         return refuse("unsupported chain or nonfictional network")
     if type(claim.field) is not str or claim.field not in (_PUBLIC | _CONCEALED | _FORBIDDEN):
         return refuse("unsupported visibility field")

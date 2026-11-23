@@ -109,5 +109,38 @@ class ZanoVisibilityTests(unittest.TestCase):
                 self.assertEqual(assess_visibility(claim("sender", source=source)).disposition, "REFUSE")
 
 
+    def test_network_equality_spoof_objects_refused(self):
+        class SpoofNetwork:
+            def __eq__(self, other):
+                return other == "zano:synthetic"
+            def __ne__(self, other):
+                return not self.__eq__(other)
+
+        for field, value, source, refs in (
+            ("transaction_id", "sim:tx_a", "PUBLIC_CHAIN", {}),
+            ("transfer_asset_id", "sim:asset", "PARTICIPANT_DECLARATION",
+             {"source_ref": "sim:receipt", "consent_ref": "sim:consent"}),
+        ):
+            with self.subTest(field=field):
+                result = assess_visibility(claim(field, value, source,
+                    network=SpoofNetwork(), **refs))
+                self.assertEqual(result.disposition, "REFUSE")
+                self.assertFalse(result.ledger_authenticated)
+
+    def test_network_comparison_exceptions_refused(self):
+        class RaisingNetwork:
+            def __ne__(self, other):
+                raise RuntimeError("untrusted comparison")
+
+        result = assess_visibility(claim("transaction_id", "sim:tx_a",
+            network=RaisingNetwork()))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_network_str_positive_and_negative_still_distinct(self):
+        self.assertEqual(assess_visibility(claim("transaction_id", "sim:tx_a",
+            network="zano:synthetic")).disposition, "PUBLIC_SYNTHETIC")
+        self.assertEqual(assess_visibility(claim("transaction_id", "sim:tx_a",
+            network="zano:mainnet")).disposition, "REFUSE")
+
 if __name__ == "__main__":
     unittest.main()
