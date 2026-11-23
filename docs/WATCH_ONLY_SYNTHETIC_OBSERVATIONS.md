@@ -23,6 +23,8 @@ Every projection explicitly sets `current_balance_established = false`, `account
 - Fictional EVM native assets use `(chain_id, native)`; fictional EVM contract assets use `(chain_id, contract, contract)`. A shared `USD` symbol is display-only, not token or bridge equivalence. The synthetic contract strings intentionally are **not** valid EVM address shapes.
 - Account observation identity includes chain and fictional `account_id`. An account identifier alone proves neither control nor real-world attribution.
 
+The identity key for this **fictional subset** compares XRPL currency codes as 160-bit bytes. It maps a supported three-character standard code to its [published binary format](https://xrpl.org/docs/references/protocol/binary-format) (12 zero bytes, three ASCII bytes, five zero bytes), and uppercase-normalizes 40-character hex representations of the same bytes. Thus "USD", the 40-character standard encoding of USD, and differently cased hexadecimal representations cannot split the same declared issued asset into false distinct identities. It excludes both reserved XRP encodings: the all-zero currency field and the standard-format XRP hex field. The subset still **does not** accept all valid real-world three-character codes, inspect checksum/issuer state, or authenticate a ledger; this normalization is not comprehensive RPC parsing.
+
 These are *declared* identity comparisons, not checksums, token discovery, mint/issuance lookups, escrow/trust-line interpretation, or proof of real on-chain asset existence.
 
 ## Availability and quantity are separate

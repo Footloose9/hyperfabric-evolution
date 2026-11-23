@@ -23,6 +23,19 @@ _COVERAGE = frozenset({"UNOBSERVED", "PARTIAL", "COMPLETE"})
 _FRESHNESS = frozenset({"UNKNOWN", "STALE", "IN_FIXTURE_WINDOW"})
 
 
+def _canonical_xrpl_currency(code: str) -> str:
+    """Map this teaching subset's text codes to the same 160-bit identity."""
+    if len(code) == 3:
+        return "00" * 12 + code.encode("ascii").hex().upper() + "00" * 5
+    return code.upper()
+
+
+_RESERVED_XRPL_CURRENCY = frozenset({
+    "00" * 20,                      # all-zero currency field
+    "00" * 12 + "585250" + "00" * 5,  # standard-format XRP
+})
+
+
 def _sim_id(value: object) -> bool:
     return isinstance(value, str) and _SIM_ID.fullmatch(value) is not None
 
@@ -66,7 +79,8 @@ class SyntheticAsset:
                      and self.mpt_issuance_id is None and self.contract is None)
         elif xrpl and self.kind == "issued":
             valid = (isinstance(self.currency, str) and _CURRENCY.fullmatch(self.currency) is not None
-                     and self.currency != "XRP" and _sim_id(self.issuer)
+                     and _canonical_xrpl_currency(self.currency) not in _RESERVED_XRPL_CURRENCY
+                     and _sim_id(self.issuer)
                      and self.mpt_issuance_id is None and self.contract is None)
         elif xrpl and self.kind == "mpt":
             valid = (_sim_id(self.mpt_issuance_id) and self.currency is None
@@ -86,7 +100,7 @@ class SyntheticAsset:
     def identity_key(self) -> tuple[str, ...]:
         """Exact declared identity only; not ledger existence or interoperability."""
         if self.kind == "issued":
-            return (self.chain_id, "issued", self.currency, self.issuer)
+            return (self.chain_id, "issued", _canonical_xrpl_currency(self.currency), self.issuer)
         if self.kind == "mpt":
             return (self.chain_id, "mpt", self.mpt_issuance_id)
         if self.kind == "contract":

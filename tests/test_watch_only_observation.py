@@ -130,6 +130,24 @@ class WatchOnlySyntheticTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             replace(self.xrp, currency="USD")
 
+    def test_xrpl_hex_case_and_standard_aliases_are_one_currency(self):
+        # The three-byte standard code occupies bytes 12-14 of the 160-bit field.
+        usd_bits = "00" * 12 + "555344" + "00" * 5
+        standard_as_hex = replace(self.usd_a, currency=usd_bits.lower())
+        self.assertTrue(same_declared_asset(self.usd_a, standard_as_hex))
+        self.assertEqual(self.usd_a.identity_key, standard_as_hex.identity_key)
+        self.assertEqual(self.usd_a.identity_key[2], usd_bits)
+
+        upper = replace(self.usd_a, currency="AB" * 20)
+        lower = replace(self.usd_a, currency="ab" * 20)
+        self.assertTrue(same_declared_asset(upper, lower))
+        self.assertNotEqual(upper.identity_key, self.usd_b.identity_key)
+
+    def test_issued_currency_rejects_reserved_hex_xrp_and_zero(self):
+        for currency in ("00" * 20, "00" * 12 + "585250" + "00" * 5):
+            with self.subTest(currency=currency), self.assertRaises(ValueError):
+                replace(self.usd_a, currency=currency)
+
     def test_evm_contract_symbol_is_not_identity(self):
         self.assertFalse(same_declared_asset(self.evm_a, self.evm_b))
         self.assertTrue(same_declared_asset(self.evm_a,
