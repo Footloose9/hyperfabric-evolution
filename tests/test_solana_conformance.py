@@ -1058,6 +1058,49 @@ class SolanaStatusEvidenceFalsifiers(unittest.TestCase):
                 result = evaluate_synthetic_observation(replace(obs, **{field: value}))
                 self.assertEqual(result.disposition, "REFUSE")
 
+    def test_78_contradictory_slot_evidence_refused(self):
+        """Contradictory status evidence slot vs transaction slot must be refused."""
+        obs = native_transfer()
+        base_slot = obs.source.slot
+
+        # Slot + 1 mismatch
+        mismatch1 = replace(obs, status_evidence=SignatureStatusEvidence(
+            confirmation_status="finalized",
+            signature_status="finalized",
+            confirmations=0,
+            slot=base_slot + 1,
+        ))
+        result = evaluate_synthetic_observation(mismatch1)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("status evidence slot conflicts with transaction slot", result.reason)
+        self.assertFalse(result.effect_claim_supported)
+
+        # Slot + 100 mismatch
+        mismatch2 = replace(obs, status_evidence=SignatureStatusEvidence(
+            confirmation_status="finalized",
+            signature_status="finalized",
+            confirmations=0,
+            slot=base_slot + 100,
+        ))
+        result = evaluate_synthetic_observation(mismatch2)
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertIn("status evidence slot conflicts with transaction slot", result.reason)
+        self.assertFalse(result.effect_claim_supported)
+
+    def test_79_matching_slot_evidence_accepted(self):
+        """Matching status evidence slot must still be accepted."""
+        obs = native_transfer()
+        matching = replace(obs, status_evidence=SignatureStatusEvidence(
+            confirmation_status="finalized",
+            signature_status="finalized",
+            confirmations=0,
+            slot=obs.source.slot,
+        ))
+        result = evaluate_synthetic_observation(matching)
+        self.assertEqual(result.disposition, "ACCEPT")
+        self.assertEqual(result.recorded_outcome, "VALIDATED_SUCCESS")
+        self.assertTrue(result.effect_claim_supported)
+
 
 class SolanaNestedTypeFalsifiers(unittest.TestCase):
     """Dataclass annotations are not runtime guards: nested bad types must REFUSE, not raise."""
