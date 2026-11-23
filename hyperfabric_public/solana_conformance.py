@@ -345,6 +345,12 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
             source_value = getattr(source, field)
             if source_value is not None and source_value != getattr(evidence, field):
                 return ConformanceDecision("REFUSE", "status evidence conflicts with source summary", "NOT_ESTABLISHED")
+        # Both source.slot and evidence.slot describe the containing transaction slot;
+        # a mismatch is contradictory evidence and must not support ACCEPT.
+        if evidence.slot is not None and source.slot != evidence.slot:
+            return ConformanceDecision(
+                "REFUSE", "status evidence slot conflicts with transaction slot", "NOT_ESTABLISHED"
+            )
         signature_status = evidence.signature_status
         confirmed = evidence.confirmation_status
         confirmations = evidence.confirmations
