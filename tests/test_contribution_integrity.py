@@ -500,6 +500,70 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
                 ):
                     verify_pr_diff(self.root, self.base, head)
 
+    def test_casefold_collisions_in_directory_components_refused(self):
+        """Real Git tree objects can contain conflicting folder spellings."""
+        def plumbing(*args, data=b""):
+            result = subprocess.run(
+                ["git", *args], cwd=self.root, input=data,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+            )
+            return result.stdout.strip()
+
+        text_blob = plumbing("hash-object", "-w", "--stdin", data=b"fictional text\n")
+
+        def build_tree(names):
+            structure = {}
+            for path in names:
+                node = structure
+                parts = path.split("/")
+                for part in parts[:-1]:
+                    node = node.setdefault(part, {})
+                node[parts[-1]] = text_blob
+
+            def emit(node):
+                items = []
+                for name, value in node.items():
+                    if isinstance(value, dict):
+                        mode, kind, sha = b"040000", b"tree", emit(value)
+                    else:
+                        mode, kind, sha = b"100644", b"blob", value
+                    items.append(mode+b" "+kind+b" "+sha+b"\t"+name.encode("utf-8")+b"\0")
+                return plumbing("mktree", "-z", data=b"".join(items))
+            return emit(structure)
+
+        examples = (
+            (("docs/Sub/a.txt", "docs/sub/b.txt"), True),
+            (("docs/café/a.txt", "docs/cafe"+chr(0x0301)+"/b.txt"), True),
+            (("docs/Part", "docs/part/a.txt"), True),
+            (("docs/Sub/a.txt", "docs/Sub/b.txt", "docs/café.txt"), False),
+        )
+        for names, must_refuse in examples:
+            with self.subTest(names=names):
+                exceptions = {"docs/"}
+                for path in names:
+                    parts = path.split("/")
+                    for i in range(2, len(parts)):
+                        exceptions.add("/".join(parts[:i]) + "/")
+                    exceptions.add(path)
+                policy = ("*\n!.gitignore\n"
+                          + "".join("!" + name + "\n" for name in sorted(exceptions)))
+                policy_sha = plumbing("hash-object", "-w", "--stdin", data=policy.encode())
+                nested_tree = build_tree(tuple(n.split('/', 1)[1] for n in names))
+                root_tree = plumbing(
+                    "mktree", "-z",
+                    data=(b"100644 blob " + policy_sha + b"\t.gitignore\0"
+                          + b"040000 tree " + nested_tree + b"\tdocs\0"),
+                )
+                head = plumbing(
+                    "commit-tree", root_tree.decode("ascii"), "-p", self.base,
+                    data=b"fictional prefix-alias test\n",
+                ).decode("ascii")
+                if must_refuse:
+                    with self.assertRaisesRegex(RuntimeError, "path collision"):
+                        verify_pr_diff(self.root, self.base, head)
+                else:
+                    self.assertEqual(verify_pr_diff(self.root, self.base, head), [])
+
     def test_only_physical_newlines_define_ignore_rules(self):
         self.assertEqual(
             _exact_allowlist(b"*\n!.gitignore\n!docs/\n!docs/ok.txt\n"), []

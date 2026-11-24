@@ -120,7 +120,7 @@ def _path_is_safe(path: str) -> bool:
 def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, bytes]]:
     """Read a Git commit's complete tree; do not trust a clean final diff."""
     tree: dict[str, tuple[bytes, bytes, bytes]] = {}
-    portable_names: set[str] = set()
+    portable_prefixes: dict[str, str] = {}
     for row in _git(root, "ls-tree", "-r", "-z", revision).stdout.split(b"\0"):
         if not row:
             continue
@@ -136,12 +136,17 @@ def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, by
             raise RuntimeError("unsafe historical Git path")
         if path in tree:
             raise RuntimeError("duplicated historical Git tree entry")
-        # Git allows distinct case/Unicode spellings that can collide when
-        # another OS checks out the repository; reject ambiguous tree names.
-        portable_name = unicodedata.normalize("NFC", path).casefold()
-        if portable_name in portable_names:
-            raise RuntimeError("case-insensitive/Unicode-normalized Git path collision")
-        portable_names.add(portable_name)
+        # Git can store different spellings of the same directory, or
+        # a file and directory whose names alias on a case-insensitive OS.
+        # Audit every path component, not only the complete leaf filename.
+        components = path.split("/")
+        for depth in range(1, len(components) + 1):
+            prefix = "/".join(components[:depth])
+            portable_key = unicodedata.normalize("NFC", prefix).casefold()
+            previous = portable_prefixes.get(portable_key)
+            if previous is not None and previous != prefix:
+                raise RuntimeError("case-insensitive/Unicode-normalized Git path collision")
+            portable_prefixes[portable_key] = prefix
         tree[path] = (parts[0], parts[1], parts[2])
         if len(tree) > 4096:
             raise RuntimeError("historical Git tree exceeds 4096-entry audit budget")
