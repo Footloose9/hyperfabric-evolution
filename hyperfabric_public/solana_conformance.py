@@ -38,6 +38,18 @@ _U64_MAX = 18446744073709551615
 _RAW_AMOUNT = re.compile(r"-?(?:0|[1-9][0-9]*)\Z", re.ASCII)
 
 
+def _plain_str(value: object) -> bool:
+    """True only for the exact built-in `str` type.
+
+    A `str` subclass can override `__eq__`, `__ne__`, `__hash__`, `__len__`,
+    `replace`, `startswith` or `isalnum` and raise from those hooks. Every
+    membership test, equality comparison, hashing step and string method below
+    must therefore be preceded by a `type(value) is str` check, never by
+    `isinstance(value, str)`.
+    """
+    return type(value) is str
+
+
 @dataclass(frozen=True)
 class SyntheticSource:
     """Synthetic envelope for a transaction-bearing RPC response.
@@ -132,7 +144,7 @@ class ConformanceDecision:
 
 
 def _is_utc_timestamp(value: object) -> bool:
-    if not isinstance(value, str) or len(value) > 45:
+    if not _plain_str(value) or len(value) > 45:
         return False
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -143,15 +155,16 @@ def _is_utc_timestamp(value: object) -> bool:
 
 def _status_field(value: object) -> bool:
     # Type-check before set membership: an injected list/dict is malformed
-    # evidence and must fail closed, not raise TypeError.
-    return value is None or (isinstance(value, str) and value in _CONFIRMATION_STATUS)
+    # evidence and must fail closed, not raise TypeError. Exact `str` only:
+    # a subclass can raise from __hash__/__eq__ during the membership test.
+    return value is None or (_plain_str(value) and value in _CONFIRMATION_STATUS)
 
 
 def _status_contradiction(signature_status: object, confirmation_status: object) -> bool:
     """The synthetic signature label is derived from confirmationStatus; both must agree."""
     return (
-        isinstance(signature_status, str)
-        and isinstance(confirmation_status, str)
+        _plain_str(signature_status)
+        and _plain_str(confirmation_status)
         and signature_status != confirmation_status
     )
 
@@ -165,10 +178,10 @@ def _source_shape_valid(source: SyntheticSource) -> bool:
         return False
     if source.network != "solana:synthetic":
         return False
-    if not isinstance(source.rpc_method, str) or source.rpc_method not in ("getTransaction", "getSignatureStatuses"):
+    if not _plain_str(source.rpc_method) or source.rpc_method not in ("getTransaction", "getSignatureStatuses"):
         return False
     if source.rpc_method == "getTransaction" and (
-        not isinstance(source.requested_commitment, str) or source.requested_commitment not in _COMMITMENT
+        not _plain_str(source.requested_commitment) or source.requested_commitment not in _COMMITMENT
     ):
         return False
     if not _status_field(source.signature_status):
@@ -179,14 +192,14 @@ def _source_shape_valid(source: SyntheticSource) -> bool:
         return False
     if type(source.slot) is not int or source.slot <= 0:
         return False
-    if not isinstance(source.blockhash, str) or _BLOCHASH_HEX.fullmatch(source.blockhash) is None:
+    if not _plain_str(source.blockhash) or _BLOCHASH_HEX.fullmatch(source.blockhash) is None:
         return False
     if not _is_utc_timestamp(source.capture_utc):
         return False
-    if not isinstance(source.raw_content_sha256, str) or _BLOCHASH_HEX.fullmatch(source.raw_content_sha256) is None:
+    if not _plain_str(source.raw_content_sha256) or _BLOCHASH_HEX.fullmatch(source.raw_content_sha256) is None:
         return False
     if source.provider_error is not None:
-        if not isinstance(source.provider_error, str) or len(source.provider_error) > 120:
+        if not _plain_str(source.provider_error) or len(source.provider_error) > 120:
             return False
     return True
 
@@ -201,7 +214,7 @@ def _status_evidence_valid(evidence: SignatureStatusEvidence) -> bool:
     if evidence.slot is not None and (type(evidence.slot) is not int or evidence.slot <= 0):
         return False
     if evidence.provider_error is not None:
-        if not isinstance(evidence.provider_error, str) or len(evidence.provider_error) > 120:
+        if not _plain_str(evidence.provider_error) or len(evidence.provider_error) > 120:
             return False
     return True
 
@@ -209,22 +222,22 @@ def _status_evidence_valid(evidence: SignatureStatusEvidence) -> bool:
 def _asset_valid(asset: TypedAsset) -> bool:
     if not isinstance(asset, TypedAsset):
         return False
-    if not isinstance(asset.kind, str) or asset.kind not in _KINDS:
+    if not _plain_str(asset.kind) or asset.kind not in _KINDS:
         return False
     if asset.display_symbol is not None:
-        if not isinstance(asset.display_symbol, str) or _DISPLAY_SYMBOL.fullmatch(asset.display_symbol) is None:
+        if not _plain_str(asset.display_symbol) or _DISPLAY_SYMBOL.fullmatch(asset.display_symbol) is None:
             return False
     if asset.kind == "native":
         return asset.mint is None and asset.program_id is None
-    if not isinstance(asset.program_id, str) or _SIM_PROGRAM.fullmatch(asset.program_id) is None:
+    if not _plain_str(asset.program_id) or _SIM_PROGRAM.fullmatch(asset.program_id) is None:
         return False
     # Structurally parseable but semantically conflated cases are refused by
     # the semantic stage with an explicit reason.
-    if isinstance(asset.mint, str) and asset.mint == asset.program_id:
+    if _plain_str(asset.mint) and asset.mint == asset.program_id:
         return True
     if asset.mint is None and asset.display_symbol is not None:
         return True
-    if not isinstance(asset.mint, str) or _SIM_MINT.fullmatch(asset.mint) is None:
+    if not _plain_str(asset.mint) or _SIM_MINT.fullmatch(asset.mint) is None:
         return False
     return True
 
@@ -238,20 +251,22 @@ def _provenance_valid(prov: InstructionProvenance) -> bool:
         return False
     if type(prov.stack_height) is not int or prov.stack_height < 0:
         return False
-    if not isinstance(prov.program_id, str) or _SIM_PROGRAM.fullmatch(prov.program_id) is None:
+    if not _plain_str(prov.program_id) or _SIM_PROGRAM.fullmatch(prov.program_id) is None:
         return False
     if prov.discriminator is not None:
-        if not isinstance(prov.discriminator, str) or _DISCRIMINATOR.fullmatch(prov.discriminator) is None:
+        if not _plain_str(prov.discriminator) or _DISCRIMINATOR.fullmatch(prov.discriminator) is None:
             return False
     if prov.program_context is not None:
-        if not isinstance(prov.program_context, str) or _SIM_PROGRAM.fullmatch(prov.program_context) is None:
+        if not _plain_str(prov.program_context) or _SIM_PROGRAM.fullmatch(prov.program_context) is None:
             return False
     if prov.account_keys_context is None:
         return True
     if not isinstance(prov.account_keys_context, (tuple, list)):
         return False
+    # Every element is checked for the exact `str` type before it can be
+    # hashed or compared during frozenset construction downstream.
     for k in prov.account_keys_context:
-        if not isinstance(k, str) or len(k) == 0:
+        if not _plain_str(k) or len(k) == 0:
             return False
     return True
 
@@ -259,15 +274,15 @@ def _provenance_valid(prov: InstructionProvenance) -> bool:
 def _transfer_valid(transfer: ClaimedTransfer) -> bool:
     if not isinstance(transfer, ClaimedTransfer):
         return False
-    if not isinstance(transfer.source, str) or not transfer.source.startswith("sim:account_"):
+    if not _plain_str(transfer.source) or not transfer.source.startswith("sim:account_"):
         return False
-    if not isinstance(transfer.destination, str) or not transfer.destination.startswith("sim:account_"):
+    if not _plain_str(transfer.destination) or not transfer.destination.startswith("sim:account_"):
         return False
     if not _asset_valid(transfer.asset):
         return False
-    if not isinstance(transfer.amount, str) or not 1 <= len(transfer.amount) <= 40:
+    if not _plain_str(transfer.amount) or not 1 <= len(transfer.amount) <= 40:
         return False
-    if transfer.authority is not None and (not isinstance(transfer.authority, str) or not transfer.authority.startswith("sim:account_")):
+    if transfer.authority is not None and (not _plain_str(transfer.authority) or not transfer.authority.startswith("sim:account_")):
         return False
     if transfer.provenance is not None and not _provenance_valid(transfer.provenance):
         return False
@@ -279,11 +294,11 @@ def _observation_valid(obs: SyntheticObservation) -> bool:
         return False
     if not isinstance(obs.source, SyntheticSource) or not _source_shape_valid(obs.source):
         return False
-    if not isinstance(obs.transaction_type, str) or obs.transaction_type not in (
+    if not _plain_str(obs.transaction_type) or obs.transaction_type not in (
         "transfer", "token_transfer", "program_invoke"
     ):
         return False
-    if not isinstance(obs.transaction_result, str) or obs.transaction_result not in _TRANSACTION_RESULTS:
+    if not _plain_str(obs.transaction_result) or obs.transaction_result not in _TRANSACTION_RESULTS:
         return False
     if not isinstance(obs.transfers, tuple) or len(obs.transfers) == 0:
         return False
@@ -292,7 +307,7 @@ def _observation_valid(obs: SyntheticObservation) -> bool:
     if not isinstance(obs.signatures, tuple) or len(obs.signatures) == 0:
         return False
     for sig in obs.signatures:
-        if not isinstance(sig, str) or len(sig) != 88 or not sig.isalnum():
+        if not _plain_str(sig) or len(sig) != 88 or not sig.isalnum():
             return False
     if obs.status_evidence is not None and not _status_evidence_valid(obs.status_evidence):
         return False
@@ -302,6 +317,10 @@ def _observation_valid(obs: SyntheticObservation) -> bool:
 def _context_incompatibility(transfer: ClaimedTransfer) -> str | None:
     """Return the reason why provenance and claimed effect disagree, if any."""
     prov = transfer.provenance
+    # Defence in depth: hashing/comparison must never reach a str subclass.
+    # `_observation_valid` already rejects those, so a miss here is a refusal.
+    if not _plain_str(transfer.source) or not _plain_str(transfer.destination):
+        return "malformed account identity in transfer"
     ctx = frozenset(prov.account_keys_context or ())
     if transfer.source not in ctx or transfer.destination not in ctx:
         return "account-key context does not include claimed source and destination"
@@ -441,7 +460,7 @@ def evaluate_synthetic_observation(observation: SyntheticObservation) -> Conform
         # canonical ASCII decimal integer is admissible: no plus sign, no
         # leading zero, no fraction, no exponent, no whitespace, no Unicode
         # digits. Parsing must not depend on locale or float semantics.
-        if not isinstance(transfer.amount, str) or _RAW_AMOUNT.fullmatch(transfer.amount) is None:
+        if not _plain_str(transfer.amount) or _RAW_AMOUNT.fullmatch(transfer.amount) is None:
             return ConformanceDecision("REFUSE", "malformed transfer amount", recorded)
         amount = int(transfer.amount)
         if amount <= 0:

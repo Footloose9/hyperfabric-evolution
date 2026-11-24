@@ -1,4 +1,4 @@
-"""Public-only, fully fictional Solana instruction/commitment conformance tests.
+﻿"""Public-only, fully fictional Solana instruction/commitment conformance tests.
 
 No Solana RPC, signer, wallet data, private source, or ownership clustering.
 """
@@ -1328,6 +1328,149 @@ class SolanaRawAmountContractTests(unittest.TestCase):
         self.assertEqual(result.disposition, "ACCEPT")
         self.assertNotIn("scaled", result.reason)
 
+
+class _HostileStr(str):
+    """A real ``str`` subclass whose protocol hooks raise instead of answering.
+
+    ``type(value) is str`` is the only check that can stop these before the
+    module tries to hash, compare, measure, format or slice them.
+    """
+
+    def __hash__(self):  # noqa: D105
+        raise RuntimeError("hostile __hash__")
+
+    def __eq__(self, other):  # noqa: D105
+        raise RuntimeError("hostile __eq__")
+
+    def __ne__(self, other):  # noqa: D105
+        raise RuntimeError("hostile __ne__")
+
+    def __len__(self):  # noqa: D105
+        raise RuntimeError("hostile __len__")
+
+    def replace(self, *args, **kwargs):  # noqa: D102
+        raise RuntimeError("hostile replace")
+
+    def startswith(self, *args, **kwargs):  # noqa: D102
+        raise RuntimeError("hostile startswith")
+
+    def isalnum(self):  # noqa: D102
+        raise RuntimeError("hostile isalnum")
+
+
+class SolanaHostileStrSubclassFalsifiers(unittest.TestCase):
+    """Every str-typed field must be refused on ``type() is str`` grounds.
+
+    A subclass that overrides __hash__/__eq__/__ne__/__len__/replace/
+    startswith/isalnum must never be reached by membership, equality, hashing,
+    formatting or string-method code: the decision is REFUSE, not RuntimeError.
+    """
+
+    def decide(self, observation):
+        # Any RuntimeError here fails the test with the original traceback.
+        return evaluate_synthetic_observation(observation)
+
+    def native_with(self, transfer_updates=None, **observation_updates):
+        base = native_transfer(**observation_updates)
+        if transfer_updates:
+            base = replace(base, transfers=(replace(base.transfers[0], **transfer_updates),))
+        return base
+
+    def token_with(self, transfer_updates=None, asset_updates=None):
+        base = token_transfer()
+        transfer = base.transfers[0]
+        if asset_updates:
+            transfer = replace(transfer, asset=replace(transfer.asset, **asset_updates))
+        if transfer_updates:
+            transfer = replace(transfer, **transfer_updates)
+        return replace(base, transfers=(transfer,))
+
+    # family 1: membership/hash on source.signature_status
+    def test_source_signature_status_hostile_hash_is_refused(self):
+        result = self.decide(native_transfer(source=standard_source(signature_status=_HostileStr("finalized"))))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    # family 2: membership/hash on source.confirmation_status
+    def test_source_confirmation_status_hostile_hash_is_refused(self):
+        result = self.decide(native_transfer(source=standard_source(confirmation_status=_HostileStr("finalized"))))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    # family 3: source.capture_utc reaches .replace() and len()
+    def test_source_capture_utc_hostile_replace_is_refused(self):
+        result = self.decide(native_transfer(source=standard_source(capture_utc=_HostileStr("2026-11-22T10:30:00Z"))))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    # family 4: account_keys_context elements are hashed into frozenset()
+    def test_account_keys_context_element_hostile_hash_is_refused(self):
+        hostile = _HostileStr("sim:account_sender_1")
+        result = self.decide(
+            self.native_with(transfer_updates={
+                "provenance": replace(native_transfer().transfers[0].provenance, account_keys_context=(hostile, "sim:account_receiver_1")),
+            })
+        )
+        self.assertEqual(result.disposition, "REFUSE")
+
+    # family 5: transfer.source is hashed for membership and compared for equality
+    def test_transfer_source_hostile_hash_is_refused(self):
+        result = self.decide(self.native_with(transfer_updates={"source": _HostileStr("sim:account_sender_1")}))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    # family 6: observation.transaction_result reaches == / != comparisons
+    def test_transaction_result_hostile_eq_is_refused(self):
+        result = self.decide(native_transfer(transaction_result=_HostileStr("success")))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_transaction_type_hostile_eq_is_refused(self):
+        result = self.decide(native_transfer(transaction_type=_HostileStr("transfer")))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_rpc_method_hostile_hash_is_refused(self):
+        result = self.decide(native_transfer(source=standard_source(rpc_method=_HostileStr("getTransaction"))))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_requested_commitment_hostile_hash_is_refused(self):
+        result = self.decide(native_transfer(source=standard_source(requested_commitment=_HostileStr("finalized"))))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_blockhash_hostile_len_is_refused(self):
+        result = self.decide(native_transfer(source=standard_source(blockhash=_HostileStr("a" * 64))))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_provider_error_hostile_len_is_refused(self):
+        result = self.decide(native_transfer(source=standard_source(provider_error=_HostileStr("boom"))))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_token_mint_hostile_eq_is_refused(self):
+        result = self.decide(self.token_with(asset_updates={"mint": _HostileStr("sim:mint_token_a")}))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_token_program_id_hostile_len_is_refused(self):
+        result = self.decide(self.token_with(asset_updates={"program_id": _HostileStr("sim:prog_token_a")}))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_transfer_authority_hostile_startswith_is_refused(self):
+        result = self.decide(self.native_with(transfer_updates={"authority": _HostileStr("sim:account_auth_1")}))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_signature_hostile_isalnum_is_refused(self):
+        result = self.decide(replace(native_transfer(), signatures=(_HostileStr("a" * 88),)))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_amount_hostile_len_is_refused(self):
+        result = self.decide(self.native_with(transfer_updates={"amount": _HostileStr("1000000000")}))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_status_evidence_hostile_hash_is_refused(self):
+        evidence = SignatureStatusEvidence(
+            confirmation_status=_HostileStr("finalized"),
+            signature_status="finalized",
+        )
+        result = self.decide(native_transfer(status_evidence=evidence))
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_valid_native_still_accepts_after_guards(self):
+        self.assertEqual(self.decide(native_transfer()).disposition, "ACCEPT")
+        self.assertEqual(self.decide(token_transfer()).disposition, "ACCEPT")
 
 if __name__ == "__main__":
     unittest.main()
