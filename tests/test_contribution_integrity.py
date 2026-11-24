@@ -399,6 +399,107 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         self.assertTrue(_path_is_safe(name))
         self.assertTrue(_exact_path_admitted(raw, name))
 
+    def test_platform_unsafe_git_path_and_allowlist_refused(self):
+        """Refuse Linux-commit-able names unsafe on Windows, without banning UTF-8."""
+        for name in (
+            "docs/file:stream.txt",
+            "docs/CON.txt",
+            "docs/lpt1.log",
+            "docs/COM¹.txt",
+            "docs/LPT³.log",
+            "docs/x|y.txt",
+            "docs/.GIT/hooks.txt",
+            "docs/git~1/config.txt",
+            "docs/report.",
+            "docs/dir. /file.txt",
+        ):
+            with self.subTest(name=name):
+                policy = (f"*\\n!.gitignore\\n!docs/\\n!{name}\\n").replace("\\n", "\n").encode("utf-8")
+                self.assertFalse(_path_is_safe(name))
+                self.assertTrue(_exact_allowlist(policy))
+                self.assertFalse(_exact_path_admitted(policy, name))
+
+        for name in ("docs/ok_name.txt", "docs/café.txt", "docs/normal.report.txt"):
+            with self.subTest(name=name):
+                policy = (f"*\\n!.gitignore\\n!docs/\\n!{name}\\n").replace("\\n", "\n").encode("utf-8")
+                self.assertTrue(_path_is_safe(name))
+                self.assertEqual(_exact_allowlist(policy), [])
+                self.assertTrue(_exact_path_admitted(policy, name))
+
+    def test_unportable_name_in_actual_git_tree_is_refused(self):
+        """Git object plumbing proves portability refusal without creating an NTFS file."""
+        def plumbing(*args, data=b""):
+            result = subprocess.run(
+                ["git", *args], cwd=self.root, input=data,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+            )
+            return result.stdout.strip()
+
+        for filename in (b"public:stream.txt", b"CON.txt", b"ok.txt"):
+            with self.subTest(filename=filename):
+                raw_policy = b"*\\n!.gitignore\\n!docs/\\n!docs/".replace(b"\\n", b"\n") + filename + b"\n"
+                ignore_sha = plumbing("hash-object", "-w", "--stdin", data=raw_policy)
+                content_sha = plumbing("hash-object", "-w", "--stdin", data=b"fictional evidence\n")
+                docs_tree = plumbing(
+                    "mktree", "-z",
+                    data=b"100644 blob " + content_sha + b"\t" + filename + b"\0",
+                )
+                root_tree = plumbing(
+                    "mktree", "-z",
+                    data=(b"100644 blob " + ignore_sha + b"\t.gitignore\0"
+                          + b"040000 tree " + docs_tree + b"\tdocs\0"),
+                )
+                head = plumbing(
+                    "commit-tree", root_tree.decode("ascii"), "-p", self.base,
+                    data=b"fictional synthetic candidate\n",
+                ).decode("ascii")
+                if filename == b"ok.txt":
+                    self.assertEqual(verify_pr_diff(self.root, self.base, head), [])
+                else:
+                    try:
+                        findings = verify_pr_diff(self.root, self.base, head)
+                    except RuntimeError as exc:
+                        findings = ["fail-closed: " + str(exc)]
+                    self.assertTrue(findings, "unsafe Git tree entry incorrectly admitted")
+
+    def test_case_insensitive_git_tree_collisions_refused(self):
+        """Actual Git trees must not contain ambiguous case or Unicode names."""
+        def plumbing(*args, data=b""):
+            result = subprocess.run(
+                ["git", *args], cwd=self.root, input=data,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+            )
+            return result.stdout.strip()
+
+        for names in (
+            ("Same.txt", "same.txt"),
+            ("café.txt", "cafe" + chr(0x0301) + ".txt"),
+        ):
+            with self.subTest(names=names):
+                raw_policy = ("*\n!.gitignore\n!docs/\n"
+                              + "".join(f"!docs/{name}\n" for name in names)).encode("utf-8")
+                policy_sha = plumbing("hash-object", "-w", "--stdin", data=raw_policy)
+                content_sha = plumbing("hash-object", "-w", "--stdin", data=b"fictional text\n")
+                docs_tree = plumbing(
+                    "mktree", "-z", data=b"".join(
+                        b"100644 blob " + content_sha + b"\t" + name.encode("utf-8") + b"\0"
+                        for name in names
+                    ),
+                )
+                root_tree = plumbing(
+                    "mktree", "-z",
+                    data=(b"100644 blob " + policy_sha + b"\t.gitignore\0"
+                          + b"040000 tree " + docs_tree + b"\tdocs\0"),
+                )
+                head = plumbing(
+                    "commit-tree", root_tree.decode("ascii"), "-p", self.base,
+                    data=b"fictional case collision\n",
+                ).decode("ascii")
+                with self.assertRaisesRegex(
+                    RuntimeError, "case-insensitive/Unicode-normalized Git path collision"
+                ):
+                    verify_pr_diff(self.root, self.base, head)
+
     def test_only_physical_newlines_define_ignore_rules(self):
         self.assertEqual(
             _exact_allowlist(b"*\n!.gitignore\n!docs/\n!docs/ok.txt\n"), []

@@ -66,7 +66,8 @@ def _exact_allowlist(raw: bytes) -> list[str]:
         bits = path.rstrip("/").split("/")
         if (not path or path.startswith("/") or "\\" in path
                 or any(c in path for c in "*?[]")
-                or any(p in ("", ".", "..") for p in bits)):
+                or any(p in ("", ".", "..") for p in bits)
+                or not _path_is_safe(path.rstrip("/"))):
             errors.append(f"non-exact staging exception: {v[:70]}")
     return errors
 
@@ -92,16 +93,34 @@ def _exact_path_admitted(raw_ignore: bytes, path: str) -> bool:
     return all("/".join(parts[:i]) + "/" in active
                for i in range(1, len(parts)))
 
+# Check Git object names independent of the runner's operating system.
+# A Linux author can commit paths that misbehave during Windows checkout.
+_WINDOWS_RESERVED = frozenset(
+    {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+    | {f"{prefix}{i}" for prefix in ("COM", "LPT") for i in range(1, 10)}
+    | {f"{prefix}{i}" for prefix in ("COM", "LPT") for i in "¹²³"}
+)
+_WINDOWS_FORBIDDEN = frozenset('<>:"|?*')
+
+
 def _path_is_safe(path: str) -> bool:
-    segments = path.split("/")
-    return bool(path and not path.startswith("/") and "\\" not in path
-                and not any(unicodedata.category(ch).startswith("C") for ch in path)
-                and all(part not in ("", ".", "..", ".git") for part in segments))
+    if (not path or path.startswith("/") or "\\" in path
+            or any(c in _WINDOWS_FORBIDDEN or unicodedata.category(c).startswith("C")
+                   for c in path)):
+        return False
+    for part in path.split("/"):
+        if (not part or part in (".", "..")
+                or part.endswith((".", " "))
+                or part.casefold() in (".git", "git~1")
+                or part.split(".", 1)[0].upper() in _WINDOWS_RESERVED):
+            return False
+    return True
 
 
 def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, bytes]]:
     """Read a Git commit's complete tree; do not trust a clean final diff."""
     tree: dict[str, tuple[bytes, bytes, bytes]] = {}
+    portable_names: set[str] = set()
     for row in _git(root, "ls-tree", "-r", "-z", revision).stdout.split(b"\0"):
         if not row:
             continue
@@ -117,6 +136,12 @@ def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, by
             raise RuntimeError("unsafe historical Git path")
         if path in tree:
             raise RuntimeError("duplicated historical Git tree entry")
+        # Git allows distinct case/Unicode spellings that can collide when
+        # another OS checks out the repository; reject ambiguous tree names.
+        portable_name = unicodedata.normalize("NFC", path).casefold()
+        if portable_name in portable_names:
+            raise RuntimeError("case-insensitive/Unicode-normalized Git path collision")
+        portable_names.add(portable_name)
         tree[path] = (parts[0], parts[1], parts[2])
         if len(tree) > 4096:
             raise RuntimeError("historical Git tree exceeds 4096-entry audit budget")
