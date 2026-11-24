@@ -9,7 +9,9 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from contribution_integrity import verify_pr_diff, _exact_allowlist  # noqa: E402
+from contribution_integrity import (  # noqa: E402
+    verify_pr_diff, _exact_allowlist, _exact_path_admitted, _path_is_safe,
+)
 
 
 def git(root: Path, *args: str) -> str:
@@ -373,6 +375,28 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
                     "whitespace",
                     " ".join(verify_pr_diff(self.root, self.base)),
                 )
+
+    def test_hidden_unicode_controls_cannot_enter_allowlist_or_path(self):
+        """Git filenames and exact exceptions must reject invisible controls."""
+        for label, ch in (
+            ("zero width", chr(0x200B)),
+            ("right-to-left override", chr(0x202E)),
+            ("escape control", chr(0x1B)),
+        ):
+            with self.subTest(label=label):
+                name = f"docs/f{ch}ile.txt"
+                raw = (f"*\n!.gitignore\n!docs/\n!{name}\n").encode("utf-8")
+                self.assertIn("Unicode control", " ".join(_exact_allowlist(raw)))
+                self.assertFalse(_path_is_safe(name))
+                self.assertFalse(_exact_path_admitted(raw, name))
+
+    def test_visible_non_ascii_literal_filename_stays_admissible(self):
+        """The guard rejects control categories, not ordinary international text."""
+        name = "docs/café.txt"
+        raw = (f"*\n!.gitignore\n!docs/\n!{name}\n").encode("utf-8")
+        self.assertEqual(_exact_allowlist(raw), [])
+        self.assertTrue(_path_is_safe(name))
+        self.assertTrue(_exact_path_admitted(raw, name))
 
     def test_only_physical_newlines_define_ignore_rules(self):
         self.assertEqual(

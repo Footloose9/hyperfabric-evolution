@@ -10,6 +10,7 @@ import argparse
 from pathlib import Path
 import re
 import subprocess
+import unicodedata
 
 MAX_TEXT_BYTES = 512_000
 MAX_NEW_FILE_BYTES = 200_000
@@ -51,8 +52,8 @@ def _exact_allowlist(raw: bytes) -> list[str]:
         # Git does not normalize leading blanks like Python str.strip().
         # A rule " *" is not the global deny rule "*"; rejecting instead
         # of trimming is essential for a fail-closed allowlist.
-        if v != v.strip() or any(ch.isspace() for ch in v):
-            errors.append("noncanonical whitespace in .gitignore rule")
+        if v != v.strip() or any(ch.isspace() or unicodedata.category(ch).startswith("C") for ch in v):
+            errors.append("noncanonical whitespace or Unicode control in .gitignore rule")
             continue
         rules.append(v)
     if not rules or rules[0] != "*":
@@ -94,6 +95,7 @@ def _exact_path_admitted(raw_ignore: bytes, path: str) -> bool:
 def _path_is_safe(path: str) -> bool:
     segments = path.split("/")
     return bool(path and not path.startswith("/") and "\\" not in path
+                and not any(unicodedata.category(ch).startswith("C") for ch in path)
                 and all(part not in ("", ".", "..", ".git") for part in segments))
 
 
