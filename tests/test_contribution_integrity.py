@@ -59,8 +59,9 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         self.assertIn("exceeds", " ".join(self.commit(content="a" * 210_000)))
 
     def test_obvious_private_key_marker_is_rejected(self):
-        secret = "-----BEGIN " + "PRIVATE KEY-----\nfictional\n"
-        self.assertIn("secret marker", " ".join(self.commit(content=secret)))
+        # Intentionally fictional marker: no actual key or secret material.
+        synthetic_fixture_marker = "-----BEGIN " + "PRIVATE KEY-----\nfictional\n"
+        self.assertIn("secret marker", " ".join(self.commit(content=synthetic_fixture_marker)))
 
     def test_executable_bit_is_rejected(self):
         file = self.root / "docs" / "ok.txt"
