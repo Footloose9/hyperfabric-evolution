@@ -721,6 +721,52 @@ class DirectoryObjectAdmissionTests(unittest.TestCase):
             ".gitignore", "readme.txt", "docs/a.txt",
         })
 
+    def test_local_replacement_refs_refused(self):
+        good = self.head([])
+        bad = self.head([self.file("unlisted.txt", self.new)])
+        self.assertEqual(verify_pr_diff(self.root, self.base, good), [])
+        self.assertIn("unallowlisted", " ".join(
+            verify_pr_diff(self.root, self.base, bad)))
+        # Local verifier metadata must not substitute another commit for bad.
+        git(self.root, "replace", bad, good)
+        self.assertEqual(git(self.root, "rev-parse", bad), bad)
+        with self.assertRaisesRegex(RuntimeError, "replacement refs"):
+            verify_pr_diff(self.root, self.base, bad)
+
+    def test_local_grafts_refused(self):
+        bad = self.head([self.file("unlisted.txt", self.new)])
+        restored = self.head([], parent=bad)
+        self.assertIn("historical unallowlisted", " ".join(
+            verify_pr_diff(self.root, self.base, restored)))
+        grafts = self.root / "info" / "grafts"
+        grafts.write_text(f"{restored} {self.base}\n", encoding="ascii")
+        with self.assertRaisesRegex(RuntimeError, "grafts"):
+            verify_pr_diff(self.root, self.base, restored)
+
+    def test_shallow_object_view_refused(self):
+        good = self.head([])
+        self.assertEqual(verify_pr_diff(self.root, self.base, good), [])
+        (self.root / "shallow").write_text(self.base + "\n", encoding="ascii")
+        with self.assertRaisesRegex(RuntimeError, "shallow"):
+            verify_pr_diff(self.root, self.base, good)
+
+    def test_object_view_environment_overrides_refused(self):
+        from unittest.mock import patch
+        good = self.head([])
+        for name, value in (
+            ("GIT_GRAFT_FILE", str(self.root / "info" / "fictional-grafts")),
+            ("GIT_REPLACE_REF_BASE", "refs/fictional-replacement/"),
+            ("GIT_SHALLOW_FILE", str(self.root / "fictional-shallow")),
+            ("GIT_DIR", str(self.root)),
+            ("GIT_COMMON_DIR", str(self.root)),
+            ("GIT_WORK_TREE", str(self.root)),
+            ("GIT_OBJECT_DIRECTORY", str(self.root / "objects")),
+            ("GIT_ALTERNATE_OBJECT_DIRECTORIES", ""),
+            ("GIT_NAMESPACE", "fictional"),
+        ):
+            with self.subTest(name=name), patch.dict(os.environ, {name: value}):
+                with self.assertRaisesRegex(RuntimeError, "object-view environment"):
+                    verify_pr_diff(self.root, self.base, good)
 
 if __name__ == "__main__":
     unittest.main()

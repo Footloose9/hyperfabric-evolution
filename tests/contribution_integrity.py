@@ -7,6 +7,7 @@ commit, not a changeable copy supplied by the pull request.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -23,12 +24,37 @@ SECRET_MARKERS = (
 
 def _git(root: Path, *args: str, allowed=(0,)) -> subprocess.CompletedProcess[bytes]:
     proc = subprocess.run(
-        ["git", *args], cwd=root, stdout=subprocess.PIPE,
+        ["git", "--no-replace-objects", *args], cwd=root, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, check=False,
     )
     if proc.returncode not in allowed:
         raise RuntimeError(f"git {' '.join(args[:2])} failed: {proc.stderr[:180]!r}")
     return proc
+
+
+def _require_unmodified_object_view(root: Path) -> None:
+    """Require a complete local object view in a separately controlled runner.
+
+    A pinned commit ID does not constrain local replacement refs or grafts.
+    Refuse such metadata rather than accepting an audit of substituted history.
+    This is not a substitute for isolation from concurrent or privileged writes.
+    """
+    overrides = (
+        "GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE", "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE",
+        "GIT_REPLACE_REF_BASE", "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE",
+    )
+    if any(name in os.environ for name in overrides):
+        raise RuntimeError("Git object-view environment override outside audit policy")
+    if _git(root, "rev-parse", "--is-shallow-repository").stdout.strip() != b"false":
+        raise RuntimeError("shallow Git history outside complete audit policy")
+    if _git(root, "for-each-ref", "--format=%(refname)", "refs/replace").stdout.strip():
+        raise RuntimeError("Git replacement refs outside immutable audit policy")
+    raw_grafts = _git(root, "rev-parse", "--path-format=absolute",
+                      "--git-path", "info/grafts").stdout.rstrip(b"\r\n")
+    grafts = Path(os.fsdecode(raw_grafts))
+    if not grafts.is_absolute() or os.path.lexists(grafts):
+        raise RuntimeError("Git grafts outside immutable audit policy")
 
 
 def _exact_allowlist(raw: bytes) -> list[str]:
@@ -171,6 +197,7 @@ def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, by
 def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
     """Inspect actual Git diff and tree objects; fail closed on uncertain types."""
     root = Path(root).resolve()
+    _require_unmodified_object_view(root)
     _git(root, "rev-parse", "--verify", "--end-of-options", base)
     _git(root, "rev-parse", "--verify", "--end-of-options", head)
     raw = _git(root, "diff", "--no-renames", "--name-status", "-z", base, head).stdout
