@@ -1204,6 +1204,53 @@ class SolanaSlotContradictionTests(unittest.TestCase):
         self.assertEqual(self.decide(self.with_evidence(native_transfer(), True)).disposition, "REFUSE")
 
 
+
+    def test_slot_10_ne_false_refused(self):
+        """Network object with __ne__ returning False must be refused."""
+        class BadNetwork:
+            def __ne__(self, other):
+                return False
+        
+        bad_source = SyntheticSource(
+            network=BadNetwork(),
+            rpc_method="getTransaction",
+            requested_commitment="finalized",
+            signature_status="finalized",
+            confirmation_status="finalized",
+            confirmations=None,
+            slot=200123456,
+            blockhash="a" * 64,
+            capture_utc="2026-11-25T00:00:00Z",
+            raw_content_sha256="0" * 64,
+        )
+        obs = native_transfer()
+        obs = replace(obs, source=bad_source)
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "REFUSE")
+
+    def test_slot_11_ne_raises_refused(self):
+        """Network object with __ne__ raising must be refused."""
+        class BadNetwork:
+            def __ne__(self, other):
+                raise RuntimeError("forbidden")
+        
+        bad_source = SyntheticSource(
+            network=BadNetwork(),
+            rpc_method="getTransaction",
+            requested_commitment="finalized",
+            signature_status="finalized",
+            confirmation_status="finalized",
+            confirmations=None,
+            slot=200123456,
+            blockhash="a" * 64,
+            capture_utc="2026-11-25T00:00:00Z",
+            raw_content_sha256="0" * 64,
+        )
+        obs = native_transfer()
+        obs = replace(obs, source=bad_source)
+        result = evaluate_synthetic_observation(obs)
+        self.assertEqual(result.disposition, "REFUSE")
+
 class SolanaRawAmountContractTests(unittest.TestCase):
     """ClaimedTransfer.amount is a raw base-unit count: canonical ASCII decimal, 1..2**64-1.
 

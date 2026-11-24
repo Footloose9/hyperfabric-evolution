@@ -161,6 +161,8 @@ def _source_shape_valid(source: SyntheticSource) -> bool:
     # arbitrary object, so every nested access is preceded by a class check.
     if not isinstance(source, SyntheticSource):
         return False
+    if type(source.network) is not str:
+        return False
     if source.network != "solana:synthetic":
         return False
     if not isinstance(source.rpc_method, str) or source.rpc_method not in ("getTransaction", "getSignatureStatuses"):
