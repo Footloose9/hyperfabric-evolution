@@ -121,7 +121,10 @@ def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, by
     """Read a Git commit's complete tree; do not trust a clean final diff."""
     tree: dict[str, tuple[bytes, bytes, bytes]] = {}
     portable_prefixes: dict[str, str] = {}
-    for row in _git(root, "ls-tree", "-r", "-z", revision).stdout.split(b"\0"):
+    seen_entries: set[str] = set()
+    directories: set[str] = set()
+    nonempty_directories: set[str] = set()
+    for row in _git(root, "ls-tree", "-r", "-t", "-z", revision).stdout.split(b"\0"):
         if not row:
             continue
         metadata, sep, raw_path = row.partition(b"\t")
@@ -134,8 +137,13 @@ def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, by
             raise RuntimeError("non-UTF8 historical Git path") from exc
         if not _path_is_safe(path):
             raise RuntimeError("unsafe historical Git path")
-        if path in tree:
+        if path in seen_entries:
             raise RuntimeError("duplicated historical Git tree entry")
+        seen_entries.add(path)
+        if len(seen_entries) > 4096:
+            raise RuntimeError("historical Git tree exceeds 4096-entry audit budget")
+        if "/" in path:
+            nonempty_directories.add(path.rsplit("/", 1)[0])
         # Git can store different spellings of the same directory, or
         # a file and directory whose names alias on a case-insensitive OS.
         # Audit every path component, not only the complete leaf filename.
@@ -147,9 +155,16 @@ def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, by
             if previous is not None and previous != prefix:
                 raise RuntimeError("case-insensitive/Unicode-normalized Git path collision")
             portable_prefixes[portable_key] = prefix
-        tree[path] = (parts[0], parts[1], parts[2])
-        if len(tree) > 4096:
-            raise RuntimeError("historical Git tree exceeds 4096-entry audit budget")
+        # Inspect directory objects without changing the file-only return contract.
+        if parts[0] == b"040000" or parts[1] == b"tree":
+            if parts[:2] != [b"040000", b"tree"]:
+                raise RuntimeError("unsupported historical Git tree mode/type")
+            directories.add(path)
+        else:
+            tree[path] = (parts[0], parts[1], parts[2])
+    # An empty subtree has no leaf on which the file admission policy can act.
+    if directories - nonempty_directories:
+        raise RuntimeError("empty historical Git subtree outside file admission policy")
     return tree
 
 

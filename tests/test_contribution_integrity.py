@@ -622,5 +622,105 @@ class ActualGitObjectAdversarialTests(unittest.TestCase):
         self.assertIn("deny-all", " ".join(verify_pr_diff(self.root, self.base)))
 
 
+class DirectoryObjectAdmissionTests(unittest.TestCase):
+    """Build real synthetic Git objects without checking unsafe paths out."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix="public_tree_admission_")
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        git(self.root, "init", "--bare", "-q")
+        git(self.root, "config", "user.name", "Fictional Test Author")
+        git(self.root, "config", "user.email", "test@example.invalid")
+        self.empty = self.tree([])
+        self.policy = self.blob(
+            b"*\n!.gitignore\n!readme.txt\n!docs/\n!docs/a.txt\n!Part\n"
+        )
+        self.old = self.blob(b"fictional base text\n")
+        self.new = self.blob(b"fictional changed text\n")
+        self.base = self.commit(self.tree([
+            self.file(".gitignore", self.policy), self.file("readme.txt", self.old),
+        ]))
+
+    def plumbing(self, *args, data=b""):
+        return subprocess.run(
+            ["git", *args], cwd=self.root, input=data, check=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ).stdout.strip()
+
+    def blob(self, data):
+        return self.plumbing("hash-object", "-w", "--stdin", data=data)
+
+    def file(self, name, sha):
+        return b"100644 blob " + sha + b"\t" + name.encode("utf-8") + b"\0"
+
+    def directory(self, name, sha):
+        return b"040000 tree " + sha + b"\t" + name.encode("utf-8") + b"\0"
+
+    def tree(self, entries):
+        return self.plumbing("mktree", "-z", data=b"".join(entries))
+
+    def commit(self, tree, parent=None):
+        args = ["commit-tree", tree.decode("ascii")]
+        if parent is not None:
+            args.extend(["-p", parent])
+        return self.plumbing(*args, data=b"fictional test commit\n").decode("ascii")
+
+    def head(self, entries, parent=None):
+        return self.commit(self.tree([
+            self.file(".gitignore", self.policy), self.file("readme.txt", self.new),
+            *entries,
+        ]), self.base if parent is None else parent)
+
+    def test_empty_subtree_names_and_aliases_refused(self):
+        ordinary = self.tree([self.file("a.txt", self.new)])
+        nested_empty = self.tree([
+            self.file("a.txt", self.new), self.directory("unused", self.empty),
+        ])
+        examples = (
+            ([self.directory("CON", self.empty)], "unsafe historical Git path"),
+            ([self.directory("docs", ordinary), self.directory("Docs", self.empty)],
+             "path collision"),
+            ([self.file("Part", self.new), self.directory("part", self.empty)],
+             "path collision"),
+            ([self.directory("ordinary", self.empty)], "empty historical Git subtree"),
+            ([self.directory("docs", nested_empty)], "empty historical Git subtree"),
+        )
+        for entries, reason in examples:
+            with self.subTest(reason=reason, entries=entries):
+                with self.assertRaisesRegex(RuntimeError, reason):
+                    verify_pr_diff(self.root, self.base, self.head(entries))
+
+    def test_removed_unsafe_empty_subtree_still_refused(self):
+        intermediate = self.head([self.directory("CON", self.empty)])
+        head = self.head([], parent=intermediate)
+        with self.assertRaisesRegex(RuntimeError, "unsafe historical Git path"):
+            verify_pr_diff(self.root, self.base, head)
+
+    def test_directory_objects_count_toward_tree_budget(self):
+        from contribution_integrity import _tree_entries
+        ordinary = self.tree([self.file("a.txt", self.new)])
+        entries = [self.directory(f"dir{i:04}", ordinary) for i in range(2048)]
+        within = self.tree(entries)
+        self.assertEqual(len(_tree_entries(self.root, within)), 2048)
+        beyond = self.tree(entries + [self.file("extra.txt", self.new)])
+        with self.assertRaisesRegex(RuntimeError, "4096-entry audit budget"):
+            _tree_entries(self.root, beyond)
+
+    def test_empty_directories_count_toward_tree_budget(self):
+        empty_entries = [self.directory(f"empty{i:04}", self.empty) for i in range(4096)]
+        with self.assertRaisesRegex(RuntimeError, "4096-entry audit budget"):
+            verify_pr_diff(self.root, self.base, self.head(empty_entries))
+
+    def test_nonempty_directory_preserves_leaf_contract(self):
+        from contribution_integrity import _tree_entries
+        ordinary = self.tree([self.file("a.txt", self.new)])
+        head = self.head([self.directory("docs", ordinary)])
+        self.assertEqual(verify_pr_diff(self.root, self.base, head), [])
+        self.assertEqual(set(_tree_entries(self.root, head)), {
+            ".gitignore", "readme.txt", "docs/a.txt",
+        })
+
+
 if __name__ == "__main__":
     unittest.main()
