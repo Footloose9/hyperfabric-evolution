@@ -54,7 +54,7 @@ def assess_visibility(claim: VisibilityClaim) -> VisibilityDecision:
     refuse = lambda reason: VisibilityDecision("REFUSE", reason)
     if not isinstance(claim, VisibilityClaim):
         return refuse("unsupported claim object")
-    if claim.network != _NETWORK:
+    if type(claim.network) is not str or claim.network != _NETWORK:
         return refuse("unsupported or non-synthetic Monero network")
     if not isinstance(claim.field, str) or claim.field not in (_PUBLIC | _CONCEALED | _UNSUPPORTED):
         return refuse("unsupported visibility field")

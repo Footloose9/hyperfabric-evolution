@@ -94,6 +94,41 @@ class MoneroVisibilityTests(unittest.TestCase):
             with self.subTest(changes=changes):
                 self.assertEqual(assess_visibility(claim("transaction_id", **changes)).disposition, "REFUSE")
 
+    def test_network_comparison_spoof_object_refused(self):
+        """An arbitrary object cannot impersonate the synthetic network label."""
+        class SpoofNetwork:
+            def __ne__(self, other):
+                return False
+
+        result = assess_visibility(claim("transaction_id", network=SpoofNetwork()))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertFalse(result.ledger_authenticated)
+
+    def test_network_comparison_raising_object_refused(self):
+        """Malformed objects must not trigger caller-controlled comparison code."""
+        class RaisingNetwork:
+            def __ne__(self, other):
+                raise RuntimeError("synthetic hostile network comparison")
+
+        result = assess_visibility(claim("transaction_id", network=RaisingNetwork()))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertFalse(result.ledger_authenticated)
+
+    def test_network_string_subclass_refused(self):
+        """The accepted label is an actual primitive str, not a custom subclass."""
+        class SpoofString(str):
+            def __ne__(self, other):
+                return False
+
+        self.assertEqual(
+            assess_visibility(claim("transaction_id", network=SpoofString("monero:synthetic"))).disposition,
+            "REFUSE",
+        )
+        self.assertEqual(
+            assess_visibility(claim("transaction_id", network="monero:synthetic")).disposition,
+            "PUBLIC_SYNTHETIC",
+        )
+
     def test_malformed_inputs_fail_closed(self):
         self.assertEqual(assess_visibility(None).disposition, "REFUSE")
         for field in ([], {}, 9, "account_owner", ""):
