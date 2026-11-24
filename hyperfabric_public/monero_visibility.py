@@ -54,7 +54,7 @@ def assess_visibility(claim: VisibilityClaim) -> VisibilityDecision:
     refuse = lambda reason: VisibilityDecision("REFUSE", reason)
     if not isinstance(claim, VisibilityClaim):
         return refuse("unsupported claim object")
-    if claim.network != _NETWORK:
+    if type(claim.network) is not str or claim.network != _NETWORK:
         return refuse("unsupported or non-synthetic Monero network")
     if not isinstance(claim.field, str) or claim.field not in (_PUBLIC | _CONCEALED | _UNSUPPORTED):
         return refuse("unsupported visibility field")
@@ -70,6 +70,11 @@ def assess_visibility(claim: VisibilityClaim) -> VisibilityDecision:
         return refuse("ownership, ring-member, network origin, cross-chain, keys and absolute privacy unproven")
     if claim.source == "CORRELATION":
         return refuse("temporal or label correlation cannot establish transaction identity")
+    if claim.field in _PUBLIC and claim.source != "PUBLIC_CHAIN":
+        return refuse("only fictional public-chain sources support public metadata")
+    if claim.field in _CONCEALED and claim.source == "VOLUNTARY_DISCLOSURE":
+        if claim.source_ref is None or claim.consent_ref is None:
+            return refuse("disclosure requires declared source and consent references")
     if claim.value is None:
         return VisibilityDecision("UNKNOWN", "no fictional value observed or declared")
     if claim.field in _PUBLIC and claim.source == "PUBLIC_CHAIN":
@@ -77,7 +82,5 @@ def assess_visibility(claim: VisibilityClaim) -> VisibilityDecision:
     if claim.field in _CONCEALED and claim.source == "PUBLIC_CHAIN":
         return refuse("sender, recipient, and transfer amount are not public on-chain facts")
     if claim.field in _CONCEALED and claim.source == "VOLUNTARY_DISCLOSURE":
-        if claim.source_ref is None or claim.consent_ref is None:
-            return refuse("disclosure requires declared source and consent references")
         return VisibilityDecision("DISCLOSED_UNVERIFIED", "fictional opt-in declaration; not cryptographic proof")
     return refuse("source class cannot establish the claimed field")

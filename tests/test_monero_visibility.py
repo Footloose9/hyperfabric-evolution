@@ -73,11 +73,61 @@ class MoneroVisibilityTests(unittest.TestCase):
         self.assertEqual(assess_visibility(claim("transaction_id", source="VOLUNTARY_DISCLOSURE",
             source_ref="sim:receipt_a", consent_ref="sim:permission_a")).disposition, "REFUSE")
 
+    def test_absent_public_metadata_from_disclosure_source_refused(self):
+        for field in ("transaction_id", "block_position", "inclusion"):
+            for refs in ({}, {"source_ref": "sim:receipt_a", "consent_ref": "sim:permission_a"}):
+                with self.subTest(field=field, refs=refs):
+                    result = assess_visibility(claim(field, None,
+                        source="VOLUNTARY_DISCLOSURE", **refs))
+                    self.assertEqual(result.disposition, "REFUSE")
+                    self.assertFalse(result.ledger_authenticated)
+
+    def test_absent_public_chain_metadata_remains_unknown(self):
+        for field in ("transaction_id", "block_position", "inclusion"):
+            with self.subTest(field=field):
+                result = assess_visibility(claim(field, None, source="PUBLIC_CHAIN"))
+                self.assertEqual(result.disposition, "UNKNOWN")
+
     def test_nonfictional_or_foreign_network_rejected(self):
         for changes in ({"network": "monero:mainnet"}, {"network": "xrpl:synthetic"},
                         {"source_ref": "https://site.example"}, {"consent_ref": "real_secret"}):
             with self.subTest(changes=changes):
                 self.assertEqual(assess_visibility(claim("transaction_id", **changes)).disposition, "REFUSE")
+
+    def test_network_comparison_spoof_object_refused(self):
+        """An arbitrary object cannot impersonate the synthetic network label."""
+        class SpoofNetwork:
+            def __ne__(self, other):
+                return False
+
+        result = assess_visibility(claim("transaction_id", network=SpoofNetwork()))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertFalse(result.ledger_authenticated)
+
+    def test_network_comparison_raising_object_refused(self):
+        """Malformed objects must not trigger caller-controlled comparison code."""
+        class RaisingNetwork:
+            def __ne__(self, other):
+                raise RuntimeError("synthetic hostile network comparison")
+
+        result = assess_visibility(claim("transaction_id", network=RaisingNetwork()))
+        self.assertEqual(result.disposition, "REFUSE")
+        self.assertFalse(result.ledger_authenticated)
+
+    def test_network_string_subclass_refused(self):
+        """The accepted label is an actual primitive str, not a custom subclass."""
+        class SpoofString(str):
+            def __ne__(self, other):
+                return False
+
+        self.assertEqual(
+            assess_visibility(claim("transaction_id", network=SpoofString("monero:synthetic"))).disposition,
+            "REFUSE",
+        )
+        self.assertEqual(
+            assess_visibility(claim("transaction_id", network="monero:synthetic")).disposition,
+            "PUBLIC_SYNTHETIC",
+        )
 
     def test_malformed_inputs_fail_closed(self):
         self.assertEqual(assess_visibility(None).disposition, "REFUSE")
@@ -87,6 +137,27 @@ class MoneroVisibilityTests(unittest.TestCase):
         for source in ([], {}, 10, "REAL_LEDGER"):
             with self.subTest(source=source):
                 self.assertEqual(assess_visibility(claim("sender", source=source)).disposition, "REFUSE")
+
+
+    def test_absent_disclosure_requires_both_fictional_references(self):
+        for field in ("sender", "recipient", "transfer_amount"):
+            for refs in ({}, {"source_ref": "sim:receipt_a"},
+                         {"consent_ref": "sim:permission_a"}):
+                with self.subTest(field=field, refs=refs):
+                    result = assess_visibility(claim(field, None,
+                        source="VOLUNTARY_DISCLOSURE", **refs))
+                    self.assertEqual(result.disposition, "REFUSE")
+                    self.assertFalse(result.ledger_authenticated)
+                    self.assertFalse(result.ownership_proven)
+
+    def test_absent_disclosure_with_both_references_stays_unknown(self):
+        for field in ("sender", "recipient", "transfer_amount"):
+            with self.subTest(field=field):
+                result = assess_visibility(claim(field, None,
+                    source="VOLUNTARY_DISCLOSURE",
+                    source_ref="sim:receipt_a", consent_ref="sim:permission_a"))
+                self.assertEqual(result.disposition, "UNKNOWN")
+                self.assertFalse(result.ledger_authenticated)
 
 
 if __name__ == "__main__":
