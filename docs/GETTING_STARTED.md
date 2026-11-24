@@ -29,6 +29,16 @@ Open [`hyperfabric_public/identity.py`](../hyperfabric_public/identity.py). The 
 
 For example, `AssetIdentity.xrp().key` returns `"xrpl:native:XRP"`. The unit tests exercise synthetic issuer strings so that no real wallet addresses are required.
 
+### Concrete currency + issuer example (synthetic, no Python needed)
+
+On the XRP Ledger ([XRPL fungible tokens docs](https://xrpl.org/docs/concepts/tokens/fungible-tokens)), a human-readable ticker like `USD` is **not** a unique asset identifier on its own:
+
+- **Native XRP**: `XRP` has no issuer (`xrpl:native:XRP`).
+- **Issued asset A**: currency `USD` issued by fictional account `raaaaaaaaaaaaaaaaaaaaaaaa` -> `xrpl:issued:USD:raaaaaaaaaaaaaaaaaaaaaaaa`.
+- **Issued asset B**: currency `USD` issued by fictional account `rbbbbbbbbbbbbbbbbbbbbbbbb` -> `xrpl:issued:USD:rbbbbbbbbbbbbbbbbbbbbbbbb`.
+
+Even though both issued assets display the label `USD`, they are **different assets** because their issuers differ. Note that this educational sample only checks basic string shape and **does not** verify account-address checksums or actual ledger existence.
+
 ## 4. Try the synthetic evidence graph
 
 This example uses **only fictional identifiers**. It does not query any blockchain or identify people. In a Python prompt from the repository root:
