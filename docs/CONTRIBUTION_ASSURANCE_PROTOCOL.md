@@ -33,6 +33,8 @@ Write one concise source-linked record; use `UNKNOWN` rather than inventing evid
 
 A `PASS` for one dimension is not transferable to any other dimension. A fresh commit invalidates previous head-specific approval. A reviewer comment is not a formal approval, and a bot cannot bestow human authorization.
 
+For a GitHub Actions run, record the PR base SHA, the PR head SHA, and the checked-out commit SHA separately. A generated test-merge commit is not the contributor head; a passing result describes the commit and verifier actually tested.
+
 ## Practical adversarial matrix (select cases relevant to the change)
 
 | Class | Minimum falsifier | Expected result |
