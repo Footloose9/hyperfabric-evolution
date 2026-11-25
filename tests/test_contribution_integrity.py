@@ -1,0 +1,772 @@
+"""Independent falsifiers for the limited PR changed-object integrity guard."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from contribution_integrity import (  # noqa: E402
+    verify_pr_diff, _exact_allowlist, _exact_path_admitted, _path_is_safe,
+)
+
+
+def git(root: Path, *args: str) -> str:
+    p = subprocess.run(["git", *args], cwd=root, check=True,
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return p.stdout.decode("utf-8").strip()
+
+
+class ActualGitObjectAdversarialTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix="public_pr_integrity_")
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        git(self.root, "init", "-q")
+        git(self.root, "config", "user.name", "Fictional Test Author")
+        git(self.root, "config", "user.email", "test@example.invalid")
+        (self.root / "docs").mkdir()
+        (self.root / ".gitignore").write_text(
+            "# Deny by default\n*\n!.gitignore\n!docs/\n!docs/ok.txt\n", encoding="utf-8")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "commit", "-qm", "base")
+        self.base = git(self.root, "rev-parse", "HEAD")
+
+    def commit(self, path="docs/ok.txt", content="hello public evidence\n", force=True):
+        file = self.root / path
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_bytes(content if isinstance(content, bytes) else content.encode("utf-8"))
+        if force:
+            git(self.root, "add", "-f", path)
+        else:
+            git(self.root, "add", "--", path)
+        git(self.root, "commit", "-qm", "candidate")
+        return verify_pr_diff(self.root, self.base, "HEAD")
+
+    def test_expected_exact_public_new_text_passes(self):
+        self.assertEqual(self.commit(), [])
+
+    def test_unlisted_file_stays_rejected_even_if_git_forced_it(self):
+        self.assertIn("excluded", " ".join(self.commit("docs/private.txt")))
+
+    def test_binary_byte_is_not_public_text(self):
+        self.assertIn("NUL/binary", " ".join(self.commit(content=b"one\x00two")))
+
+    def test_oversized_new_file_is_rejected(self):
+        self.assertIn("exceeds", " ".join(self.commit(content="a" * 210_000)))
+
+    def test_obvious_private_key_marker_is_rejected(self):
+        # Intentionally fictional marker: no actual key or secret material.
+        synthetic_fixture_marker = "-----BEGIN " + "PRIVATE KEY-----\nfictional\n"
+        self.assertIn("secret marker", " ".join(self.commit(content=synthetic_fixture_marker)))
+
+    def test_executable_bit_is_rejected(self):
+        file = self.root / "docs" / "ok.txt"
+        file.write_text("echo synthetic\n", encoding="utf-8")
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "update-index", "--chmod=+x", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "candidate")
+        self.assertIn("unsupported file mode", " ".join(verify_pr_diff(self.root, self.base)))
+
+    def test_symlink_is_rejected(self):
+        path = self.root / "docs" / "ok.txt"
+        try:
+            os.symlink("../.gitignore", path)
+        except (OSError, NotImplementedError):
+            self.skipTest("symlink creation unsupported on this runner")
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "candidate")
+        self.assertIn("unsupported file mode", " ".join(verify_pr_diff(self.root, self.base)))
+
+    def test_deletion_requires_manual_exception(self):
+        self.assertEqual(self.commit(), [])
+        self.base = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "rm", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "deletion")
+        self.assertIn("deletion requires", " ".join(verify_pr_diff(self.root, self.base)))
+
+    def test_existing_tracked_deletion_cannot_hide_behind_restoration(self):
+        self.assertEqual(self.commit(), [])
+        self.base = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "rm", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "transient tracked deletion")
+        (self.root / "docs").mkdir(exist_ok=True)
+        (self.root / "docs" / "ok.txt").write_text(
+            "fictional changed public text\n", encoding="utf-8"
+        )
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "restore path with benign update")
+        self.assertIn(
+            "historical deletion requires",
+            " ".join(verify_pr_diff(self.root, self.base)),
+        )
+
+    def test_new_public_file_deletion_in_history_is_not_amnestied(self):
+        self.assertEqual(self.commit(), [])
+        git(self.root, "rm", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "transient deletion of new public file")
+        (self.root / "docs").mkdir(exist_ok=True)
+        (self.root / "docs" / "ok.txt").write_text(
+            "hello public evidence\n", encoding="utf-8"
+        )
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "restore original new file")
+        self.assertIn(
+            "historical deletion requires",
+            " ".join(verify_pr_diff(self.root, self.base)),
+        )
+
+    def test_head_allowlist_not_dependent_on_runner_checkout(self):
+        # The verifier accepts an explicit arbitrary head SHA; a local
+        # checkout of the earlier base must not change that head's policy.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional source evidence\n", encoding="utf-8")
+        git(self.root, "add", "--", ".gitignore", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "atomic permitted public addition")
+        candidate_head = git(self.root, "rev-parse", "HEAD")
+        self.assertEqual(verify_pr_diff(self.root, self.base, candidate_head), [])
+        git(self.root, "checkout", "--detach", "-q", self.base)
+        actual = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(actual.returncode, 0)
+        self.assertEqual(verify_pr_diff(self.root, self.base, candidate_head), [])
+
+    def test_true_head_denied_path_stays_denied_with_permissive_worktree(self):
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional forbidden content\n", encoding="utf-8")
+        git(self.root, "add", "-f", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "unallowlisted introduction")
+        denied_head = git(self.root, "rev-parse", "HEAD")
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", ".gitignore")
+        git(self.root, "commit", "-qm", "late runner-only policy relaxation")
+        current = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(current.returncode, 1)
+        self.assertIn(
+            "historical unallowlisted path",
+            " ".join(verify_pr_diff(self.root, self.base, denied_head)),
+        )
+
+    def test_normal_multicommit_update_still_passes(self):
+        self.assertEqual(self.commit(), [])
+        (self.root / "docs" / "ok.txt").write_text(
+            "allowed public update\n", encoding="utf-8"
+        )
+        git(self.root, "add", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "ordinary update")
+        self.assertEqual(verify_pr_diff(self.root, self.base), [])
+
+
+    def test_first_parent_merge_does_not_invent_old_base_deletions(self):
+        # A feature commit may predate a harmless file added on the newer
+        # base branch. Absence from the old feature tree is not a deletion.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/peer.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", ".gitignore")
+        git(self.root, "commit", "-qm", "shared policy base")
+        common = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "checkout", "-qb", "feature")
+        (self.root / "docs" / "ok.txt").write_text(
+            "old feature fictional text\n", encoding="utf-8"
+        )
+        git(self.root, "add", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "feature predates peer")
+        git(self.root, "checkout", "-qb", "upstream", common)
+        (self.root / "docs").mkdir(exist_ok=True)
+        (self.root / "docs" / "peer.txt").write_text(
+            "new upstream fictional text\n", encoding="utf-8"
+        )
+        git(self.root, "add", "docs/peer.txt")
+        git(self.root, "commit", "-qm", "upstream public addition")
+        recent_base = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "checkout", "-q", "feature")
+        git(self.root, "merge", "--no-ff", "-qm", "sync upstream", "upstream")
+        self.assertEqual(verify_pr_diff(self.root, recent_base), [])
+
+
+    def test_hidden_history_secret_is_not_hidden_by_later_deletion(self):
+        # New public objects stay in Git even if the final PR tree no longer has them.
+        historical = self.root / "docs" / "historical.txt"
+        historical.write_text("-----BEGIN " + "PRIVATE KEY-----\nsynthetic\n", encoding="utf-8")
+        git(self.root, "add", "-f", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "historical leak attempt")
+        git(self.root, "rm", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "hide previous commit")
+        issues = self.commit()
+        self.assertIn("historical object contains secret marker", " ".join(issues))
+
+    def test_hidden_history_binary_is_not_hidden_by_later_deletion(self):
+        historical = self.root / "docs" / "historical.txt"
+        historical.write_bytes(b"fictional\x00data")
+        git(self.root, "add", "-f", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "historical binary")
+        git(self.root, "rm", "docs/historical.txt")
+        git(self.root, "commit", "-qm", "hide previous binary")
+        self.assertIn("historical binary object", " ".join(self.commit()))
+
+    def _transient_then_clean(self, path: str, content: bytes | str,
+                              executable: bool = False, symlink: bool = False):
+        target = self.root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if symlink:
+            try:
+                os.symlink("../.gitignore", target)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation unsupported on this runner")
+        else:
+            target.write_bytes(content if isinstance(content, bytes)
+                               else content.encode("utf-8"))
+        git(self.root, "add", "-f", path)
+        if executable:
+            git(self.root, "update-index", "--chmod=+x", path)
+        git(self.root, "commit", "-qm", "transient object")
+        git(self.root, "rm", "-f", path)
+        git(self.root, "commit", "-qm", "delete transient object")
+        return self.commit()
+
+    def test_historical_symlink_cannot_be_hidden_in_clean_final_diff(self):
+        issues = self._transient_then_clean("docs/transient.txt", "", symlink=True)
+        self.assertIn("historical unsupported mode/type", " ".join(issues))
+
+    def test_historical_executable_cannot_be_hidden_in_clean_final_diff(self):
+        issues = self._transient_then_clean("docs/transient.txt", "synthetic", executable=True)
+        self.assertIn("historical unsupported mode/type", " ".join(issues))
+
+    def test_historical_unallowlisted_path_stays_disallowed(self):
+        issues = self._transient_then_clean("docs/hidden.txt", "fictional")
+        self.assertIn("historical unallowlisted path", " ".join(issues))
+
+
+
+
+    def test_historical_nested_gitignore_cannot_amnesty_forced_file(self):
+        # The public guard's policy is root-only, but Git also applies
+        # a tracked nested .gitignore. A later nested exception cannot
+        # retroactively authorize a file introduced while ignored.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/.gitignore\n"
+            "!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        nested = self.root / "docs" / ".gitignore"
+        nested.write_text("candidate.txt\n", encoding="utf-8")
+        git(self.root, "add", "--", ".gitignore", "docs/.gitignore")
+        git(self.root, "commit", "-qm", "synthetic nested baseline")
+        base = git(self.root, "rev-parse", "HEAD")
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional text only\n", encoding="utf-8")
+        denied = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(denied.returncode, 0)
+        git(self.root, "add", "-f", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "historically ignored addition")
+        nested.write_text("# candidate permitted later\n", encoding="utf-8")
+        git(self.root, "add", "--", "docs/.gitignore")
+        git(self.root, "commit", "-qm", "later nested exception")
+        admitted = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(admitted.returncode, 1)
+        self.assertIn(
+            "nested .gitignore",
+            " ".join(verify_pr_diff(self.root, base, "HEAD")),
+        )
+
+    def test_root_only_literal_allowlist_still_passes(self):
+        # Ordinary atomic root allowlisting without nested ignore files
+        # must remain a valid public contribution.
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n"
+            "!docs/candidate.txt\n", encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "first permit fictional path")
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("independently invented public fixture\n",
+                             encoding="utf-8")
+        git(self.root, "add", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "valid subsequent public addition")
+        self.assertEqual(verify_pr_diff(self.root, self.base, "HEAD"), [])
+
+    def test_historical_forced_path_is_not_amnestied_by_later_exception(self):
+        # A later .gitignore exception cannot retroactively authorize a file
+        # that entered Git while the exact path was still denied.
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional research text\n", encoding="utf-8")
+        git(self.root, "add", "-f", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "unsafe historical admission")
+        prior = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(prior.returncode, 0)
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "late retroactive exception")
+        current = subprocess.run(
+            ["git", "check-ignore", "-q", "--no-index", "--",
+             "docs/candidate.txt"], cwd=self.root, check=False,
+        )
+        self.assertEqual(current.returncode, 1)
+        self.assertIn(
+            "historical unallowlisted path",
+            " ".join(verify_pr_diff(self.root, self.base, "HEAD")),
+        )
+
+    def test_historical_path_is_valid_when_exception_precedes_first_add(self):
+        (self.root / ".gitignore").write_text(
+            "*\n!.gitignore\n!docs/\n!docs/ok.txt\n!docs/candidate.txt\n",
+            encoding="utf-8",
+        )
+        git(self.root, "add", "--", ".gitignore")
+        git(self.root, "commit", "-qm", "valid prior exception")
+        candidate = self.root / "docs" / "candidate.txt"
+        candidate.write_text("fictional public evidence\n", encoding="utf-8")
+        git(self.root, "add", "--", "docs/candidate.txt")
+        git(self.root, "commit", "-qm", "allowlisted addition")
+        self.assertEqual(verify_pr_diff(self.root, self.base, "HEAD"), [])
+
+    def test_unicode_line_separator_cannot_forge_deny_all(self):
+        # Python str.splitlines() recognizes U+2028 and U+0085, while Git
+        # reads .gitignore records as physical lines. Never normalize them
+        # into a synthetic valid '*' policy.
+        for label, separator in (
+            ("unicode-line-separator", "\u2028"),
+            ("unicode-next-line", "\u0085"),
+        ):
+            with self.subTest(label=label):
+                git(self.root, "reset", "--hard", self.base)
+                (self.root / "docs").mkdir(exist_ok=True)
+                malformed = "*" + separator + "!.gitignore\n!docs/\n!docs/ok.txt\n"
+                (self.root / ".gitignore").write_text(malformed, encoding="utf-8")
+                (self.root / "docs" / "private.txt").write_text(
+                    "fictional review-only text\n", encoding="utf-8"
+                )
+                git_decision = subprocess.run(
+                    ["git", "check-ignore", "-q", "--no-index", "--",
+                     "docs/private.txt"], cwd=self.root, check=False,
+                )
+                self.assertEqual(git_decision.returncode, 1)
+                git(self.root, "add", "--", ".gitignore", "docs/private.txt")
+                git(self.root, "commit", "-qm", "synthetic Unicode separator")
+                self.assertIn(
+                    "whitespace",
+                    " ".join(verify_pr_diff(self.root, self.base)),
+                )
+
+    def test_hidden_unicode_controls_cannot_enter_allowlist_or_path(self):
+        """Git filenames and exact exceptions must reject invisible controls."""
+        for label, ch in (
+            ("zero width", chr(0x200B)),
+            ("right-to-left override", chr(0x202E)),
+            ("escape control", chr(0x1B)),
+        ):
+            with self.subTest(label=label):
+                name = f"docs/f{ch}ile.txt"
+                raw = (f"*\n!.gitignore\n!docs/\n!{name}\n").encode("utf-8")
+                self.assertIn("Unicode control", " ".join(_exact_allowlist(raw)))
+                self.assertFalse(_path_is_safe(name))
+                self.assertFalse(_exact_path_admitted(raw, name))
+
+    def test_visible_non_ascii_literal_filename_stays_admissible(self):
+        """The guard rejects control categories, not ordinary international text."""
+        name = "docs/café.txt"
+        raw = (f"*\n!.gitignore\n!docs/\n!{name}\n").encode("utf-8")
+        self.assertEqual(_exact_allowlist(raw), [])
+        self.assertTrue(_path_is_safe(name))
+        self.assertTrue(_exact_path_admitted(raw, name))
+
+    def test_platform_unsafe_git_path_and_allowlist_refused(self):
+        """Refuse Linux-commit-able names unsafe on Windows, without banning UTF-8."""
+        for name in (
+            "docs/file:stream.txt",
+            "docs/CON.txt",
+            "docs/lpt1.log",
+            "docs/COM¹.txt",
+            "docs/LPT³.log",
+            "docs/x|y.txt",
+            "docs/.GIT/hooks.txt",
+            "docs/git~1/config.txt",
+            "docs/report.",
+            "docs/dir. /file.txt",
+        ):
+            with self.subTest(name=name):
+                policy = (f"*\\n!.gitignore\\n!docs/\\n!{name}\\n").replace("\\n", "\n").encode("utf-8")
+                self.assertFalse(_path_is_safe(name))
+                self.assertTrue(_exact_allowlist(policy))
+                self.assertFalse(_exact_path_admitted(policy, name))
+
+        for name in ("docs/ok_name.txt", "docs/café.txt", "docs/normal.report.txt"):
+            with self.subTest(name=name):
+                policy = (f"*\\n!.gitignore\\n!docs/\\n!{name}\\n").replace("\\n", "\n").encode("utf-8")
+                self.assertTrue(_path_is_safe(name))
+                self.assertEqual(_exact_allowlist(policy), [])
+                self.assertTrue(_exact_path_admitted(policy, name))
+
+    def test_unportable_name_in_actual_git_tree_is_refused(self):
+        """Git object plumbing proves portability refusal without creating an NTFS file."""
+        def plumbing(*args, data=b""):
+            result = subprocess.run(
+                ["git", *args], cwd=self.root, input=data,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+            )
+            return result.stdout.strip()
+
+        for filename in (b"public:stream.txt", b"CON.txt", b"ok.txt"):
+            with self.subTest(filename=filename):
+                raw_policy = b"*\\n!.gitignore\\n!docs/\\n!docs/".replace(b"\\n", b"\n") + filename + b"\n"
+                ignore_sha = plumbing("hash-object", "-w", "--stdin", data=raw_policy)
+                content_sha = plumbing("hash-object", "-w", "--stdin", data=b"fictional evidence\n")
+                docs_tree = plumbing(
+                    "mktree", "-z",
+                    data=b"100644 blob " + content_sha + b"\t" + filename + b"\0",
+                )
+                root_tree = plumbing(
+                    "mktree", "-z",
+                    data=(b"100644 blob " + ignore_sha + b"\t.gitignore\0"
+                          + b"040000 tree " + docs_tree + b"\tdocs\0"),
+                )
+                head = plumbing(
+                    "commit-tree", root_tree.decode("ascii"), "-p", self.base,
+                    data=b"fictional synthetic candidate\n",
+                ).decode("ascii")
+                if filename == b"ok.txt":
+                    self.assertEqual(verify_pr_diff(self.root, self.base, head), [])
+                else:
+                    try:
+                        findings = verify_pr_diff(self.root, self.base, head)
+                    except RuntimeError as exc:
+                        findings = ["fail-closed: " + str(exc)]
+                    self.assertTrue(findings, "unsafe Git tree entry incorrectly admitted")
+
+    def test_case_insensitive_git_tree_collisions_refused(self):
+        """Actual Git trees must not contain ambiguous case or Unicode names."""
+        def plumbing(*args, data=b""):
+            result = subprocess.run(
+                ["git", *args], cwd=self.root, input=data,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+            )
+            return result.stdout.strip()
+
+        for names in (
+            ("Same.txt", "same.txt"),
+            ("café.txt", "cafe" + chr(0x0301) + ".txt"),
+        ):
+            with self.subTest(names=names):
+                raw_policy = ("*\n!.gitignore\n!docs/\n"
+                              + "".join(f"!docs/{name}\n" for name in names)).encode("utf-8")
+                policy_sha = plumbing("hash-object", "-w", "--stdin", data=raw_policy)
+                content_sha = plumbing("hash-object", "-w", "--stdin", data=b"fictional text\n")
+                docs_tree = plumbing(
+                    "mktree", "-z", data=b"".join(
+                        b"100644 blob " + content_sha + b"\t" + name.encode("utf-8") + b"\0"
+                        for name in names
+                    ),
+                )
+                root_tree = plumbing(
+                    "mktree", "-z",
+                    data=(b"100644 blob " + policy_sha + b"\t.gitignore\0"
+                          + b"040000 tree " + docs_tree + b"\tdocs\0"),
+                )
+                head = plumbing(
+                    "commit-tree", root_tree.decode("ascii"), "-p", self.base,
+                    data=b"fictional case collision\n",
+                ).decode("ascii")
+                with self.assertRaisesRegex(
+                    RuntimeError, "case-insensitive/Unicode-normalized Git path collision"
+                ):
+                    verify_pr_diff(self.root, self.base, head)
+
+    def test_casefold_collisions_in_directory_components_refused(self):
+        """Real Git tree objects can contain conflicting folder spellings."""
+        def plumbing(*args, data=b""):
+            result = subprocess.run(
+                ["git", *args], cwd=self.root, input=data,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+            )
+            return result.stdout.strip()
+
+        text_blob = plumbing("hash-object", "-w", "--stdin", data=b"fictional text\n")
+
+        def build_tree(names):
+            structure = {}
+            for path in names:
+                node = structure
+                parts = path.split("/")
+                for part in parts[:-1]:
+                    node = node.setdefault(part, {})
+                node[parts[-1]] = text_blob
+
+            def emit(node):
+                items = []
+                for name, value in node.items():
+                    if isinstance(value, dict):
+                        mode, kind, sha = b"040000", b"tree", emit(value)
+                    else:
+                        mode, kind, sha = b"100644", b"blob", value
+                    items.append(mode+b" "+kind+b" "+sha+b"\t"+name.encode("utf-8")+b"\0")
+                return plumbing("mktree", "-z", data=b"".join(items))
+            return emit(structure)
+
+        examples = (
+            (("docs/Sub/a.txt", "docs/sub/b.txt"), True),
+            (("docs/café/a.txt", "docs/cafe"+chr(0x0301)+"/b.txt"), True),
+            (("docs/Part", "docs/part/a.txt"), True),
+            (("docs/Sub/a.txt", "docs/Sub/b.txt", "docs/café.txt"), False),
+        )
+        for names, must_refuse in examples:
+            with self.subTest(names=names):
+                exceptions = {"docs/"}
+                for path in names:
+                    parts = path.split("/")
+                    for i in range(2, len(parts)):
+                        exceptions.add("/".join(parts[:i]) + "/")
+                    exceptions.add(path)
+                policy = ("*\n!.gitignore\n"
+                          + "".join("!" + name + "\n" for name in sorted(exceptions)))
+                policy_sha = plumbing("hash-object", "-w", "--stdin", data=policy.encode())
+                nested_tree = build_tree(tuple(n.split('/', 1)[1] for n in names))
+                root_tree = plumbing(
+                    "mktree", "-z",
+                    data=(b"100644 blob " + policy_sha + b"\t.gitignore\0"
+                          + b"040000 tree " + nested_tree + b"\tdocs\0"),
+                )
+                head = plumbing(
+                    "commit-tree", root_tree.decode("ascii"), "-p", self.base,
+                    data=b"fictional prefix-alias test\n",
+                ).decode("ascii")
+                if must_refuse:
+                    with self.assertRaisesRegex(RuntimeError, "path collision"):
+                        verify_pr_diff(self.root, self.base, head)
+                else:
+                    self.assertEqual(verify_pr_diff(self.root, self.base, head), [])
+
+    def test_only_physical_newlines_define_ignore_rules(self):
+        self.assertEqual(
+            _exact_allowlist(b"*\n!.gitignore\n!docs/\n!docs/ok.txt\n"), []
+        )
+        self.assertEqual(
+            _exact_allowlist(b"*\r\n!.gitignore\r\n!docs/\r\n!docs/ok.txt\r\n"), []
+        )
+        for separator in ("\u2028", "\u0085", "\v", "\f", "\r"):
+            with self.subTest(separator=repr(separator)):
+                malformed = ("*" + separator + "!.gitignore\n"
+                             "!docs/\n!docs/ok.txt\n").encode("utf-8")
+                self.assertIn("whitespace", " ".join(_exact_allowlist(malformed)))
+
+    def test_leading_whitespace_cannot_defeat_deny_all(self):
+        (self.root / ".gitignore").write_text(
+            " *\n!.gitignore\n!docs/\n!docs/ok.txt\n", encoding="utf-8")
+        (self.root / "docs" / "private.txt").write_text("fictional\n")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "add", "--", "docs/private.txt")
+        git(self.root, "commit", "-qm", "unsafe ignore whitespace")
+        self.assertIn("noncanonical whitespace", " ".join(verify_pr_diff(self.root, self.base)))
+
+    def test_historical_oversized_added_text_cannot_be_hidden_by_deletion(self):
+        path = self.root / "docs" / "ok.txt"
+        path.write_bytes(b"x" * 210_001)
+        git(self.root, "add", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "historical oversized new object")
+        git(self.root, "rm", "-f", "docs/ok.txt")
+        git(self.root, "commit", "-qm", "remove oversized object")
+        self.assertIn("historical added text exceeds", " ".join(self.commit()))
+
+    def test_historical_weak_allowlist_is_rejected_even_if_restored(self):
+        original = (self.root / ".gitignore").read_text(encoding="utf-8")
+        (self.root / ".gitignore").write_text(
+            " *\n!.gitignore\n!docs/\n!docs/ok.txt\n", encoding="utf-8")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "commit", "-qm", "historical weakened denyall")
+        (self.root / ".gitignore").write_text(original, encoding="utf-8")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "commit", "-qm", "restore ignore rules")
+        self.assertIn("historical ignore rule", " ".join(self.commit()))
+
+    def test_deny_all_cannot_be_removed(self):
+        self.assertIn("deny-all", " ".join(_exact_allowlist(b"!docs/\n")))
+
+    def test_wildcard_exception_is_rejected(self):
+        self.assertIn("non-exact", " ".join(_exact_allowlist(b"*\n!docs/\n!**/*.txt\n")))
+
+    def test_path_traversal_exception_is_rejected(self):
+        self.assertIn("non-exact", " ".join(_exact_allowlist(b"*\n!docs/../secret\n")))
+
+    def test_tainted_changed_ignore_fails_pr_check(self):
+        (self.root / ".gitignore").write_text("!**\n", encoding="utf-8")
+        git(self.root, "add", "-f", ".gitignore")
+        git(self.root, "commit", "-qm", "weaken-default")
+        self.assertIn("deny-all", " ".join(verify_pr_diff(self.root, self.base)))
+
+
+class DirectoryObjectAdmissionTests(unittest.TestCase):
+    """Build real synthetic Git objects without checking unsafe paths out."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix="public_tree_admission_")
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        git(self.root, "init", "--bare", "-q")
+        git(self.root, "config", "user.name", "Fictional Test Author")
+        git(self.root, "config", "user.email", "test@example.invalid")
+        self.empty = self.tree([])
+        self.policy = self.blob(
+            b"*\n!.gitignore\n!readme.txt\n!docs/\n!docs/a.txt\n!Part\n"
+        )
+        self.old = self.blob(b"fictional base text\n")
+        self.new = self.blob(b"fictional changed text\n")
+        self.base = self.commit(self.tree([
+            self.file(".gitignore", self.policy), self.file("readme.txt", self.old),
+        ]))
+
+    def plumbing(self, *args, data=b""):
+        return subprocess.run(
+            ["git", *args], cwd=self.root, input=data, check=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ).stdout.strip()
+
+    def blob(self, data):
+        return self.plumbing("hash-object", "-w", "--stdin", data=data)
+
+    def file(self, name, sha):
+        return b"100644 blob " + sha + b"\t" + name.encode("utf-8") + b"\0"
+
+    def directory(self, name, sha):
+        return b"040000 tree " + sha + b"\t" + name.encode("utf-8") + b"\0"
+
+    def tree(self, entries):
+        return self.plumbing("mktree", "-z", data=b"".join(entries))
+
+    def commit(self, tree, parent=None):
+        args = ["commit-tree", tree.decode("ascii")]
+        if parent is not None:
+            args.extend(["-p", parent])
+        return self.plumbing(*args, data=b"fictional test commit\n").decode("ascii")
+
+    def head(self, entries, parent=None):
+        return self.commit(self.tree([
+            self.file(".gitignore", self.policy), self.file("readme.txt", self.new),
+            *entries,
+        ]), self.base if parent is None else parent)
+
+    def test_empty_subtree_names_and_aliases_refused(self):
+        ordinary = self.tree([self.file("a.txt", self.new)])
+        nested_empty = self.tree([
+            self.file("a.txt", self.new), self.directory("unused", self.empty),
+        ])
+        examples = (
+            ([self.directory("CON", self.empty)], "unsafe historical Git path"),
+            ([self.directory("docs", ordinary), self.directory("Docs", self.empty)],
+             "path collision"),
+            ([self.file("Part", self.new), self.directory("part", self.empty)],
+             "path collision"),
+            ([self.directory("ordinary", self.empty)], "empty historical Git subtree"),
+            ([self.directory("docs", nested_empty)], "empty historical Git subtree"),
+        )
+        for entries, reason in examples:
+            with self.subTest(reason=reason, entries=entries):
+                with self.assertRaisesRegex(RuntimeError, reason):
+                    verify_pr_diff(self.root, self.base, self.head(entries))
+
+    def test_removed_unsafe_empty_subtree_still_refused(self):
+        intermediate = self.head([self.directory("CON", self.empty)])
+        head = self.head([], parent=intermediate)
+        with self.assertRaisesRegex(RuntimeError, "unsafe historical Git path"):
+            verify_pr_diff(self.root, self.base, head)
+
+    def test_directory_objects_count_toward_tree_budget(self):
+        from contribution_integrity import _tree_entries
+        ordinary = self.tree([self.file("a.txt", self.new)])
+        entries = [self.directory(f"dir{i:04}", ordinary) for i in range(2048)]
+        within = self.tree(entries)
+        self.assertEqual(len(_tree_entries(self.root, within)), 2048)
+        beyond = self.tree(entries + [self.file("extra.txt", self.new)])
+        with self.assertRaisesRegex(RuntimeError, "4096-entry audit budget"):
+            _tree_entries(self.root, beyond)
+
+    def test_empty_directories_count_toward_tree_budget(self):
+        empty_entries = [self.directory(f"empty{i:04}", self.empty) for i in range(4096)]
+        with self.assertRaisesRegex(RuntimeError, "4096-entry audit budget"):
+            verify_pr_diff(self.root, self.base, self.head(empty_entries))
+
+    def test_nonempty_directory_preserves_leaf_contract(self):
+        from contribution_integrity import _tree_entries
+        ordinary = self.tree([self.file("a.txt", self.new)])
+        head = self.head([self.directory("docs", ordinary)])
+        self.assertEqual(verify_pr_diff(self.root, self.base, head), [])
+        self.assertEqual(set(_tree_entries(self.root, head)), {
+            ".gitignore", "readme.txt", "docs/a.txt",
+        })
+
+    def test_local_replacement_refs_refused(self):
+        good = self.head([])
+        bad = self.head([self.file("unlisted.txt", self.new)])
+        self.assertEqual(verify_pr_diff(self.root, self.base, good), [])
+        self.assertIn("unallowlisted", " ".join(
+            verify_pr_diff(self.root, self.base, bad)))
+        # Local verifier metadata must not substitute another commit for bad.
+        git(self.root, "replace", bad, good)
+        self.assertEqual(git(self.root, "rev-parse", bad), bad)
+        with self.assertRaisesRegex(RuntimeError, "replacement refs"):
+            verify_pr_diff(self.root, self.base, bad)
+
+    def test_local_grafts_refused(self):
+        bad = self.head([self.file("unlisted.txt", self.new)])
+        restored = self.head([], parent=bad)
+        self.assertIn("historical unallowlisted", " ".join(
+            verify_pr_diff(self.root, self.base, restored)))
+        grafts = self.root / "info" / "grafts"
+        grafts.write_text(f"{restored} {self.base}\n", encoding="ascii")
+        with self.assertRaisesRegex(RuntimeError, "grafts"):
+            verify_pr_diff(self.root, self.base, restored)
+
+    def test_shallow_object_view_refused(self):
+        good = self.head([])
+        self.assertEqual(verify_pr_diff(self.root, self.base, good), [])
+        (self.root / "shallow").write_text(self.base + "\n", encoding="ascii")
+        with self.assertRaisesRegex(RuntimeError, "shallow"):
+            verify_pr_diff(self.root, self.base, good)
+
+    def test_object_view_environment_overrides_refused(self):
+        from unittest.mock import patch
+        good = self.head([])
+        for name, value in (
+            ("GIT_GRAFT_FILE", str(self.root / "info" / "fictional-grafts")),
+            ("GIT_REPLACE_REF_BASE", "refs/fictional-replacement/"),
+            ("GIT_SHALLOW_FILE", str(self.root / "fictional-shallow")),
+            ("GIT_DIR", str(self.root)),
+            ("GIT_COMMON_DIR", str(self.root)),
+            ("GIT_WORK_TREE", str(self.root)),
+            ("GIT_OBJECT_DIRECTORY", str(self.root / "objects")),
+            ("GIT_ALTERNATE_OBJECT_DIRECTORIES", ""),
+            ("GIT_NAMESPACE", "fictional"),
+        ):
+            with self.subTest(name=name), patch.dict(os.environ, {name: value}):
+                with self.assertRaisesRegex(RuntimeError, "object-view environment"):
+                    verify_pr_diff(self.root, self.base, good)
+
+if __name__ == "__main__":
+    unittest.main()

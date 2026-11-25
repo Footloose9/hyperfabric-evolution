@@ -1,0 +1,388 @@
+"""Public PR changed-file guard; not a rights, identity, or security approval.
+
+Standard-library only. This checks Git objects, not self-reported PR claims.
+On GitHub Actions it should run using the version from the protected base
+commit, not a changeable copy supplied by the pull request.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+import re
+import subprocess
+import unicodedata
+
+MAX_TEXT_BYTES = 512_000
+MAX_NEW_FILE_BYTES = 200_000
+SECRET_MARKERS = (
+    re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"),
+    re.compile(rb"\bghp_[A-Za-z0-9]{30,}\b"),
+    re.compile(rb"\bgithub_pat_[A-Za-z0-9_]{25,}\b"),
+)
+
+
+def _git(root: Path, *args: str, allowed=(0,)) -> subprocess.CompletedProcess[bytes]:
+    proc = subprocess.run(
+        ["git", "--no-replace-objects", *args], cwd=root, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, check=False,
+    )
+    if proc.returncode not in allowed:
+        raise RuntimeError(f"git {' '.join(args[:2])} failed: {proc.stderr[:180]!r}")
+    return proc
+
+
+def _require_unmodified_object_view(root: Path) -> None:
+    """Require a complete local object view in a separately controlled runner.
+
+    A pinned commit ID does not constrain local replacement refs or grafts.
+    Refuse such metadata rather than accepting an audit of substituted history.
+    This is not a substitute for isolation from concurrent or privileged writes.
+    """
+    overrides = (
+        "GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE", "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE",
+        "GIT_REPLACE_REF_BASE", "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE",
+    )
+    if any(name in os.environ for name in overrides):
+        raise RuntimeError("Git object-view environment override outside audit policy")
+    if _git(root, "rev-parse", "--is-shallow-repository").stdout.strip() != b"false":
+        raise RuntimeError("shallow Git history outside complete audit policy")
+    if _git(root, "for-each-ref", "--format=%(refname)", "refs/replace").stdout.strip():
+        raise RuntimeError("Git replacement refs outside immutable audit policy")
+    raw_grafts = _git(root, "rev-parse", "--path-format=absolute",
+                      "--git-path", "info/grafts").stdout.rstrip(b"\r\n")
+    grafts = Path(os.fsdecode(raw_grafts))
+    if not grafts.is_absolute() or os.path.lexists(grafts):
+        raise RuntimeError("Git grafts outside immutable audit policy")
+
+
+def _exact_allowlist(raw: bytes) -> list[str]:
+    """Reject changed allowlists that disable the deny-all staging default."""
+    try:
+        # Git separates ignore rules at LF (optionally CRLF), not at
+        # Unicode line/paragraph separators or Python's vertical controls.
+        # str.splitlines() can fabricate a valid '*' rule Git never saw.
+        lines = raw.decode("utf-8").split("\n")
+    except UnicodeError:
+        return [".gitignore is not UTF-8"]
+    errors: list[str] = []
+    rules: list[str] = []
+    for i, v in enumerate(lines):
+        if i < len(lines) - 1 and v.endswith("\r"):
+            v = v[:-1]  # normalize CRLF only, never lone CR or Unicode NL
+        if not v:
+            continue
+        if v.startswith("#"):
+            continue
+        # Git does not normalize leading blanks like Python str.strip().
+        # A rule " *" is not the global deny rule "*"; rejecting instead
+        # of trimming is essential for a fail-closed allowlist.
+        if v != v.strip() or any(ch.isspace() or unicodedata.category(ch).startswith("C") for ch in v):
+            errors.append("noncanonical whitespace or Unicode control in .gitignore rule")
+            continue
+        rules.append(v)
+    if not rules or rules[0] != "*":
+        errors.append(".gitignore must start with a deny-all '*' rule")
+    for v in rules[1:]:
+        if not v.startswith("!"):
+            errors.append(f"unexpected ignore rule: {v[:70]}")
+            continue
+        path = v[1:]
+        bits = path.rstrip("/").split("/")
+        if (not path or path.startswith("/") or "\\" in path
+                or any(c in path for c in "*?[]")
+                or any(p in ("", ".", "..") for p in bits)
+                or not _path_is_safe(path.rstrip("/"))):
+            errors.append(f"non-exact staging exception: {v[:70]}")
+    return errors
+
+
+
+def _exact_path_admitted(raw_ignore: bytes, path: str) -> bool:
+    """Conservatively require each historical file and ancestor to be named.
+
+    The public staging policy is restricted to a top-level deny-all '*' and
+    literal '!' exceptions. Unlike git check-ignore in the current worktree,
+    this predicate evaluates the exact historical root .gitignore blob.
+    """
+    if _exact_allowlist(raw_ignore) or not _path_is_safe(path):
+        return False
+    active = set()
+    for raw_line in raw_ignore.decode("utf-8").split("\n"):
+        line = raw_line[:-1] if raw_line.endswith("\r") else raw_line
+        if line.startswith("!"):
+            active.add(line[1:])
+    parts = path.split("/")
+    if path not in active:
+        return False
+    return all("/".join(parts[:i]) + "/" in active
+               for i in range(1, len(parts)))
+
+# Check Git object names independent of the runner's operating system.
+# A Linux author can commit paths that misbehave during Windows checkout.
+_WINDOWS_RESERVED = frozenset(
+    {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+    | {f"{prefix}{i}" for prefix in ("COM", "LPT") for i in range(1, 10)}
+    | {f"{prefix}{i}" for prefix in ("COM", "LPT") for i in "¹²³"}
+)
+_WINDOWS_FORBIDDEN = frozenset('<>:"|?*')
+
+
+def _path_is_safe(path: str) -> bool:
+    if (not path or path.startswith("/") or "\\" in path
+            or any(c in _WINDOWS_FORBIDDEN or unicodedata.category(c).startswith("C")
+                   for c in path)):
+        return False
+    for part in path.split("/"):
+        if (not part or part in (".", "..")
+                or part.endswith((".", " "))
+                or part.casefold() in (".git", "git~1")
+                or part.split(".", 1)[0].upper() in _WINDOWS_RESERVED):
+            return False
+    return True
+
+
+def _tree_entries(root: Path, revision: str) -> dict[str, tuple[bytes, bytes, bytes]]:
+    """Read a Git commit's complete tree; do not trust a clean final diff."""
+    tree: dict[str, tuple[bytes, bytes, bytes]] = {}
+    portable_prefixes: dict[str, str] = {}
+    seen_entries: set[str] = set()
+    directories: set[str] = set()
+    nonempty_directories: set[str] = set()
+    for row in _git(root, "ls-tree", "-r", "-t", "-z", revision).stdout.split(b"\0"):
+        if not row:
+            continue
+        metadata, sep, raw_path = row.partition(b"\t")
+        parts = metadata.split()
+        if not sep or len(parts) != 3:
+            raise RuntimeError("malformed historical Git tree entry")
+        try:
+            path = raw_path.decode("utf-8")
+        except UnicodeError as exc:
+            raise RuntimeError("non-UTF8 historical Git path") from exc
+        if not _path_is_safe(path):
+            raise RuntimeError("unsafe historical Git path")
+        if path in seen_entries:
+            raise RuntimeError("duplicated historical Git tree entry")
+        seen_entries.add(path)
+        if len(seen_entries) > 4096:
+            raise RuntimeError("historical Git tree exceeds 4096-entry audit budget")
+        if "/" in path:
+            nonempty_directories.add(path.rsplit("/", 1)[0])
+        # Git can store different spellings of the same directory, or
+        # a file and directory whose names alias on a case-insensitive OS.
+        # Audit every path component, not only the complete leaf filename.
+        components = path.split("/")
+        for depth in range(1, len(components) + 1):
+            prefix = "/".join(components[:depth])
+            portable_key = unicodedata.normalize("NFC", prefix).casefold()
+            previous = portable_prefixes.get(portable_key)
+            if previous is not None and previous != prefix:
+                raise RuntimeError("case-insensitive/Unicode-normalized Git path collision")
+            portable_prefixes[portable_key] = prefix
+        # Inspect directory objects without changing the file-only return contract.
+        if parts[0] == b"040000" or parts[1] == b"tree":
+            if parts[:2] != [b"040000", b"tree"]:
+                raise RuntimeError("unsupported historical Git tree mode/type")
+            directories.add(path)
+        else:
+            tree[path] = (parts[0], parts[1], parts[2])
+    # An empty subtree has no leaf on which the file admission policy can act.
+    if directories - nonempty_directories:
+        raise RuntimeError("empty historical Git subtree outside file admission policy")
+    return tree
+
+
+def verify_pr_diff(root: Path, base: str, head: str = "HEAD") -> list[str]:
+    """Inspect actual Git diff and tree objects; fail closed on uncertain types."""
+    root = Path(root).resolve()
+    _require_unmodified_object_view(root)
+    _git(root, "rev-parse", "--verify", "--end-of-options", base)
+    _git(root, "rev-parse", "--verify", "--end-of-options", head)
+    raw = _git(root, "diff", "--no-renames", "--name-status", "-z", base, head).stdout
+    fields = raw.rstrip(b"\0").split(b"\0") if raw else []
+    if not fields:
+        return ["empty PR diff: no demonstrable changed paths"]
+    if len(fields) % 2:
+        return ["malformed Git name-status output"]
+    errors: list[str] = []
+    changed_ignore = False
+    # A verifier may inspect any explicit head SHA without checking it out.
+    # The current filesystem's ignore policy must not decide another
+    # commit's eligibility; bind final admission to that head's Git blob.
+    raw_head_ignore = _git(root, "show", f"{head}:.gitignore").stdout
+    for i in range(0, len(fields), 2):
+        status = fields[i].decode("ascii", "replace")
+        try:
+            path = fields[i + 1].decode("utf-8")
+        except UnicodeError:
+            errors.append("non-UTF8 changed path")
+            continue
+        if not _path_is_safe(path):
+            errors.append(f"unsafe changed path: {path!r}")
+            continue
+        if path == ".gitignore":
+            changed_ignore = True
+        if status.startswith("D"):
+            errors.append(f"deletion requires explicit bounded exception: {path}")
+            continue
+        if status[0] not in ("A", "M", "T"):
+            errors.append(f"unsupported change kind {status}: {path}")
+            continue
+        row = _git(root, "ls-tree", "-z", head, "--", path).stdout
+        if not row or row.count(b"\0") != 1:
+            errors.append(f"missing/ambiguous tree entry: {path}")
+            continue
+        meta = row.split(b"\t", 1)[0].split()
+        if len(meta) != 3 or meta[0] != b"100644" or meta[1] != b"blob":
+            errors.append(f"unsupported file mode/type (symlink, executable, submodule): {path}")
+            continue
+        size = int(_git(root, "cat-file", "-s", meta[2].decode("ascii")).stdout)
+        limit = MAX_NEW_FILE_BYTES if status.startswith("A") else MAX_TEXT_BYTES
+        if size > limit:
+            errors.append(f"changed text exceeds {limit} bytes: {path}")
+            continue
+        content = _git(root, "cat-file", "blob", meta[2].decode("ascii")).stdout
+        if b"\0" in content:
+            errors.append(f"NUL/binary content: {path}")
+        try:
+            content.decode("utf-8")
+        except UnicodeError:
+            errors.append(f"invalid UTF-8 content: {path}")
+        if any(pattern.search(content) for pattern in SECRET_MARKERS):
+            errors.append(f"high-confidence secret marker: {path}")
+        if status.startswith("A"):
+            if not _exact_path_admitted(raw_head_ignore, path):
+                errors.append(f"new path excluded by exact head .gitignore: {path}")
+    if changed_ignore:
+        errors.extend(_exact_allowlist(raw_head_ignore))
+    # A final-tree diff cannot see a secret briefly committed and later removed.
+    # Scan every newly reachable Git blob, including discarded historical blobs.
+    history = _git(root, "rev-list", "--objects", f"{base}..{head}").stdout.splitlines()
+    if len(history) > 1024:
+        errors.append("PR history exceeds bounded 1024-object audit budget")
+        return errors
+    seen: set[str] = set()
+    for row in history:
+        object_id, _, raw_path = row.partition(b" ")
+        sha = object_id.decode("ascii")
+        if sha in seen:
+            continue
+        seen.add(sha)
+        kind = _git(root, "cat-file", "-t", sha).stdout.strip()
+        if kind == b"commit":
+            # Commit-message content is public too; inspect high-confidence markers.
+            commit = _git(root, "cat-file", "commit", sha).stdout
+            if any(pattern.search(commit) for pattern in SECRET_MARKERS):
+                errors.append(f"historical commit contains secret marker: {sha[:12]}")
+            continue
+        if kind != b"blob":
+            continue
+        name = raw_path.decode("utf-8", "replace")[:110] or "unnamed blob"
+        size = int(_git(root, "cat-file", "-s", sha).stdout)
+        if size > MAX_TEXT_BYTES:
+            errors.append(f"historical object exceeds text limit: {name} ({sha[:12]})")
+            continue
+        content = _git(root, "cat-file", "blob", sha).stdout
+        if b"\0" in content:
+            errors.append(f"historical binary object: {name} ({sha[:12]})")
+        try:
+            content.decode("utf-8")
+        except UnicodeError:
+            errors.append(f"historical invalid UTF-8 object: {name} ({sha[:12]})")
+        if any(pattern.search(content) for pattern in SECRET_MARKERS):
+            errors.append(f"historical object contains secret marker: {name} ({sha[:12]})")
+    # A clean end-state cannot prove intermediate commits lacked links,
+    # executable objects or non-public filenames. Examine each new commit's
+    # *tree entry modes and paths*, not only blobs/commit messages.
+    commit_ids = _git(root, "rev-list", f"{base}..{head}").stdout.splitlines()
+    if len(commit_ids) > 64:
+        errors.append("PR exceeds bounded 64-commit historical tree audit")
+        return errors
+    base_tree = _tree_entries(root, base)
+    # The narrow exact-path predicate below models only the repository's
+    # root .gitignore. Git also applies nested .gitignore files, so allowing
+    # them here would make per-commit admission claims unsound. Fail closed.
+    nested_base = next((p for p in base_tree if p.endswith("/.gitignore")), None)
+    if nested_base is not None:
+        errors.append(f"nested .gitignore outside root-only policy: {nested_base} (base)")
+        return errors
+    # Bind each historical new path to the *same commit's* root policy.
+    # Cache by blob identity to keep the bounded history audit efficient.
+    policy_by_blob: dict[bytes, bytes] = {}
+    for raw_commit in commit_ids:
+        commit_sha = raw_commit.decode("ascii")
+        current_tree = _tree_entries(root, commit_sha)
+        nested = next((p for p in current_tree if p.endswith("/.gitignore")), None)
+        if nested is not None:
+            errors.append(
+                f"nested .gitignore outside root-only policy: "
+                f"{nested} ({commit_sha[:12]})"
+            )
+            return errors
+        # First-parent comparisons detect a deletion in an intermediate
+        # commit even when a later commit restores the same tracked path.
+        # Comparing against the *latest base* would falsely reject older
+        # feature commits that predate newer files merged into main.
+        lineage = _git(
+            root, "rev-list", "--parents", "-n", "1", commit_sha
+        ).stdout.split()
+        if len(lineage) < 2 or lineage[0] != raw_commit:
+            errors.append(f"historical commit lacks auditable first parent: {commit_sha[:12]}")
+            continue
+        first_parent = _tree_entries(root, lineage[1].decode("ascii"))
+        for removed in sorted(first_parent.keys() - current_tree.keys()):
+            errors.append(
+                f"historical deletion requires explicit bounded exception: "
+                f"{removed} ({commit_sha[:12]})"
+            )
+        ignore_entry = current_tree.get(".gitignore")
+        if ignore_entry is None or ignore_entry[1] != b"blob":
+            errors.append(f"historical missing .gitignore: {commit_sha[:12]}")
+            continue
+        ignore_blob = ignore_entry[2]
+        if ignore_blob not in policy_by_blob:
+            policy_by_blob[ignore_blob] = _git(
+                root, "cat-file", "blob", ignore_blob.decode("ascii")
+            ).stdout
+        raw_ignore = policy_by_blob[ignore_blob]
+        if base_tree.get(".gitignore") != ignore_entry:
+            for issue in _exact_allowlist(raw_ignore):
+                errors.append(f"historical ignore rule: {issue} ({commit_sha[:12]})")
+        for path, entry in current_tree.items():
+            if base_tree.get(path) == entry:
+                continue
+            if entry[0] != b"100644" or entry[1] != b"blob":
+                errors.append(f"historical unsupported mode/type: {path} ({commit_sha[:12]})")
+            if path not in base_tree:
+                if entry[1] == b"blob":
+                    size = int(_git(root, "cat-file", "-s", entry[2].decode("ascii")).stdout)
+                    if size > MAX_NEW_FILE_BYTES:
+                        errors.append(f"historical added text exceeds {MAX_NEW_FILE_BYTES} bytes: {path} ({commit_sha[:12]})")
+                if not _exact_path_admitted(raw_ignore, path):
+                    errors.append(f"historical unallowlisted path: {path} ({commit_sha[:12]})")
+    return errors
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Limited public-only PR diff check")
+    parser.add_argument("--base", required=True)
+    parser.add_argument("--head", default="HEAD")
+    parser.add_argument("--repo", default=".")
+    args = parser.parse_args()
+    try:
+        issues = verify_pr_diff(Path(args.repo), args.base, args.head)
+    except (RuntimeError, ValueError) as exc:
+        print(f"HOLD: unable to inspect exact Git objects: {exc}")
+        return 1
+    if issues:
+        for issue in issues:
+            print("HOLD:", issue)
+        return 1
+    print("PASS: Git object/path hygiene only. NOT provenance, rights, human review, or release clearance.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
