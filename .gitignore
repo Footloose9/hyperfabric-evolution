@@ -18,6 +18,7 @@
 !docs/evm_identity_cases.json
 !docs/EXPLORER_PROPOSAL.md
 !docs/WALLET_INTEROP_PROPOSAL.md
+!docs/WATCH_ONLY_SYNTHETIC_OBSERVATIONS.md
 !docs/PUBLIC_COLLABORATION_PROTOCOL.md
 !docs/THREAT_RESEARCH.md
 !docs/BITX_PILOT.md
@@ -62,6 +63,7 @@
 !hyperfabric_public/graphsense_bridge.py
 !hyperfabric_public/evidence_observation.py
 !hyperfabric_public/xrpl_conformance.py
+!hyperfabric_public/watch_only_observation.py
 !hyperfabric_public/bitcoin_utxo.py
 !tests/
 !tests/fixtures/
@@ -78,4 +80,5 @@
 !tests/contribution_integrity.py
 !tests/test_contribution_integrity.py
 !tests/test_xrpl_conformance.py
+!tests/test_watch_only_observation.py
 !tests/capability-gallery.test.cjs
