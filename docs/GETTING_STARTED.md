@@ -31,7 +31,7 @@ For example, `AssetIdentity.xrp().key` returns `"xrpl:native:XRP"`. The unit tes
 
 ### Concrete currency + issuer example (synthetic, no Python needed)
 
-On the XRP Ledger ([XRPL fungible tokens docs](https://xrpl.org/docs/concepts/tokens/fungible-tokens)), a human-readable ticker like `USD` is **not** a unique asset identifier on its own:
+On the XRP Ledger ([XRPL fungible tokens docs](https://xrpl.org/docs/concepts/tokens/fungible-tokens)), a human-readable ticker like `USD` is **not** a unique asset identifier on its own. For **XRPL trust-line tokens** (the standard modeled by `identity.py`, distinct from [Multi-Purpose Tokens](https://xrpl.org/docs/concepts/tokens/fungible-tokens/multi-purpose-tokens) which use an `mpt_issuance_id`):
 
 - **Native XRP**: `XRP` has no issuer (`xrpl:native:XRP`).
 - **Issued asset A**: currency `USD` issued by fictional account `raaaaaaaaaaaaaaaaaaaaaaaa` -> `xrpl:issued:USD:raaaaaaaaaaaaaaaaaaaaaaaa`.
