@@ -27,6 +27,20 @@ Open [`hyperfabric_public/identity.py`](../hyperfabric_public/identity.py). The 
 - **Issued XRPL assets** are identified by currency **and** issuer; matching ticker labels alone do not mean two assets are identical.
 - **Syntactic shape is not validation.** The demonstration does not verify the issuer's checksum, actual existence or authorization, or a token's market state.
 
+### Why a matching currency label is not enough
+
+These are **fictional conceptual identities**, not ledger records or valid XRPL account addresses. The `sim:` issuer labels are deliberately invalid as real account addresses.
+
+| Case | Illustrative identity | What it means |
+| --- | --- | --- |
+| Native XRP | `XRP` (no issuer) | Native ledger asset, not an issued token. |
+| Issued token A | `(USD, sim:issuer:A)` | A fictional classic trust-line token identified by its currency and issuer together. |
+| Issued token B | `(USD, sim:issuer:B)` | A different fictional token, despite sharing the `USD` label with A. |
+
+The string `USD` alone cannot distinguish A from B. A missing issuer therefore leaves a classic issued-token identity **unresolved**; it must not be silently assigned to either asset. Native XRP does not acquire an issuer. This example concerns classic trust-line tokens: XRPL Multi-Purpose Tokens (MPTs) use a separate **MPT Issuance ID**.
+
+Primary protocol references: [XRPL Currency Formats](https://xrpl.org/docs/references/protocol/data-types/currency-formats) and [Issue a Fungible Token](https://xrpl.org/docs/tutorials/tokens/fungible-tokens/issue-a-fungible-token). This illustration does **not** validate account checksums, currency encoding, issuer ownership, trust lines, balances, ledger existence or network observations. It performs no RPC request or transaction.
+
 For example, `AssetIdentity.xrp().key` returns `"xrpl:native:XRP"`. The unit tests exercise synthetic issuer strings so that no real wallet addresses are required.
 
 ## 4. Try the synthetic evidence graph
