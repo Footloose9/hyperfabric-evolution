@@ -79,3 +79,6 @@
 !tests/test_contribution_integrity.py
 !tests/test_xrpl_conformance.py
 !tests/capability-gallery.test.cjs
+!docs/XRPL_OFFLINE_SOURCE_ADAPTER.md
+!hyperfabric_public/xrpl_offline_rpc_adapter.py
+!tests/test_xrpl_offline_rpc_adapter.py
