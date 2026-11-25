@@ -1,0 +1,143 @@
+{
+  "schema": "hf.solana.synthetic_transfer.v1",
+  "network": "solana:synthetic",
+  "provenance": "PUBLIC_SYNTHETIC",
+  "positive_cases": [
+    {
+      "name": "native_transfer_with_full_provenance",
+      "source": {
+        "network": "solana:synthetic",
+        "rpc_method": "getTransaction",
+        "requested_commitment": "finalized",
+        "signature_status": "finalized",
+        "confirmation_status": "finalized",
+        "confirmations": null,
+        "slot": 200123456,
+        "blockhash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+        "capture_utc": "2026-11-22T10:30:00Z",
+        "raw_content_sha256": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3"
+      },
+      "transaction_type": "transfer",
+      "transaction_result": "success",
+      "transfers": [
+        {
+          "source": "sim:account_sender_1",
+          "destination": "sim:account_receiver_1",
+          "asset": {
+            "kind": "native"
+          },
+          "amount": "1000000000",
+          "authority": null,
+          "provenance": {
+            "outer_index": 0,
+            "inner_ordinal": null,
+            "stack_height": 0,
+            "program_id": "sim:prog_system",
+            "account_keys_context": [
+              "sim:account_sender_1",
+              "sim:account_receiver_1"
+            ]
+          }
+        }
+      ],
+      "signatures": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ]
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "ambiguous_nested_instruction_missing_inner_ordinal",
+      "source": {
+        "network": "solana:synthetic",
+        "rpc_method": "getTransaction",
+        "requested_commitment": "finalized",
+        "signature_status": "finalized",
+        "confirmation_status": "finalized",
+        "slot": 200123457,
+        "blockhash": "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e",
+        "capture_utc": "2026-11-22T10:31:00Z",
+        "raw_content_sha256": "d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
+      },
+      "transaction_type": "token_transfer",
+      "transaction_result": "success",
+      "transfers": [
+        {
+          "source": "sim:account_token_sender_1",
+          "destination": "sim:account_token_receiver_1",
+          "asset": {
+            "kind": "spl_token",
+            "mint": "sim:mint_usdc_1",
+            "program_id": "sim:prog_spl_token",
+            "display_symbol": "SIMUSD"
+          },
+          "amount": "5000000",
+          "authority": "sim:account_token_authority_1",
+          "provenance": {
+            "outer_index": 1,
+            "inner_ordinal": null,
+            "stack_height": 1,
+            "program_id": "sim:prog_spl_token",
+            "account_keys_context": [
+              "sim:account_token_sender_1",
+              "sim:account_token_receiver_1",
+              "sim:mint_usdc_1",
+              "sim:account_token_authority_1"
+            ]
+          }
+        }
+      ],
+      "signatures": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ]
+    },
+    {
+      "name": "unqualified_commitment_missing_confirmation_status",
+      "source": {
+        "network": "solana:synthetic",
+        "rpc_method": "getTransaction",
+        "requested_commitment": "finalized",
+        "signature_status": null,
+        "confirmation_status": null,
+        "confirmations": null,
+        "slot": 200123458,
+        "blockhash": "d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f",
+        "capture_utc": "2026-11-22T10:32:00Z",
+        "raw_content_sha256": "e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1"
+      },
+      "transaction_type": "transfer",
+      "transaction_result": "success",
+      "transfers": [
+        {
+          "source": "sim:account_sender_2",
+          "destination": "sim:account_receiver_2",
+          "asset": {
+            "kind": "native"
+          },
+          "amount": "2000000000",
+          "authority": null,
+          "provenance": {
+            "outer_index": 0,
+            "inner_ordinal": null,
+            "stack_height": 0,
+            "program_id": "sim:prog_system",
+            "account_keys_context": [
+              "sim:account_sender_2",
+              "sim:account_receiver_2"
+            ]
+          }
+        }
+      ],
+      "signatures": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ]
+    }
+  ],
+  "public_spec_references": {
+    "getTransaction": "https://solana.com/docs/rpc/http/gettransaction",
+    "getSignatureStatuses": "https://solana.com/docs/rpc/http/getsignaturestatuses",
+    "spl_token_program": "https://spl.solana.com/token",
+    "solana_transaction_structure": "https://solana.com/docs/core/transactions",
+    "token_mint_identity": "https://spl.solana.com/token#mint"
+  }
+}
