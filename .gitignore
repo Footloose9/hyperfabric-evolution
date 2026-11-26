@@ -79,3 +79,7 @@
 !tests/test_contribution_integrity.py
 !tests/test_xrpl_conformance.py
 !tests/capability-gallery.test.cjs
+
+!docs/MONERO_VISIBILITY_SYNTHETIC.md
+!hyperfabric_public/monero_visibility.py
+!tests/test_monero_visibility.py
